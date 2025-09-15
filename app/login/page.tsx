@@ -25,35 +25,28 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      const user = await login(email, password);
       toast.success('সফলভাবে লগইন হয়েছে!');
       
-      // Get user data from localStorage to determine role-based routing
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        // Route based on user role
-        switch (user.role) {
-          case 'admin':
-            router.push('/admin/dashboard');
-            break;
-          case 'mentor':
-            router.push('/mentor/dashboard');
-            break;
-          case 'student':
-            router.push('/student/dashboard');
-            break;
-          case 'marketing':
-            router.push('/marketing/dashboard');
-            break;
-          case 'support':
-            router.push('/support/dashboard');
-            break;
-          default:
-            router.push('/dashboard');
-        }
-      } else {
-        router.push('/dashboard');
+      // Route based on user role
+      switch (user.role) {
+        case 'admin':
+          router.push('/admin/dashboard');
+          break;
+        case 'mentor':
+          router.push('/mentor/dashboard');
+          break;
+        case 'student':
+          router.push('/student/dashboard');
+          break;
+        case 'marketing':
+          router.push('/marketing/dashboard');
+          break;
+        case 'support':
+          router.push('/support/dashboard');
+          break;
+        default:
+          router.push('/dashboard');
       }
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'message' in error 

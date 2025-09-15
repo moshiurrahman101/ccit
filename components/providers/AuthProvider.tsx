@@ -6,8 +6,8 @@ import { User, UserRole } from '@/types';
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (userData: RegisterData) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (userData: RegisterData) => Promise<User>;
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: {
@@ -86,9 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     localStorage.setItem('auth-token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data.user;
   };
 
-  const register = async (userData: RegisterData) => {
+  const register = async (userData: RegisterData): Promise<User> => {
     const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: {
@@ -107,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     localStorage.setItem('auth-token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
+    
+    return data.user;
   };
 
   const logout = () => {
