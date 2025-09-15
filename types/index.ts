@@ -1,0 +1,152 @@
+export type UserRole = 'student' | 'mentor' | 'admin' | 'marketing' | 'support';
+
+export type PaymentMethod = 'bkash' | 'nagad';
+
+export type EnrollmentStatus = 'pending' | 'approved' | 'rejected';
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+  avatar?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Course {
+  _id: string;
+  title: string;
+  description: string;
+  syllabus: string;
+  tags: string[];
+  keywords: string[];
+  learningOutcomes: string[];
+  duration: number; // in hours
+  price: number;
+  mentorId: string;
+  mentor: User;
+  thumbnail?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Enrollment {
+  _id: string;
+  studentId: string;
+  courseId: string;
+  student: User;
+  course: Course;
+  paymentMethod: PaymentMethod;
+  senderNumber: string;
+  transactionId: string;
+  status: EnrollmentStatus;
+  enrolledAt: Date;
+  approvedAt?: Date;
+  approvedBy?: string;
+  approvedByUser?: User;
+}
+
+export interface ClassSession {
+  _id: string;
+  courseId: string;
+  title: string;
+  description?: string;
+  sessionDate: Date;
+  duration: number; // in minutes
+  zoomLink?: string;
+  googleMeetLink?: string;
+  youtubeVideoId?: string;
+  resources: ClassResource[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ClassResource {
+  _id: string;
+  title: string;
+  type: 'pdf' | 'slides' | 'video' | 'other';
+  url: string;
+  uploadedAt: Date;
+}
+
+export interface Assignment {
+  _id: string;
+  courseId: string;
+  title: string;
+  description: string;
+  dueDate: Date;
+  maxPoints: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Submission {
+  _id: string;
+  assignmentId: string;
+  studentId: string;
+  courseId: string;
+  submissionText?: string;
+  submissionFiles: string[];
+  submittedAt: Date;
+  grade?: number;
+  feedback?: string;
+  gradedAt?: Date;
+  gradedBy?: string;
+}
+
+export interface Certificate {
+  _id: string;
+  studentId: string;
+  courseId: string;
+  student: User;
+  course: Course;
+  certificateNumber: string;
+  issueDate: Date;
+  mentorSignature: string;
+  pdfUrl: string;
+  shareableLink: string;
+  createdAt: Date;
+}
+
+export interface BlogPost {
+  _id: string;
+  title: string;
+  slug: string;
+  content: string;
+  excerpt: string;
+  featuredImage?: string;
+  tags: string[];
+  category: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  authorId: string;
+  author: User;
+  isPublished: boolean;
+  publishedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Notification {
+  _id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  isRead: boolean;
+  createdAt: Date;
+}
+
+export interface DashboardStats {
+  totalStudents: number;
+  totalCourses: number;
+  totalEnrollments: number;
+  pendingApprovals: number;
+  totalRevenue: number;
+  monthlyRevenue: number;
+}
