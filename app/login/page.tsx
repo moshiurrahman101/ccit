@@ -27,7 +27,34 @@ export default function LoginPage() {
     try {
       await login(email, password);
       toast.success('সফলভাবে লগইন হয়েছে!');
-      router.push('/dashboard');
+      
+      // Get user data from localStorage to determine role-based routing
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        // Route based on user role
+        switch (user.role) {
+          case 'admin':
+            router.push('/admin/dashboard');
+            break;
+          case 'mentor':
+            router.push('/mentor/dashboard');
+            break;
+          case 'student':
+            router.push('/student/dashboard');
+            break;
+          case 'marketing':
+            router.push('/marketing/dashboard');
+            break;
+          case 'support':
+            router.push('/support/dashboard');
+            break;
+          default:
+            router.push('/dashboard');
+        }
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'message' in error 
         ? (error as { message: string }).message 
@@ -47,7 +74,7 @@ export default function LoginPage() {
               আপনার অ্যাকাউন্টে লগইন করুন
             </CardTitle>
             <CardDescription className="text-center">
-              আপনার ইমেইল এবং পাসওয়ার্ড দিয়ে লগইন করুন
+              শিক্ষার্থী, মেন্টর, অ্যাডমিন - সবাই এখানে লগইন করতে পারেন
             </CardDescription>
           </CardHeader>
           <CardContent>

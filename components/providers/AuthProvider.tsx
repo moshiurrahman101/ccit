@@ -85,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem('auth-token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
   };
 
   const register = async (userData: RegisterData) => {
@@ -105,12 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem('auth-token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('auth-token');
+    localStorage.removeItem('user');
   };
 
   const hasRole = (role: UserRole): boolean => {

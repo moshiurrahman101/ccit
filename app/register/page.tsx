@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, EyeOff, Mail, Lock, User, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -18,8 +17,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    phone: '',
-    role: 'student' as 'student' | 'mentor' | 'admin' | 'marketing' | 'support'
+    phone: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -51,10 +49,10 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
         phone: formData.phone || undefined,
-        role: formData.role
+        role: 'student'
       });
       toast.success('সফলভাবে নিবন্ধন হয়েছে!');
-      router.push('/dashboard');
+      router.push('/student/dashboard');
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'message' in error 
         ? (error as { message: string }).message 
@@ -71,10 +69,10 @@ export default function RegisterPage() {
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-center">
-              নতুন অ্যাকাউন্ট তৈরি করুন
+              শিক্ষার্থী হিসেবে নিবন্ধন করুন
             </CardTitle>
             <CardDescription className="text-center">
-              আপনার তথ্য দিয়ে একটি নতুন অ্যাকাউন্ট তৈরি করুন
+              আমাদের কোর্সে অংশগ্রহণ করতে একটি শিক্ষার্থী অ্যাকাউন্ট তৈরি করুন
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -129,21 +127,6 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="role">ভূমিকা</Label>
-                <Select value={formData.role} onValueChange={(value: string) => setFormData(prev => ({ ...prev, role: value as typeof prev.role }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">শিক্ষার্থী</SelectItem>
-                    <SelectItem value="mentor">মেন্টর</SelectItem>
-                    <SelectItem value="admin">এডমিন</SelectItem>
-                    <SelectItem value="marketing">মার্কেটিং</SelectItem>
-                    <SelectItem value="support">সাপোর্ট</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">পাসওয়ার্ড</Label>
