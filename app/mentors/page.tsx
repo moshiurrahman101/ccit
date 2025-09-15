@@ -203,7 +203,7 @@ export default function MentorsPage() {
                     </Button>
                   </div>
 
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                     <MessageCircle className="w-4 h-4 mr-2" />
                     মেন্টরের সাথে যোগাযোগ
                   </Button>
@@ -273,7 +273,7 @@ export default function MentorsPage() {
             আপনার অভিজ্ঞতা এবং জ্ঞান শেয়ার করে অন্যের ক্যারিয়ার গড়তে সাহায্য করুন।
             আমাদের মেন্টর পরিবারের অংশ হন।
           </p>
-          <Button size="lg" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+          <Button size="lg" className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
             মেন্টর হওয়ার আবেদন করুন
           </Button>
         </div>

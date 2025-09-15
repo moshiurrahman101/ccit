@@ -4,7 +4,49 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Calendar, Users, Clock, Star } from 'lucide-react';
-import content from '../../homepage.content.json';
+// Static content for course section
+const content = {
+  courses: {
+    featured: [
+      {
+        title: "Full Stack Web Development",
+        instructor: "রাহুল আহমেদ",
+        price: "৳১৫,০০০",
+        originalPrice: "৳২০,০০০",
+        rating: 4.9,
+        students: 1200,
+        duration: "৬ মাস",
+        level: "বিগিনার",
+        image: "🌐",
+        badge: "জনপ্রিয়"
+      },
+      {
+        title: "Digital Marketing Mastery",
+        instructor: "সুমাইয়া খান",
+        price: "৳১২,০০০",
+        originalPrice: "৳১৫,০০০",
+        rating: 4.8,
+        students: 980,
+        duration: "৪ মাস",
+        level: "ইন্টারমিডিয়েট",
+        image: "📱",
+        badge: "নতুন"
+      },
+      {
+        title: "Graphic Design with Adobe",
+        instructor: "আরিফ হোসেন",
+        price: "৳১০,০০০",
+        originalPrice: "৳১৩,০০০",
+        rating: 4.7,
+        students: 850,
+        duration: "৩ মাস",
+        level: "বিগিনার",
+        image: "🎨",
+        badge: "বিশেষ ছাড়"
+      }
+    ]
+  }
+};
 
 interface CourseSectionProps {
   title: string;
@@ -110,8 +152,8 @@ export function CourseSection({ title, subtitle, showCalendar = false }: CourseS
 
                   {/* Price */}
                   <div className="flex items-center space-x-3 mb-4">
-                    <span className="text-2xl font-bold text-ccit-primary">{course.newPrice}</span>
-                    <span className="text-lg text-ccit-muted-1 line-through">{course.oldPrice}</span>
+                    <span className="text-2xl font-bold text-ccit-primary">{course.price}</span>
+                    <span className="text-lg text-ccit-muted-1 line-through">{course.originalPrice}</span>
                     <Badge variant="destructive" className="text-xs">
                       ছাড়
                     </Badge>
@@ -131,7 +173,7 @@ export function CourseSection({ title, subtitle, showCalendar = false }: CourseS
 
                   {/* CTA Button */}
                   <Button className="w-full bg-gradient-to-r from-ccit-primary to-ccit-accent-1 hover:from-ccit-accent-1 hover:to-ccit-primary text-white shadow-lg hover:shadow-xl transition-all duration-300">
-                    {content.courses.cta.viewDetails}
+                    কোর্স বিস্তারিত
                   </Button>
                 </div>
               </div>
@@ -146,7 +188,7 @@ export function CourseSection({ title, subtitle, showCalendar = false }: CourseS
             size="lg"
             className="border-2 border-ccit-primary text-ccit-primary hover:bg-ccit-primary hover:text-white px-8 py-3 font-semibold"
           >
-            {content.courses.cta.viewAll}
+            সব কোর্স দেখুন
           </Button>
         </div>
       </div>

@@ -55,8 +55,11 @@ export default function RegisterPage() {
       });
       toast.success('সফলভাবে নিবন্ধন হয়েছে!');
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'নিবন্ধনে সমস্যা হয়েছে');
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'নিবন্ধনে সমস্যা হয়েছে';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +131,7 @@ export default function RegisterPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">ভূমিকা</Label>
-                <Select value={formData.role} onValueChange={(value: any) => setFormData(prev => ({ ...prev, role: value }))}>
+                <Select value={formData.role} onValueChange={(value: string) => setFormData(prev => ({ ...prev, role: value as typeof prev.role }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="ভূমিকা নির্বাচন করুন" />
                   </SelectTrigger>

@@ -1,17 +1,15 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Enrollment as IEnrollment, PaymentMethod, EnrollmentStatus } from '@/types';
 
-export interface EnrollmentDocument extends IEnrollment, Document {}
+export interface EnrollmentDocument extends Omit<IEnrollment, '_id'>, Document {}
 
 const enrollmentSchema = new Schema<EnrollmentDocument>({
   studentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: [true, 'শিক্ষার্থী প্রয়োজন']
   },
   courseId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Course',
+    type: String,
     required: [true, 'কোর্স প্রয়োজন']
   },
   paymentMethod: {
@@ -48,27 +46,13 @@ const enrollmentSchema = new Schema<EnrollmentDocument>({
     type: Date
   },
   approvedBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User'
+    type: String
   }
 }, {
   timestamps: true
 });
 
-// Populate student, course, and approvedBy fields
-enrollmentSchema.pre(/^find/, function(next) {
-  this.populate({
-    path: 'studentId',
-    select: 'name email phone'
-  }).populate({
-    path: 'courseId',
-    select: 'title price mentorId'
-  }).populate({
-    path: 'approvedBy',
-    select: 'name email'
-  });
-  next();
-});
+// Note: IDs are now strings, not ObjectIds, so no populate needed
 
 // Prevent duplicate enrollments
 enrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });

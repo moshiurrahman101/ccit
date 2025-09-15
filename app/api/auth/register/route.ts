@@ -45,17 +45,17 @@ export async function POST(request: NextRequest) {
       token
     }, { status: 201 });
 
-  } catch (error: any) {
-    if (error.name === 'ValidationError') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ValidationError' && 'errors' in error) {
       return NextResponse.json(
-        { message: 'ভুল তথ্য', errors: error.errors },
+        { message: 'ভুল তথ্য', errors: (error as { errors: unknown }).errors },
         { status: 400 }
       );
     }
     
-    if (error.name === 'ZodError') {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError' && 'errors' in error) {
       return NextResponse.json(
-        { message: 'ভুল তথ্য', errors: error.errors },
+        { message: 'ভুল তথ্য', errors: (error as { errors: unknown }).errors },
         { status: 400 }
       );
     }

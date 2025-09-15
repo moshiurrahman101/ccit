@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'active';
 
     // Build query
-    const query: any = {};
+    const query: Record<string, unknown> = {};
     
     if (status === 'active') {
       query.isActive = true;

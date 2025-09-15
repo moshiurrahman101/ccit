@@ -166,7 +166,7 @@ export default function ContactPage() {
 
                     <Button 
                       type="submit" 
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 py-3"
+                      className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 py-3"
                     >
                       <Send className="w-5 h-5 mr-2" />
                       বার্তা পাঠান

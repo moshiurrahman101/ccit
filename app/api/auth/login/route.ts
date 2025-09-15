@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
       token
     });
 
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError' && 'errors' in error) {
       return NextResponse.json(
-        { message: 'ভুল তথ্য', errors: error.errors },
+        { message: 'ভুল তথ্য', errors: (error as { errors: unknown }).errors },
         { status: 400 }
       );
     }

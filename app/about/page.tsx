@@ -263,10 +263,10 @@ export default function AboutPage() {
             আজই আপনার কোর্স বেছে নিন।
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button size="lg" className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white">
               কোর্স দেখুন
             </Button>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-blue-600">
+            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-orange-600">
               আমাদের সাথে যোগাযোগ
             </Button>
           </div>

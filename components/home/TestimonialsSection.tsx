@@ -2,7 +2,43 @@
 
 import { Button } from '@/components/ui/button';
 import { Star, Quote, TrendingUp, Users } from 'lucide-react';
-import content from '../../homepage.content.json';
+// Static content for testimonials section
+const content = {
+  testimonials: {
+    title: "শিক্ষার্থীদের সফলতার গল্প",
+    subtitle: "আমাদের কোর্স থেকে সফল হওয়া শিক্ষার্থীদের অভিজ্ঞতা জানুন",
+    items: [
+      {
+        name: "রাহুল আহমেদ",
+        role: "Full Stack Developer",
+        company: "Tech Solutions Ltd",
+        image: "R",
+        rating: 5,
+        text: "Creative Canvas IT এর কোর্স করার পর আমি একটি ভালো চাকরি পেয়েছি। মেন্টররা খুবই সহায়ক ছিলেন।",
+        earning: "৳৮০,০০০/মাস"
+      },
+      {
+        name: "সুমাইয়া খান",
+        role: "Digital Marketing Specialist",
+        company: "Marketing Pro",
+        image: "S",
+        rating: 5,
+        text: "ডিজিটাল মার্কেটিং কোর্সটি আমার ক্যারিয়ার পরিবর্তন করেছে। এখন আমি ফ্রিল্যান্সার হিসেবে কাজ করছি।",
+        earning: "৳৬০,০০০/মাস"
+      },
+      {
+        name: "আরিফ হোসেন",
+        role: "UI/UX Designer",
+        company: "Design Studio",
+        image: "A",
+        rating: 5,
+        text: "গ্রাফিক ডিজাইন কোর্সটি শিখে আমি এখন একটি ডিজাইন স্টুডিও চালাচ্ছি। অনেক ধন্যবাদ।",
+        earning: "৳৭০,০০০/মাস"
+      }
+    ],
+    cta: "আপনার সফলতার গল্প শুরু করুন"
+  }
+};
 
 export function TestimonialsSection() {
   return (
@@ -30,7 +66,7 @@ export function TestimonialsSection() {
 
         {/* Success Stories Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          {content.testimonials.stories.map((story, index) => (
+          {content.testimonials.items.map((story, index) => (
             <div
               key={index}
               className="group bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
@@ -46,7 +82,7 @@ export function TestimonialsSection() {
                   <div className="relative mb-6">
                     <Quote className="w-8 h-8 text-white/30 mb-2" />
                     <p className="text-white/90 leading-relaxed text-lg italic">
-                      &ldquo;{story.quote}&rdquo;
+                      &ldquo;{story.text}&rdquo;
                     </p>
                   </div>
 

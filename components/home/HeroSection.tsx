@@ -4,7 +4,32 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Play, Star, Users, Award } from 'lucide-react';
-import content from '../../homepage.content.json';
+// Static content for hero section
+const content = {
+  hero: {
+    title: "আগে দক্ষতা অর্জন করুন, তারপর আয় করুন!",
+    subtitle: "বাংলাদেশের অন্যতম সেরা আইটি প্রশিক্ষণ প্ল্যাটফর্ম",
+    description: "বিশেষজ্ঞ মেন্টরদের সাথে শিখুন, প্রজেক্ট তৈরি করুন এবং সফল ক্যারিয়ার গড়ুন।",
+    badge: "বাংলাদেশের #১ আইটি ট্রেনিং প্ল্যাটফর্ম",
+    cta: {
+      primary: "কোর্স দেখুন",
+      secondary: "মেন্টরদের সাথে কথা বলুন"
+    },
+    stats: [
+      { value: "১০,০০০+", label: "সফল শিক্ষার্থী" },
+      { value: "৫০+", label: "প্রফেশনাল কোর্স" },
+      { value: "৯৮%", label: "সন্তুষ্টি হার" },
+      { value: "২৪/৭", label: "সাপোর্ট" }
+    ]
+  },
+  courses: {
+    featured: [
+      { title: "Full Stack Web Development", instructor: "রাহুল আহমেদ", image: "🌐", badge: "জনপ্রিয়", newPrice: "৳১৫,০০০", oldPrice: "৳২০,০০০", duration: "৬ মাস", students: "১,২০০+" },
+      { title: "Digital Marketing Mastery", instructor: "সুমাইয়া খান", image: "📱", badge: "নতুন", newPrice: "৳১২,০০০", oldPrice: "৳১৫,০০০", duration: "৪ মাস", students: "৯৮০+" },
+      { title: "Graphic Design with Adobe", instructor: "আরিফ হোসেন", image: "🎨", badge: "বিশেষ ছাড়", newPrice: "৳১০,০০০", oldPrice: "৳১৩,০০০", duration: "৩ মাস", students: "৮৫০+" }
+    ]
+  }
+};
 
 export function HeroSection() {
   const [currentCourseIndex, setCurrentCourseIndex] = useState(0);
@@ -85,20 +110,20 @@ export function HeroSection() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-8">
               <div className="text-center p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <div className="text-2xl font-bold text-white mb-1">{content.stats.students}</div>
-                <div className="text-white/80 text-sm">সফল শিক্ষার্থী</div>
+                <div className="text-2xl font-bold text-white mb-1">{content.hero.stats[0].value}</div>
+                <div className="text-white/80 text-sm">{content.hero.stats[0].label}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <div className="text-2xl font-bold text-white mb-1">{content.stats.courses}</div>
-                <div className="text-white/80 text-sm">প্রফেশনাল কোর্স</div>
+                <div className="text-2xl font-bold text-white mb-1">{content.hero.stats[1].value}</div>
+                <div className="text-white/80 text-sm">{content.hero.stats[1].label}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <div className="text-2xl font-bold text-white mb-1">{content.stats.mentors}</div>
-                <div className="text-white/80 text-sm">বিশেষজ্ঞ মেন্টর</div>
+                <div className="text-2xl font-bold text-white mb-1">{content.hero.stats[2].value}</div>
+                <div className="text-white/80 text-sm">{content.hero.stats[2].label}</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20">
-                <div className="text-2xl font-bold text-white mb-1">{content.stats.success}</div>
-                <div className="text-white/80 text-sm">সন্তুষ্টি হার</div>
+                <div className="text-2xl font-bold text-white mb-1">{content.hero.stats[3].value}</div>
+                <div className="text-white/80 text-sm">{content.hero.stats[3].label}</div>
               </div>
             </div>
           </div>

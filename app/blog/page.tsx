@@ -148,7 +148,7 @@ export default function BlogPage() {
                     </div>
                   </div>
 
-                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                     পুরো আর্টিকেল পড়ুন
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
@@ -284,7 +284,7 @@ export default function BlogPage() {
               placeholder="আপনার ইমেইল দিন"
               className="flex-1 px-6 py-3 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50"
             />
-            <Button className="bg-white text-blue-600 hover:bg-gray-100">
+            <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white">
               সাবস্ক্রাইব
             </Button>
           </div>

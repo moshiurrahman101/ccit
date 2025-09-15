@@ -28,8 +28,11 @@ export default function LoginPage() {
       await login(email, password);
       toast.success('সফলভাবে লগইন হয়েছে!');
       router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'লগইনে সমস্যা হয়েছে');
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'message' in error 
+        ? (error as { message: string }).message 
+        : 'লগইনে সমস্যা হয়েছে';
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }

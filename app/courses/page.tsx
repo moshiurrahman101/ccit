@@ -225,7 +225,7 @@ export default function CoursesPage() {
                     <Badge variant="outline">{course.level}</Badge>
                   </div>
 
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                  <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                     কোর্স বিস্তারিত
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>

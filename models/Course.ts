@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import { Course as ICourse } from '@/types';
 
-export interface CourseDocument extends ICourse, Document {}
+export interface CourseDocument extends Omit<ICourse, '_id'>, Document {}
 
 const courseSchema = new Schema<CourseDocument>({
   title: {
@@ -43,8 +43,7 @@ const courseSchema = new Schema<CourseDocument>({
     min: [0, 'মূল্য ঋণাত্মক হতে পারবে না']
   },
   mentorId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
+    type: String,
     required: [true, 'মেন্টর প্রয়োজন']
   },
   thumbnail: {
@@ -59,13 +58,6 @@ const courseSchema = new Schema<CourseDocument>({
   timestamps: true
 });
 
-// Populate mentor field
-courseSchema.pre(/^find/, function(next) {
-  this.populate({
-    path: 'mentorId',
-    select: 'name email avatar'
-  });
-  next();
-});
+// Note: mentorId is now a string, not ObjectId, so no populate needed
 
 export default mongoose.models.Course || mongoose.model<CourseDocument>('Course', courseSchema);

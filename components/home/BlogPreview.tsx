@@ -3,7 +3,33 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ArrowRight, Tag } from 'lucide-react';
-import content from '../../homepage.content.json';
+// Static content for blog preview
+const content = {
+  blog: {
+    title: "সফলতার গল্প ও টিপস",
+    subtitle: "আমাদের বিশেষজ্ঞদের অভিজ্ঞতা এবং সফল শিক্ষার্থীদের গল্প জানুন",
+    posts: [
+      {
+        title: "ফ্রিল্যান্সিং শুরু করার সম্পূর্ণ গাইড",
+        excerpt: "ফ্রিল্যান্সিং শুরু করতে চান? এই গাইডে শিখুন কিভাবে প্রথম প্রজেক্ট পাবেন।",
+        date: "১৫ জানুয়ারি",
+        tags: ["ফ্রিল্যান্সিং", "ক্যারিয়ার"]
+      },
+      {
+        title: "React.js শেখার সেরা উপায়",
+        excerpt: "React.js শিখতে চান? জানুন কোন পথে এগোলে দ্রুত শিখতে পারবেন।",
+        date: "১২ জানুয়ারি",
+        tags: ["React", "প্রোগ্রামিং"]
+      },
+      {
+        title: "ডিজিটাল মার্কেটিংয়ে সফলতা",
+        excerpt: "ডিজিটাল মার্কেটিংয়ে ক্যারিয়ার গড়তে চান? এই টিপসগুলো সাহায্য করবে।",
+        date: "১০ জানুয়ারি",
+        tags: ["মার্কেটিং", "সফলতা"]
+      }
+    ]
+  }
+};
 
 export function BlogPreview() {
   return (

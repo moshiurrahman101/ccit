@@ -12,7 +12,24 @@ import {
   DollarSign,
   ChevronRight
 } from 'lucide-react';
-import content from '../../homepage.content.json';
+// Static content for feature grid
+const content = {
+  features: {
+    title: "আমাদের বিশেষ সুবিধা",
+    subtitle: "আপনার সফলতার জন্য আমরা যা অফার করি",
+    items: [
+      "পোর্টফোলিও তৈরি",
+      "রেকর্ডেড মাস্টারক্লাস", 
+      "লাইফটাইম অ্যাক্সেস",
+      "সিভি বিল্ডার ও এক্সপার্ট সিভি রিভিউ",
+      "গ্রুপ লার্নিং",
+      "জব প্লেসমেন্ট",
+      "২৪/৭ লাইভ সাপোর্ট",
+      "বিশ্বাসযোগ্য সার্টিফিকেট",
+      "সাশ্রয়ী এবং মানসম্মত কোর্স"
+    ]
+  }
+};
 
 const featureIcons = {
   'পোর্টফোলিও তৈরি': Briefcase,
@@ -48,8 +65,8 @@ export function FeatureGrid() {
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {content.features.map((feature, index) => {
-            const Icon = featureIcons[feature.title as keyof typeof featureIcons];
+          {content.features.items.map((feature, index) => {
+            const Icon = featureIcons[feature as keyof typeof featureIcons];
             
             return (
               <div
@@ -71,10 +88,10 @@ export function FeatureGrid() {
 
                     {/* Content */}
                     <h3 className="text-xl font-bold text-ccit-primary mb-4 group-hover:text-ccit-accent-1 transition-colors duration-300">
-                      {feature.title}
+                      {feature}
                     </h3>
                     <p className="text-ccit-muted-1 leading-relaxed">
-                      {feature.description}
+                      এই সুবিধাটি আপনার ক্যারিয়ার গড়তে সাহায্য করবে।
                     </p>
                   </div>
 
