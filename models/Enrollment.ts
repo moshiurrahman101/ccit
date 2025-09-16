@@ -1,60 +1,96 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { Enrollment as IEnrollment, PaymentMethod, EnrollmentStatus } from '@/types';
 
-export interface EnrollmentDocument extends Omit<IEnrollment, '_id'>, Document {}
+export interface IEnrollment extends Document {
+  student: mongoose.Types.ObjectId;
+  course: mongoose.Types.ObjectId;
+  batch?: mongoose.Types.ObjectId; // for offline students
+  enrollmentDate: Date;
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'dropped';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'cash';
+  transactionId?: string;
+  senderNumber?: string;
+  amount: number;
+  approvedBy?: mongoose.Types.ObjectId;
+  approvedAt?: Date;
+  completedAt?: Date;
+  progress: number; // percentage
+  lastAccessed: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-const enrollmentSchema = new Schema<EnrollmentDocument>({
-  studentId: {
-    type: String,
-    required: [true, 'শিক্ষার্থী প্রয়োজন']
+const EnrollmentSchema = new Schema<IEnrollment>({
+  student: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  courseId: {
-    type: String,
-    required: [true, 'কোর্স প্রয়োজন']
+  course: {
+    type: Schema.Types.ObjectId,
+    ref: 'Course',
+    required: true
   },
-  paymentMethod: {
-    type: String,
-    enum: {
-      values: ['bkash', 'nagad'],
-      message: 'ভুল পেমেন্ট পদ্ধতি'
-    },
-    required: [true, 'পেমেন্ট পদ্ধতি প্রয়োজন']
+  batch: {
+    type: Schema.Types.ObjectId,
+    ref: 'Batch'
   },
-  senderNumber: {
-    type: String,
-    required: [true, 'প্রেরকের নম্বর প্রয়োজন'],
-    trim: true
-  },
-  transactionId: {
-    type: String,
-    required: [true, 'লেনদেনের আইডি প্রয়োজন'],
-    trim: true
-  },
-  status: {
-    type: String,
-    enum: {
-      values: ['pending', 'approved', 'rejected'],
-      message: 'ভুল নিবন্ধন অবস্থা'
-    },
-    default: 'pending'
-  },
-  enrolledAt: {
+  enrollmentDate: {
     type: Date,
     default: Date.now
   },
-  approvedAt: {
-    type: Date
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'completed', 'dropped'],
+    default: 'pending'
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', 'refunded'],
+    default: 'pending'
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['bkash', 'nagad', 'rocket', 'cash']
+  },
+  transactionId: {
+    type: String,
+    trim: true
+  },
+  senderNumber: {
+    type: String,
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true
   },
   approvedBy: {
-    type: String
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  approvedAt: Date,
+  completedAt: Date,
+  progress: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 100
+  },
+  lastAccessed: {
+    type: Date,
+    default: Date.now
   }
 }, {
   timestamps: true
 });
 
-// Note: IDs are now strings, not ObjectIds, so no populate needed
+// Compound index to prevent duplicate enrollments
+EnrollmentSchema.index({ student: 1, course: 1 }, { unique: true });
+EnrollmentSchema.index({ student: 1, batch: 1 }, { unique: true, sparse: true });
 
-// Prevent duplicate enrollments
-enrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
+// Index for efficient queries
+EnrollmentSchema.index({ status: 1, paymentStatus: 1 });
+EnrollmentSchema.index({ approvedBy: 1, approvedAt: 1 });
 
-export default mongoose.models.Enrollment || mongoose.model<EnrollmentDocument>('Enrollment', enrollmentSchema);
+export const Enrollment = mongoose.models.Enrollment || mongoose.model<IEnrollment>('Enrollment', EnrollmentSchema);

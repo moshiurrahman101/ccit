@@ -31,8 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token in localStorage
-    const storedToken = localStorage.getItem('auth-token');
+    // Check for existing token in localStorage first, then cookies
+    const localStorageToken = localStorage.getItem('auth-token');
+    const cookieToken = document.cookie.split('; ').find(row => row.startsWith('auth-token='))?.split('=')[1];
+    const storedToken = localStorageToken || cookieToken;
+    
     if (storedToken) {
       setToken(storedToken);
       // Verify token and get user data
@@ -113,11 +116,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Clear client-side state
     setUser(null);
     setToken(null);
     localStorage.removeItem('auth-token');
     localStorage.removeItem('user');
+    
+    // Clear cookies
+    document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    
+    // Try to call logout API (optional)
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      // Ignore API errors since client-side logout is sufficient
+      console.log('Logout API not available, client-side logout completed');
+    }
   };
 
   const hasRole = (role: UserRole): boolean => {

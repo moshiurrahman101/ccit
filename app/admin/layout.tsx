@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,7 +15,8 @@ import {
   X,
   User,
   Bell,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -23,7 +25,59 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const { user, loading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) {
+      if (!isAuthenticated || !user) {
+        router.push('/login');
+        return;
+      }
+      
+      // Check if user is admin
+      if (user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      
+      setIsInitialized(true);
+    }
+  }, [loading, isAuthenticated, user, router]);
+
+  if (loading || !isInitialized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-600" />
+          </div>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">
+            অ্যাডমিন প্যানেল লোড হচ্ছে...
+          </h1>
+          <p className="text-gray-600">
+            অনুগ্রহ করে অপেক্ষা করুন
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            অ্যাক্সেস ডিনাইড
+          </h1>
+          <p className="text-gray-600">
+            আপনার অ্যাডমিন অ্যাক্সেস নেই
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const navigation = [
     { name: 'ড্যাশবোর্ড', href: '/admin/dashboard', icon: LayoutDashboard },
@@ -33,10 +87,9 @@ export default function AdminLayout({
     { name: 'সেটিংস', href: '/admin/settings', icon: Settings },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/admin/login');
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
   };
 
   return (
@@ -131,7 +184,7 @@ export default function AdminLayout({
                   <User className="h-4 w-4 text-white" />
                 </div>
                 <span className="hidden md:block text-sm font-medium text-gray-700">
-                  Admin User
+                  {user?.name || 'Admin User'}
                 </span>
               </div>
             </div>

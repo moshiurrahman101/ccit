@@ -12,9 +12,10 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const isAdminPage = pathname.startsWith('/admin');
+  const isDashboardPage = pathname.startsWith('/dashboard');
 
-  // For admin pages, only render children (admin layout will handle its own UI)
-  if (isAdminPage) {
+  // For admin pages and dashboard pages, only render children (they have their own layouts)
+  if (isAdminPage || isDashboardPage) {
     return <>{children}</>;
   }
 

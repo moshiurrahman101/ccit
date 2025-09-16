@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -17,8 +17,32 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const router = useRouter();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, loading, router]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">লোড হচ্ছে...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render login form if already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,26 +52,8 @@ export default function LoginPage() {
       const user = await login(email, password);
       toast.success('সফলভাবে লগইন হয়েছে!');
       
-      // Route based on user role
-      switch (user.role) {
-        case 'admin':
-          router.push('/admin/dashboard');
-          break;
-        case 'mentor':
-          router.push('/mentor/dashboard');
-          break;
-        case 'student':
-          router.push('/student/dashboard');
-          break;
-        case 'marketing':
-          router.push('/marketing/dashboard');
-          break;
-        case 'support':
-          router.push('/support/dashboard');
-          break;
-        default:
-          router.push('/dashboard');
-      }
+      // Redirect to unified dashboard
+      router.push('/dashboard');
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'message' in error 
         ? (error as { message: string }).message 

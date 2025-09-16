@@ -46,6 +46,54 @@ const userSchema = new Schema<UserDocument>({
   isActive: {
     type: Boolean,
     default: true
+  },
+  studentInfo: {
+    studentId: {
+      type: String,
+      unique: true,
+      sparse: true
+    },
+    dateOfBirth: Date,
+    gender: {
+      type: String,
+      enum: ['male', 'female', 'other']
+    },
+    address: {
+      street: String,
+      city: String,
+      district: String,
+      postalCode: String
+    },
+    emergencyContact: {
+      name: String,
+      phone: String,
+      relation: String
+    },
+    education: {
+      level: String,
+      institution: String,
+      graduationYear: Number
+    },
+    isOfflineStudent: {
+      type: Boolean,
+      default: false
+    }
+  },
+  mentorInfo: {
+    specialization: [String],
+    experience: Number, // in years
+    bio: String,
+    qualifications: [String],
+    hourlyRate: Number,
+    availability: {
+      monday: { start: String, end: String },
+      tuesday: { start: String, end: String },
+      wednesday: { start: String, end: String },
+      thursday: { start: String, end: String },
+      friday: { start: String, end: String },
+      saturday: { start: String, end: String },
+      sunday: { start: String, end: String }
+    }
   }
 }, {
   timestamps: true

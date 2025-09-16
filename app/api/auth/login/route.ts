@@ -49,11 +49,24 @@ export async function POST(request: NextRequest) {
       role: user.role
     });
 
-    return NextResponse.json({
+    // Create response with cookie
+    const response = NextResponse.json({
       message: 'সফলভাবে লগইন হয়েছে',
       user: user.toJSON(),
       token
     });
+
+    // Set cookie for middleware
+    const isProduction = process.env.NODE_ENV === 'production';
+    response.cookies.set('auth-token', token, {
+      path: '/',
+      maxAge: 86400, // 24 hours
+      secure: isProduction,
+      sameSite: 'lax',
+      httpOnly: false // Allow client-side access
+    });
+
+    return response;
 
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError' && 'errors' in error) {
