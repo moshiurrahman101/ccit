@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
   } catch (error: unknown) {
     console.error('Error creating user:', error);
     
-    if (error.code === 11000) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
       return NextResponse.json(
         { error: 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে' },
         { status: 409 }

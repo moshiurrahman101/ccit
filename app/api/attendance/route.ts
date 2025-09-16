@@ -108,12 +108,12 @@ export async function GET(request: NextRequest) {
       query.batch = batchId;
     }
     if (startDate || endDate) {
-      query.classDate = {};
+      query.classDate = {} as Record<string, unknown>;
       if (startDate) {
-        query.classDate.$gte = new Date(startDate);
+        (query.classDate as Record<string, unknown>).$gte = new Date(startDate);
       }
       if (endDate) {
-        query.classDate.$lte = new Date(endDate);
+        (query.classDate as Record<string, unknown>).$lte = new Date(endDate);
       }
     }
 

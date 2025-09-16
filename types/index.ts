@@ -4,6 +4,51 @@ export type PaymentMethod = 'bkash' | 'nagad';
 
 export type EnrollmentStatus = 'pending' | 'approved' | 'rejected';
 
+export interface StudentInfo {
+  studentId?: string;
+  dateOfBirth?: Date;
+  gender?: 'male' | 'female' | 'other';
+  address?: {
+    street?: string;
+    city?: string;
+    district?: string;
+    postalCode?: string;
+  };
+  emergencyContact?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
+  guardianInfo?: {
+    name?: string;
+    phone?: string;
+    relationship?: string;
+  };
+  academicInfo?: {
+    previousEducation?: string;
+    institution?: string;
+    yearOfPassing?: number;
+  };
+}
+
+export interface MentorInfo {
+  specialization?: string[];
+  experience?: number; // in years
+  bio?: string;
+  qualifications?: string[];
+  socialLinks?: {
+    linkedin?: string;
+    twitter?: string;
+    github?: string;
+    website?: string;
+  };
+  availability?: {
+    timezone?: string;
+    workingHours?: string;
+    daysAvailable?: string[];
+  };
+}
+
 export interface User {
   _id: string;
   name: string;
@@ -12,9 +57,26 @@ export interface User {
   role: UserRole;
   phone?: string;
   avatar?: string;
+  studentInfo?: StudentInfo;
+  mentorInfo?: MentorInfo;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CourseResource {
+  title: string;
+  type: 'video' | 'document' | 'link' | 'assignment';
+  url: string;
+  description: string;
+}
+
+export interface CourseAssignment {
+  title: string;
+  description: string;
+  dueDate: Date;
+  maxMarks: number;
+  instructions: string;
 }
 
 export interface Course {
@@ -30,6 +92,15 @@ export interface Course {
   mentorId: string;
   mentor: User;
   thumbnail?: string;
+  category: 'web-development' | 'data-science' | 'mobile-development' | 'design' | 'marketing' | 'other';
+  level: 'beginner' | 'intermediate' | 'advanced';
+  language: 'bengali' | 'english';
+  maxStudents: number;
+  hasOfflineBatch: boolean;
+  hasOnlineBatch: boolean;
+  requirements: string[];
+  resources: CourseResource[];
+  assignments: CourseAssignment[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

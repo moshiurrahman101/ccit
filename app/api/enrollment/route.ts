@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { Enrollment } from '@/models/Enrollment';
-import { User } from '@/models/User';
+import User from '@/models/User';
 import Course from '@/models/Course';
 import { Batch } from '@/models/Batch';
 import { z } from 'zod';

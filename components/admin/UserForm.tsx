@@ -59,7 +59,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
       const url = user ? `/api/admin/users/${user._id}` : '/api/admin/users';
       const method = user ? 'PUT' : 'POST';
       
-      const body = { ...formData };
+      const body: Record<string, unknown> = { ...formData };
       if (user && !body.password) {
         delete body.password; // Don't update password if empty
       }

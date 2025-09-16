@@ -92,7 +92,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       message,
-      affectedCount: (result as any).modifiedCount || (result as any).deletedCount || 0
+      affectedCount: (result as { modifiedCount?: number; deletedCount?: number }).modifiedCount || 
+                    (result as { modifiedCount?: number; deletedCount?: number }).deletedCount || 0
     });
 
   } catch (error) {
