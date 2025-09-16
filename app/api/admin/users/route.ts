@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build filter query
-    const filter: any = {
+    const filter: Record<string, unknown> = {
       role: { $ne: 'student' } // Exclude students
     };
 
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating user:', error);
     
     if (error.code === 11000) {

@@ -151,7 +151,7 @@ export default function StudentForm({
       const url = isEdit ? `/api/students/${student._id}` : '/api/students';
       const method = isEdit ? 'PUT' : 'POST';
 
-      const body: any = {
+      const body: Record<string, unknown> = {
         name: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import { verifyToken } from '@/lib/auth';
+import { verifyTokenEdge } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
 // GET single student
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -17,12 +17,14 @@ export async function GET(
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyToken(token);
+    const payload = verifyTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     await connectDB();
+    
+    const { id } = await params;
     
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
@@ -30,11 +32,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const student = await User.findOne({ _id: params.id, role: 'student' })
-      .select('-password');
+    const student = await User.findById(id).select('-password');
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
+    if (student.role !== 'student') {
+      return NextResponse.json({ error: 'User is not a student' }, { status: 400 });
     }
 
     return NextResponse.json({ student });
@@ -47,7 +52,7 @@ export async function GET(
 // PUT update student
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -57,12 +62,14 @@ export async function PUT(
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyToken(token);
+    const payload = verifyTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     await connectDB();
+    
+    const { id } = await params;
     
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
@@ -74,15 +81,19 @@ export async function PUT(
     const { name, email, phone, batch, status, password } = body;
 
     // Find student
-    const student = await User.findOne({ _id: params.id, role: 'student' });
+    const student = await User.findById(id);
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
+    if (student.role !== 'student') {
+      return NextResponse.json({ error: 'User is not a student' }, { status: 400 });
+    }
+
     // Check if email already exists (excluding current student)
     if (email && email !== student.email) {
-      const existingUser = await User.findOne({ email, _id: { $ne: params.id } });
-      if (existingUser) {
+      const existingStudent = await User.findOne({ email, _id: { $ne: id } });
+      if (existingStudent) {
         return NextResponse.json({ 
           error: 'Email already exists' 
         }, { status: 400 });
@@ -91,7 +102,7 @@ export async function PUT(
 
     // Update fields
     if (name) student.name = name;
-    if (email) student.email = email;
+    if (email) student.email = email.toLowerCase();
     if (phone) student.phone = phone;
     if (batch) student.batch = batch;
     if (status) student.status = status;
@@ -99,19 +110,20 @@ export async function PUT(
       student.password = await bcrypt.hash(password, 12);
     }
 
-    // Update avatar if name changed
-    if (name && name !== student.name) {
-      student.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
-    }
-
     await student.save();
-
-    // Return student without password
-    const { password: _, ...studentWithoutPassword } = student.toObject();
 
     return NextResponse.json({
       message: 'Student updated successfully',
-      student: studentWithoutPassword
+      student: {
+        _id: student._id,
+        name: student.name,
+        email: student.email,
+        phone: student.phone,
+        batch: student.batch,
+        status: student.status,
+        role: student.role,
+        createdAt: student.createdAt
+      }
     });
   } catch (error) {
     console.error('Error updating student:', error);
@@ -122,7 +134,7 @@ export async function PUT(
 // DELETE student
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -132,12 +144,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyToken(token);
+    const payload = verifyTokenEdge(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
     await connectDB();
+    
+    const { id } = await params;
     
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
@@ -145,12 +159,16 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const student = await User.findOne({ _id: params.id, role: 'student' });
+    const student = await User.findById(id);
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
-    await User.findByIdAndDelete(params.id);
+    if (student.role !== 'student') {
+      return NextResponse.json({ error: 'User is not a student' }, { status: 400 });
+    }
+
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({
       message: 'Student deleted successfully'

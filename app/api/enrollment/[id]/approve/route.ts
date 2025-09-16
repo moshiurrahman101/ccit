@@ -5,12 +5,12 @@ import { User } from '@/models/User';
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-
-    const enrollmentId = params.id;
+    
+    const { id: enrollmentId } = await params;
     const { action } = await request.json(); // 'approve' or 'reject'
 
     if (!['approve', 'reject'].includes(action)) {
@@ -25,7 +25,7 @@ export async function PATCH(
       return NextResponse.json({ message: 'নিবন্ধন পাওয়া যায়নি' }, { status: 404 });
     }
 
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       approvedBy: adminUserId,
       approvedAt: new Date()
     };

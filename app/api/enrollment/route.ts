@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
     const studentId = searchParams.get('studentId');
     const courseId = searchParams.get('courseId');
 
-    let query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = {};
 
     if (status) {
       query.status = status;

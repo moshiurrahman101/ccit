@@ -86,7 +86,7 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

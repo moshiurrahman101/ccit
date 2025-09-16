@@ -6,12 +6,14 @@ import mongoose from 'mongoose';
 // PUT /api/admin/users/[id]/password - Update user password
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    
+    const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'অবৈধ ব্যবহারকারী ID' },
         { status: 400 }
@@ -27,7 +29,7 @@ export async function PUT(
       );
     }
 
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     
     if (!user) {
       return NextResponse.json(

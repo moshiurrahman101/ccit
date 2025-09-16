@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
 
     // Build filter query
-    const filter: Record<string, any> = {};
+    const filter: Record<string, unknown> = {};
     
     if (search) {
       filter.$or = [

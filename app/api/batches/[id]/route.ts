@@ -7,7 +7,7 @@ import { verifyTokenEdge } from '@/lib/auth';
 // GET single batch
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -24,13 +24,15 @@ export async function GET(
 
     await connectDB();
     
+    const { id } = await params;
+    
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
     if (!currentUser || currentUser.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const batch = await BatchSimple.findById(params.id);
+    const batch = await BatchSimple.findById(id);
 
     if (!batch) {
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
@@ -46,7 +48,7 @@ export async function GET(
 // PUT update batch
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -63,6 +65,8 @@ export async function PUT(
 
     await connectDB();
     
+    const { id } = await params;
+    
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
     if (!currentUser || currentUser.role !== 'admin') {
@@ -73,14 +77,14 @@ export async function PUT(
     const { name, description, startDate, endDate, maxStudents, status, isActive } = body;
 
     // Find batch
-    const batch = await BatchSimple.findById(params.id);
+    const batch = await BatchSimple.findById(id);
     if (!batch) {
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     }
 
     // Check if name already exists (excluding current batch)
     if (name && name !== batch.name) {
-      const existingBatch = await BatchSimple.findOne({ name, _id: { $ne: params.id } });
+      const existingBatch = await BatchSimple.findOne({ name, _id: { $ne: id } });
       if (existingBatch) {
         return NextResponse.json({ 
           error: 'Batch name already exists' 
@@ -124,7 +128,7 @@ export async function PUT(
 // DELETE batch
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -141,13 +145,15 @@ export async function DELETE(
 
     await connectDB();
     
+    const { id } = await params;
+    
     // Check if user is admin
     const currentUser = await User.findById(payload.userId);
     if (!currentUser || currentUser.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const batch = await BatchSimple.findById(params.id);
+    const batch = await BatchSimple.findById(id);
     if (!batch) {
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     }
@@ -159,7 +165,7 @@ export async function DELETE(
       }, { status: 400 });
     }
 
-    await BatchSimple.findByIdAndDelete(params.id);
+    await BatchSimple.findByIdAndDelete(id);
 
     return NextResponse.json({
       message: 'Batch deleted successfully'

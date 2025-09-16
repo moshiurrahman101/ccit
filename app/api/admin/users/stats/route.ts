@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const inactive = total - active;
 
     // Count by role
-    const byRole = allUsers.reduce((acc: any, user) => {
+    const byRole = allUsers.reduce((acc: Record<string, number>, user) => {
       acc[user.role] = (acc[user.role] || 0) + 1;
       return acc;
     }, {});
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     // Count active by role
     const activeByRole = allUsers
       .filter(user => user.isActive)
-      .reduce((acc: any, user) => {
+      .reduce((acc: Record<string, number>, user) => {
         acc[user.role] = (acc[user.role] || 0) + 1;
         return acc;
       }, {});

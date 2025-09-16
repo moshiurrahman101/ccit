@@ -6,19 +6,21 @@ import mongoose from 'mongoose';
 // GET /api/admin/users/[id] - Get single user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    
+    const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'অবৈধ ব্যবহারকারী ID' },
         { status: 400 }
       );
     }
 
-    const user = await User.findById(params.id).select('-password');
+    const user = await User.findById(id).select('-password');
     
     if (!user) {
       return NextResponse.json(
@@ -49,12 +51,14 @@ export async function GET(
 // PUT /api/admin/users/[id] - Update user
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    
+    const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'অবৈধ ব্যবহারকারী ID' },
         { status: 400 }
@@ -63,7 +67,7 @@ export async function PUT(
 
     const { name, email, role, phone, isActive } = await request.json();
 
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     
     if (!user) {
       return NextResponse.json(
@@ -84,7 +88,7 @@ export async function PUT(
     if (email && email !== user.email) {
       const existingUser = await User.findOne({ 
         email: email.toLowerCase(),
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       });
       
       if (existingUser) {
@@ -107,7 +111,7 @@ export async function PUT(
     }
 
     // Update user
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
     if (name) updateData.name = name;
     if (email) updateData.email = email.toLowerCase();
     if (role) updateData.role = role;
@@ -115,7 +119,7 @@ export async function PUT(
     if (isActive !== undefined) updateData.isActive = isActive;
 
     const updatedUser = await User.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password');
@@ -125,10 +129,10 @@ export async function PUT(
       user: updatedUser
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating user:', error);
     
-    if (error.code === 11000) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
       return NextResponse.json(
         { error: 'এই ইমেইল দিয়ে ইতিমধ্যে অ্যাকাউন্ট আছে' },
         { status: 409 }
@@ -145,19 +149,21 @@ export async function PUT(
 // DELETE /api/admin/users/[id] - Delete user
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    
+    const { id } = await params;
 
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'অবৈধ ব্যবহারকারী ID' },
         { status: 400 }
       );
     }
 
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     
     if (!user) {
       return NextResponse.json(
@@ -185,7 +191,7 @@ export async function DELETE(
       }
     }
 
-    await User.findByIdAndDelete(params.id);
+    await User.findByIdAndDelete(id);
 
     return NextResponse.json({
       message: 'ব্যবহারকারী সফলভাবে মুছে ফেলা হয়েছে'
