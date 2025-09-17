@@ -123,14 +123,14 @@ export default function UserForm({ user, isOpen, onClose, onSuccess }: UserFormP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border border-gray-200 shadow-xl z-50 text-gray-900 max-w-md">
-        <DialogHeader className="pb-4 border-b border-gray-200">
-          <DialogTitle className="text-gray-900 text-xl font-semibold">
+      <DialogContent className="bg-white border border-gray-200 shadow-xl z-50 text-gray-900 max-w-md p-3 sm:p-6">
+        <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-200">
+          <DialogTitle className="text-gray-900 text-lg sm:text-xl font-semibold">
             {user ? 'ব্যবহারকারী সম্পাদনা' : 'নতুন ব্যবহারকারী'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="py-4 space-y-4">
+        <form onSubmit={handleSubmit} className="py-3 sm:py-4 space-y-3 sm:space-y-4">
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-700 font-medium">

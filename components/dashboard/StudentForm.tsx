@@ -360,50 +360,56 @@ export default function StudentForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl z-50 text-gray-900">
-        <DialogHeader className="pb-4 border-b border-gray-200">
-          <DialogTitle className="text-gray-900 text-xl font-semibold">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl z-50 text-gray-900 p-3 sm:p-6">
+        <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-200">
+          <DialogTitle className="text-gray-900 text-lg sm:text-xl font-semibold">
             {student ? 'শিক্ষার্থী সম্পাদনা' : 'নতুন শিক্ষার্থী'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="py-4">
+        <form onSubmit={handleSubmit} className="py-3 sm:py-4">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="basic" className="flex items-center gap-2">
-                <User className="w-4 h-4" />
-                মৌলিক
+            <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
+              <TabsTrigger value="basic" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">মৌলিক</span>
+                <span className="sm:hidden">মৌলিক</span>
               </TabsTrigger>
-              <TabsTrigger value="personal" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                ব্যক্তিগত
+              <TabsTrigger value="personal" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">ব্যক্তিগত</span>
+                <span className="sm:hidden">ব্যক্তিগত</span>
               </TabsTrigger>
-              <TabsTrigger value="address" className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                ঠিকানা
+              <TabsTrigger value="address" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">ঠিকানা</span>
+                <span className="sm:hidden">ঠিকানা</span>
               </TabsTrigger>
-              <TabsTrigger value="education" className="flex items-center gap-2">
-                <GraduationCap className="w-4 h-4" />
-                শিক্ষা
+              <TabsTrigger value="education" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <GraduationCap className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">শিক্ষা</span>
+                <span className="sm:hidden">শিক্ষা</span>
               </TabsTrigger>
-              <TabsTrigger value="payment" className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />
-                পেমেন্ট
+              <TabsTrigger value="payment" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <CreditCard className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">পেমেন্ট</span>
+                <span className="sm:hidden">পেমেন্ট</span>
               </TabsTrigger>
-              <TabsTrigger value="additional" className="flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                অতিরিক্ত
+              <TabsTrigger value="additional" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 py-1 sm:px-3 sm:py-2">
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">অতিরিক্ত</span>
+                <span className="sm:hidden">অতিরিক্ত</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Basic Information Tab */}
-            <TabsContent value="basic" className="space-y-4">
+            <TabsContent value="basic" className="space-y-3 sm:space-y-4">
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">মৌলিক তথ্য</CardTitle>
+                <CardHeader className="pb-3 sm:pb-4">
+                  <CardTitle className="text-base sm:text-lg">মৌলিক তথ্য</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CardContent className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name" className="text-gray-700 font-medium">
                         <User className="inline w-4 h-4 mr-2" />
@@ -1022,20 +1028,20 @@ export default function StudentForm({
           </Tabs>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-3 sm:pt-4 border-t border-gray-200">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
+              className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 text-sm sm:text-base"
             >
               বাতিল
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               {student ? 'আপডেট' : 'তৈরি করুন'}

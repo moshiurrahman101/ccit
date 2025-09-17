@@ -228,25 +228,25 @@ export default function BatchForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl z-50 text-gray-900">
-        <DialogHeader className="pb-4 border-b border-gray-200">
-          <DialogTitle className="flex items-center gap-2 text-gray-900">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-xl z-50 text-gray-900 p-3 sm:p-6">
+        <DialogHeader className="pb-3 sm:pb-4 border-b border-gray-200">
+          <DialogTitle className="flex items-center gap-2 text-gray-900 text-lg sm:text-xl">
             {isEdit ? (
               <>
-                <Edit className="h-5 w-5" />
+                <Edit className="h-4 w-4 sm:h-5 sm:w-5" />
                 ব্যাচ সম্পাদনা
               </>
             ) : (
               <>
-                <BookOpen className="h-5 w-5" />
+                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                 নতুন ব্যাচ তৈরি
               </>
             )}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 py-3 sm:py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {/* Name */}
             <div className="space-y-2">
               <Label htmlFor="name" className="text-gray-700 font-medium">ব্যাচের নাম *</Label>

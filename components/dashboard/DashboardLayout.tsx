@@ -186,9 +186,9 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       <div className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex h-full flex-col bg-white/20 backdrop-blur-md border-r border-white/20 lg:bg-white/10">
+        <div className="flex h-full flex-col bg-white border-r border-gray-200 lg:bg-white/10 lg:backdrop-blur-md lg:border-white/20">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-between px-6 border-b border-white/20">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 border-b border-gray-200 lg:border-white/20">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-lg">CC</span>
@@ -209,12 +209,12 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </div>
 
           {/* Search */}
-          <div className="p-4 border-b border-white/20">
+          <div className="p-3 sm:p-4 border-b border-gray-200 lg:border-white/20">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 lg:text-gray-400" />
               <Input
                 placeholder="খুঁজুন..."
-                className="pl-10 bg-white/30 border-white/40 text-gray-900 placeholder:text-gray-600 lg:bg-white/20 lg:border-white/30 lg:text-gray-800 lg:placeholder:text-gray-500"
+                className="pl-10 bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-600 lg:bg-white/20 lg:border-white/30 lg:text-gray-800 lg:placeholder:text-gray-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -222,7 +222,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+          <nav className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1 sm:space-y-2">
             {filteredMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
@@ -231,23 +231,23 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                 <button
                   key={item.id}
                   onClick={() => handleMenuClick(item.path)}
-                  className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
+                  className={`w-full flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-200 group ${
                     isActive
-                      ? 'bg-white/40 shadow-lg backdrop-blur-sm border border-white/50 lg:bg-white/30 lg:border-white/40'
-                      : 'hover:bg-white/30 hover:backdrop-blur-sm lg:hover:bg-white/20'
+                      ? 'bg-indigo-50 shadow-sm border border-indigo-200 lg:bg-white/30 lg:border-white/40 lg:shadow-lg lg:backdrop-blur-sm'
+                      : 'hover:bg-gray-50 lg:hover:bg-white/20 lg:hover:backdrop-blur-sm'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 transition-colors ${
+                  <Icon className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${
                     isActive ? 'text-indigo-600' : 'text-gray-700 group-hover:text-indigo-600 lg:text-gray-600'
                   }`} />
                   <div className="flex-1 text-left">
-                    <p className={`text-sm font-medium transition-colors ${
+                    <p className={`text-xs sm:text-sm font-medium transition-colors ${
                       isActive ? 'text-gray-900 lg:text-gray-800' : 'text-gray-800 group-hover:text-gray-900 lg:text-gray-700 lg:group-hover:text-gray-800'
                     }`}>
                       {item.label}
                     </p>
                     {item.description && (
-                      <p className="text-xs text-gray-600 mt-0.5 lg:text-gray-500">
+                      <p className="text-xs text-gray-600 mt-0.5 lg:text-gray-500 hidden sm:block">
                         {item.description}
                       </p>
                     )}
@@ -263,13 +263,13 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-white/20">
+          <div className="p-3 sm:p-4 border-t border-gray-200 lg:border-white/20">
             <Button
               onClick={handleLogout}
               variant="ghost"
-              className="w-full justify-start text-red-700 hover:text-red-800 hover:bg-red-50/70 lg:text-red-600 lg:hover:text-red-700 lg:hover:bg-red-50/50"
+              className="w-full justify-start text-red-700 hover:text-red-800 hover:bg-red-50 text-xs sm:text-sm lg:text-red-600 lg:hover:text-red-700 lg:hover:bg-red-50/50"
             >
-              <LogOut className="h-4 w-4 mr-3" />
+              <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3" />
               লগআউট
             </Button>
           </div>
@@ -279,44 +279,44 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="bg-white/20 backdrop-blur-md border-b border-white/20 px-6 py-4 lg:bg-white/10">
+        <header className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4 lg:bg-white/10 lg:backdrop-blur-md lg:border-white/20">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
-                className="lg:hidden"
+                className="lg:hidden p-2"
                 onClick={() => setSidebarOpen(true)}
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 lg:text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 lg:text-gray-800">
                   {filteredMenuItems.find(item => item.path === pathname)?.label || 'ড্যাশবোর্ড'}
                 </h2>
-                <p className="text-sm text-gray-700 lg:text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-700 lg:text-gray-600 hidden sm:block">
                   {filteredMenuItems.find(item => item.path === pathname)?.description || 'সিস্টেম ড্যাশবোর্ড'}
                 </p>
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" className="relative">
-                <Bell className="h-5 w-5" />
-                <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <Button variant="ghost" size="sm" className="relative p-2">
+                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full">
                   3
                 </Badge>
               </Button>
               
-              <div className="flex items-center space-x-3">
-                <Avatar className="w-8 h-8">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Avatar className="w-7 h-7 sm:w-8 sm:h-8">
                   <AvatarImage src={user.avatar} />
-                  <AvatarFallback className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-sm">
+                  <AvatarFallback className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white text-xs sm:text-sm">
                     {user.name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium text-gray-900 lg:text-gray-800">{user.name}</p>
+                <div className="hidden sm:block">
+                  <p className="text-xs sm:text-sm font-medium text-gray-900 lg:text-gray-800">{user.name}</p>
                   <p className="text-xs text-gray-700 lg:text-gray-600">{getRoleLabel(user.role)}</p>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
