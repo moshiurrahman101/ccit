@@ -323,7 +323,7 @@ export default function BatchFormNew({
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="ব্যাচ/কোর্সের নাম"
-                className={errors.name ? 'border-red-500' : ''}
+                className={`bg-white border-gray-300 ${errors.name ? 'border-red-500' : ''}`}
               />
               {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
             </div>
@@ -345,10 +345,10 @@ export default function BatchFormNew({
               <div>
                 <Label htmlFor="courseType">ধরন</Label>
                 <Select value={formData.courseType} onValueChange={(value) => handleInputChange('courseType', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200">
                     <SelectItem value="batch">ব্যাচ</SelectItem>
                     <SelectItem value="course">কোর্স</SelectItem>
                   </SelectContent>
@@ -358,13 +358,13 @@ export default function BatchFormNew({
               <div>
                 <Label htmlFor="level">লেভেল</Label>
                 <Select value={formData.level} onValueChange={(value) => handleInputChange('level', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">শুরু</SelectItem>
-                    <SelectItem value="intermediate">মধ্যম</SelectItem>
-                    <SelectItem value="advanced">উন্নত</SelectItem>
+                  <SelectContent className="bg-white border border-gray-200">
+                    <SelectItem value="beginner">বিগিনার</SelectItem>
+                    <SelectItem value="intermediate">ইন্টারমিডিয়েট</SelectItem>
+                    <SelectItem value="advanced">এডভান্স</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -379,16 +379,17 @@ export default function BatchFormNew({
                   value={formData.duration}
                   onChange={(e) => handleInputChange('duration', parseInt(e.target.value))}
                   min="1"
+                  className="bg-white border-gray-300"
                 />
               </div>
 
               <div>
                 <Label htmlFor="durationUnit">একক</Label>
                 <Select value={formData.durationUnit} onValueChange={(value) => handleInputChange('durationUnit', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200">
                     <SelectItem value="days">দিন</SelectItem>
                     <SelectItem value="weeks">সপ্তাহ</SelectItem>
                     <SelectItem value="months">মাস</SelectItem>
@@ -408,7 +409,7 @@ export default function BatchFormNew({
                   onChange={(e) => handleInputChange('fee', parseFloat(e.target.value))}
                   min="0"
                   step="0.01"
-                  className={errors.fee ? 'border-red-500' : ''}
+                  className={`bg-white border-gray-300 ${errors.fee ? 'border-red-500' : ''}`}
                 />
                 {errors.fee && <p className="text-sm text-red-500 mt-1">{errors.fee}</p>}
               </div>
@@ -416,10 +417,10 @@ export default function BatchFormNew({
               <div>
                 <Label htmlFor="currency">মুদ্রা</Label>
                 <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200">
                     <SelectItem value="BDT">BDT</SelectItem>
                     <SelectItem value="USD">USD</SelectItem>
                   </SelectContent>
@@ -451,7 +452,7 @@ export default function BatchFormNew({
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => handleInputChange('startDate', e.target.value)}
-                  className={errors.startDate ? 'border-red-500' : ''}
+                  className={`bg-white border-gray-300 ${errors.startDate ? 'border-red-500' : ''}`}
                 />
                 {errors.startDate && <p className="text-sm text-red-500 mt-1">{errors.startDate}</p>}
               </div>
@@ -463,7 +464,7 @@ export default function BatchFormNew({
                   type="date"
                   value={formData.endDate}
                   onChange={(e) => handleInputChange('endDate', e.target.value)}
-                  className={errors.endDate ? 'border-red-500' : ''}
+                  className={`bg-white border-gray-300 ${errors.endDate ? 'border-red-500' : ''}`}
                 />
                 {errors.endDate && <p className="text-sm text-red-500 mt-1">{errors.endDate}</p>}
               </div>
@@ -477,7 +478,7 @@ export default function BatchFormNew({
                 value={formData.maxStudents}
                 onChange={(e) => handleInputChange('maxStudents', parseInt(e.target.value))}
                 min="1"
-                className={errors.maxStudents ? 'border-red-500' : ''}
+                className={`bg-white border-gray-300 ${errors.maxStudents ? 'border-red-500' : ''}`}
               />
               {errors.maxStudents && <p className="text-sm text-red-500 mt-1">{errors.maxStudents}</p>}
             </div>
@@ -656,10 +657,10 @@ export default function BatchFormNew({
               <div>
                 <Label htmlFor="status">অবস্থা</Label>
                 <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-white border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white border border-gray-200">
                     <SelectItem value="upcoming">আসন্ন</SelectItem>
                     <SelectItem value="ongoing">চলমান</SelectItem>
                     <SelectItem value="completed">সম্পন্ন</SelectItem>

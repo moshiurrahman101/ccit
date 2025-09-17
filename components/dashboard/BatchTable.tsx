@@ -20,7 +20,8 @@ import {
   Users,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Trash
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
@@ -95,6 +96,12 @@ export default function BatchTable({
     batch: null
   });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedBatches, setSelectedBatches] = useState<string[]>([]);
+  const [batchDeleteDialog, setBatchDeleteDialog] = useState<{ isOpen: boolean; count: number }>({
+    isOpen: false,
+    count: 0
+  });
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -170,6 +177,60 @@ export default function BatchTable({
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedBatches(batches.map(batch => batch._id));
+    } else {
+      setSelectedBatches([]);
+    }
+  };
+
+  const handleSelectBatch = (batchId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBatches(prev => [...prev, batchId]);
+    } else {
+      setSelectedBatches(prev => prev.filter(id => id !== batchId));
+    }
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedBatches.length === 0) return;
+    setBatchDeleteDialog({ isOpen: true, count: selectedBatches.length });
+  };
+
+  const confirmBatchDelete = async () => {
+    if (selectedBatches.length === 0) return;
+
+    setIsBatchDeleting(true);
+    try {
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch('/api/batches/bulk-delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ batchIds: selectedBatches })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(`${selectedBatches.length} টি ব্যাচ মুছে ফেলা হয়েছে`);
+        setSelectedBatches([]);
+        onRefresh();
+        setBatchDeleteDialog({ isOpen: false, count: 0 });
+      } else {
+        toast.error(data.error || 'একটি সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error deleting batches:', error);
+      toast.error('নেটওয়ার্ক সমস্যা');
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('bn-BD', {
       year: 'numeric',
@@ -190,12 +251,26 @@ export default function BatchTable({
           <h2 className="text-2xl font-bold text-gray-900">ব্যাচ ব্যবস্থাপনা</h2>
           <p className="text-gray-600">মোট {pagination.totalBatches} টি ব্যাচ</p>
         </div>
-        <AdminOnly>
-          <Button onClick={onAdd} className="w-full sm:w-auto">
-            <BookOpen className="h-4 w-4 mr-2" />
-            নতুন ব্যাচ
-          </Button>
-        </AdminOnly>
+        <div className="flex flex-col sm:flex-row gap-2">
+          {selectedBatches.length > 0 && (
+            <AdminOnly>
+              <Button 
+                variant="destructive" 
+                onClick={handleBatchDelete}
+                className="w-full sm:w-auto"
+              >
+                <Trash className="h-4 w-4 mr-2" />
+                {selectedBatches.length} টি মুছুন
+              </Button>
+            </AdminOnly>
+          )}
+          <AdminOnly>
+            <Button onClick={onAdd} className="w-full sm:w-auto">
+              <BookOpen className="h-4 w-4 mr-2" />
+              নতুন ব্যাচ
+            </Button>
+          </AdminOnly>
+        </div>
       </div>
 
       {/* Filters */}
@@ -237,6 +312,16 @@ export default function BatchTable({
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <AdminOnly>
+                    <input
+                      type="checkbox"
+                      checked={selectedBatches.length === batches.length && batches.length > 0}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </AdminOnly>
+                </TableHead>
                 <TableHead>ব্যাচের নাম</TableHead>
                 <TableHead>তারিখ</TableHead>
                 <TableHead>শিক্ষার্থী</TableHead>
@@ -248,7 +333,7 @@ export default function BatchTable({
             <TableBody>
               {batches.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <div className="text-gray-500">
                       <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                       <p>কোন ব্যাচ পাওয়া যায়নি</p>
@@ -258,6 +343,16 @@ export default function BatchTable({
               ) : (
                 batches.map((batch) => (
                   <TableRow key={batch._id}>
+                    <TableCell>
+                      <AdminOnly>
+                        <input
+                          type="checkbox"
+                          checked={selectedBatches.includes(batch._id)}
+                          onChange={(e) => handleSelectBatch(batch._id, e.target.checked)}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </AdminOnly>
+                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="font-medium text-gray-900">{batch.name}</p>
@@ -393,6 +488,46 @@ export default function BatchTable({
               disabled={isDeleting}
             >
               {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  মুছে ফেলছে...
+                </>
+              ) : (
+                'মুছে ফেলুন'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Batch Delete Confirmation Dialog */}
+      <Dialog open={batchDeleteDialog.isOpen} onOpenChange={(open) => setBatchDeleteDialog({ isOpen: open, count: 0 })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>ব্যাচ মুছে ফেলুন</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              আপনি কি নিশ্চিত যে আপনি <strong>{batchDeleteDialog.count} টি ব্যাচ</strong> মুছে ফেলতে চান?
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
+            </p>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setBatchDeleteDialog({ isOpen: false, count: 0 })}
+              disabled={isBatchDeleting}
+            >
+              বাতিল
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmBatchDelete}
+              disabled={isBatchDeleting}
+            >
+              {isBatchDeleting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   মুছে ফেলছে...
