@@ -13,12 +13,33 @@ interface Batch {
   _id?: string;
   name: string;
   description?: string;
+  courseType: 'batch' | 'course';
+  duration: number;
+  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  fee: number;
+  currency: string;
   startDate: string;
   endDate: string;
   maxStudents: number;
   currentStudents?: number;
+  prerequisites: string[];
+  modules: {
+    title: string;
+    description: string;
+    duration: number;
+    order: number;
+  }[];
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
+  isMandatory: boolean;
+  instructor: {
+    name: string;
+    email: string;
+    phone: string;
+    bio: string;
+  };
+  tags: string[];
+  level: 'beginner' | 'intermediate' | 'advanced';
 }
 
 interface BatchFormProps {
@@ -37,37 +58,80 @@ export default function BatchForm({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    courseType: 'batch' as 'batch' | 'course',
+    duration: 3,
+    durationUnit: 'months' as 'days' | 'weeks' | 'months' | 'years',
+    fee: 0,
+    currency: 'BDT',
     startDate: '',
     endDate: '',
     maxStudents: 30,
+    prerequisites: [] as string[],
+    modules: [] as { title: string; description: string; duration: number; order: number }[],
     status: 'upcoming' as 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
-    isActive: true
+    isActive: true,
+    isMandatory: true,
+    instructor: {
+      name: '',
+      email: '',
+      phone: '',
+      bio: ''
+    },
+    tags: [] as string[],
+    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [currentStep, setCurrentStep] = useState(1);
+  const [newPrerequisite, setNewPrerequisite] = useState('');
+  const [newModule, setNewModule] = useState({ title: '', description: '', duration: 0, order: 0 });
+  const [newTag, setNewTag] = useState('');
 
   const isEdit = !!batch;
+  const totalSteps = 4;
 
   useEffect(() => {
     if (batch) {
       setFormData({
         name: batch.name || '',
         description: batch.description || '',
+        courseType: batch.courseType || 'batch',
+        duration: batch.duration || 1,
+        durationUnit: batch.durationUnit || 'months',
+        fee: batch.fee || 0,
+        currency: batch.currency || 'BDT',
         startDate: batch.startDate ? new Date(batch.startDate).toISOString().split('T')[0] : '',
         endDate: batch.endDate ? new Date(batch.endDate).toISOString().split('T')[0] : '',
         maxStudents: batch.maxStudents || 30,
+        prerequisites: batch.prerequisites || [],
+        modules: batch.modules || [],
         status: batch.status || 'upcoming',
-        isActive: batch.isActive !== undefined ? batch.isActive : true
+        isActive: batch.isActive !== undefined ? batch.isActive : true,
+        isMandatory: batch.isMandatory || false,
+        instructor: batch.instructor || { name: '', email: '', phone: '', bio: '' },
+        tags: batch.tags || [],
+        level: batch.level || 'beginner'
       });
     } else {
       setFormData({
         name: '',
         description: '',
+        courseType: 'batch',
+        duration: 1,
+        durationUnit: 'months',
+        fee: 0,
+        currency: 'BDT',
         startDate: '',
         endDate: '',
         maxStudents: 30,
+        prerequisites: [],
+        modules: [],
         status: 'upcoming',
-        isActive: true
+        isActive: true,
+        isMandatory: false,
+        instructor: { name: '', email: '', phone: '', bio: '' },
+        tags: [],
+        level: 'beginner'
       });
     }
     setErrors({});
@@ -115,7 +179,7 @@ export default function BatchForm({
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth-token');
       const url = isEdit ? `/api/batches/${batch._id}` : '/api/batches';
       const method = isEdit ? 'PUT' : 'POST';
 
@@ -154,10 +218,10 @@ export default function BatchForm({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'upcoming': return 'আসন্ন';
-      case 'ongoing': return 'চলমান';
-      case 'completed': return 'সম্পন্ন';
-      case 'cancelled': return 'বাতিল';
+      case 'upcoming': return 'সামনে আসছে';
+      case 'ongoing': return 'চলছে';
+      case 'completed': return 'শেষ হয়েছে';
+      case 'cancelled': return 'ক্যানসেল';
       default: return status;
     }
   };
@@ -256,17 +320,17 @@ export default function BatchForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200">
-                  <SelectItem value="upcoming">আসন্ন</SelectItem>
-                  <SelectItem value="ongoing">চলমান</SelectItem>
-                  <SelectItem value="completed">সম্পন্ন</SelectItem>
-                  <SelectItem value="cancelled">বাতিল</SelectItem>
+                  <SelectItem value="upcoming">সামনে আসছে</SelectItem>
+                  <SelectItem value="ongoing">চলছে</SelectItem>
+                  <SelectItem value="completed">শেষ হয়েছে</SelectItem>
+                  <SelectItem value="cancelled">ক্যানসেল</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Active Status */}
             <div className="space-y-2">
-              <Label htmlFor="isActive" className="text-gray-700 font-medium">সক্রিয়</Label>
+              <Label htmlFor="isActive" className="text-gray-700 font-medium">অ্যাক্টিভ</Label>
               <Select
                 value={formData.isActive ? 'true' : 'false'}
                 onValueChange={(value) => handleInputChange('isActive', value === 'true')}
@@ -275,7 +339,7 @@ export default function BatchForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200">
-                  <SelectItem value="true">সক্রিয়</SelectItem>
+                  <SelectItem value="true">অ্যাক্টিভ</SelectItem>
                   <SelectItem value="false">নিষ্ক্রিয়</SelectItem>
                 </SelectContent>
               </Select>

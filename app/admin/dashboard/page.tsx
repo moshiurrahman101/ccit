@@ -30,7 +30,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Check if admin is logged in
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('auth-token');
     const userData = localStorage.getItem('user');
 
     if (!token || !userData) {

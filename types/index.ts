@@ -8,27 +8,60 @@ export interface StudentInfo {
   studentId?: string;
   dateOfBirth?: Date;
   gender?: 'male' | 'female' | 'other';
+  nid?: string;
+  bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
   address?: {
     street?: string;
     city?: string;
     district?: string;
     postalCode?: string;
+    country?: string;
   };
   emergencyContact?: {
     name?: string;
     phone?: string;
-    relationship?: string;
+    relation?: string;
+    address?: string;
   };
-  guardianInfo?: {
-    name?: string;
-    phone?: string;
-    relationship?: string;
-  };
-  academicInfo?: {
-    previousEducation?: string;
+  education?: {
+    level?: string;
     institution?: string;
-    yearOfPassing?: number;
+    graduationYear?: number;
+    gpa?: number;
+    major?: string;
   };
+  socialInfo?: {
+    facebook?: string;
+    linkedin?: string;
+    github?: string;
+    twitter?: string;
+    website?: string;
+  };
+  paymentInfo?: {
+    paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash';
+    paymentNumber?: string;
+    transactionId?: string;
+    paidAmount?: number;
+    dueAmount?: number;
+    lastPaymentDate?: Date;
+    paymentStatus?: 'paid' | 'partial' | 'due' | 'overdue';
+  };
+  batchInfo?: {
+    batchId?: string;
+    batchName?: string;
+    enrollmentDate?: Date;
+    completionDate?: Date;
+    status?: 'enrolled' | 'active' | 'completed' | 'dropped' | 'suspended';
+  };
+  isOfflineStudent?: boolean;
+  profilePicture?: string;
+  documents?: Array<{
+    type: 'nid' | 'certificate' | 'photo' | 'other';
+    url: string;
+    uploadedAt: Date;
+  }>;
+  notes?: string;
+  isVerified?: boolean;
 }
 
 export interface MentorInfo {

@@ -58,6 +58,11 @@ const userSchema = new Schema<UserDocument>({
       type: String,
       enum: ['male', 'female', 'other']
     },
+    nid: String,
+    bloodGroup: {
+      type: String,
+      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
+    },
     address: {
       street: String,
       city: String,
@@ -69,15 +74,70 @@ const userSchema = new Schema<UserDocument>({
       phone: String,
       relation: String
     },
-    education: {
-      level: String,
+    guardianInfo: {
+      name: String,
+      phone: String,
+      relation: String,
+      occupation: String
+    },
+    academicInfo: {
+      previousEducation: String,
       institution: String,
-      graduationYear: Number
+      graduationYear: Number,
+      gpa: String
+    },
+    enrollmentDate: Date,
+    graduationDate: Date,
+    isGraduated: {
+      type: Boolean,
+      default: false
+    },
+    socialInfo: {
+      facebook: String,
+      linkedin: String,
+      github: String,
+      twitter: String,
+      website: String
+    },
+    paymentInfo: {
+      paymentMethod: {
+        type: String,
+        enum: ['bkash', 'nagad', 'rocket', 'bank', 'cash']
+      },
+      paymentNumber: String,
+      transactionId: String,
+      paidAmount: Number,
+      dueAmount: Number,
+      lastPaymentDate: Date,
+      paymentStatus: {
+        type: String,
+        enum: ['paid', 'partial', 'due', 'overdue'],
+        default: 'due'
+      }
+    },
+    batchInfo: {
+      batchId: { type: Schema.Types.ObjectId, ref: 'BatchSimple' },
+      batchName: String,
+      enrollmentDate: Date,
+      completionDate: Date,
+      status: {
+        type: String,
+        enum: ['enrolled', 'active', 'completed', 'dropped', 'suspended'],
+        default: 'enrolled'
+      }
     },
     isOfflineStudent: {
       type: Boolean,
       default: false
-    }
+    },
+    profilePicture: String,
+    documents: [{
+      type: { type: String, enum: ['nid', 'certificate', 'photo', 'other'] },
+      url: String,
+      uploadedAt: { type: Date, default: Date.now }
+    }],
+    notes: String,
+    isVerified: { type: Boolean, default: false }
   },
   mentorInfo: {
     specialization: [String],

@@ -29,12 +29,33 @@ interface Batch {
   _id: string;
   name: string;
   description?: string;
+  courseType: 'batch' | 'course';
+  duration: number;
+  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  fee: number;
+  currency: string;
   startDate: string;
   endDate: string;
   maxStudents: number;
   currentStudents: number;
+  prerequisites: string[];
+  modules: {
+    title: string;
+    description: string;
+    duration: number;
+    order: number;
+  }[];
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
+  isMandatory: boolean;
+  instructor: {
+    name: string;
+    email: string;
+    phone: string;
+    bio: string;
+  };
+  tags: string[];
+  level: 'beginner' | 'intermediate' | 'advanced';
   createdAt: string;
 }
 
@@ -87,10 +108,10 @@ export default function BatchTable({
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'upcoming': return 'আসন্ন';
-      case 'ongoing': return 'চলমান';
-      case 'completed': return 'সম্পন্ন';
-      case 'cancelled': return 'বাতিল';
+      case 'upcoming': return 'সামনে আসছে';
+      case 'ongoing': return 'চলছে';
+      case 'completed': return 'শেষ হয়েছে';
+      case 'cancelled': return 'ক্যানসেল';
       default: return status;
     }
   };
@@ -124,7 +145,7 @@ export default function BatchTable({
 
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth-token');
       const response = await fetch(`/api/batches/${deleteDialog.batch._id}`, {
         method: 'DELETE',
         headers: {
@@ -197,10 +218,10 @@ export default function BatchTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">সব</SelectItem>
-              <SelectItem value="upcoming">আসন্ন</SelectItem>
-              <SelectItem value="ongoing">চলমান</SelectItem>
-              <SelectItem value="completed">সম্পন্ন</SelectItem>
-              <SelectItem value="cancelled">বাতিল</SelectItem>
+              <SelectItem value="upcoming">সামনে আসছে</SelectItem>
+              <SelectItem value="ongoing">চলছে</SelectItem>
+              <SelectItem value="completed">শেষ হয়েছে</SelectItem>
+              <SelectItem value="cancelled">ক্যানসেল</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -220,7 +241,7 @@ export default function BatchTable({
                 <TableHead>তারিখ</TableHead>
                 <TableHead>শিক্ষার্থী</TableHead>
                 <TableHead>অবস্থা</TableHead>
-                <TableHead>সক্রিয়</TableHead>
+                <TableHead>অ্যাক্টিভ</TableHead>
                 <TableHead className="text-right">অ্যাকশন</TableHead>
               </TableRow>
             </TableHeader>
@@ -282,7 +303,7 @@ export default function BatchTable({
                     </TableCell>
                     <TableCell>
                       <Badge className={batch.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}>
-                        {batch.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                        {batch.isActive ? 'অ্যাক্টিভ' : 'নিষ্ক্রিয়'}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">

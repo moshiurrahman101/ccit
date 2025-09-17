@@ -21,6 +21,9 @@ export function middleware(request: NextRequest) {
   const isBatchApiRoute = request.nextUrl.pathname.startsWith('/api/batches') && 
     !request.nextUrl.pathname.startsWith('/api/batches/active');
   
+  // User management API routes that require admin authentication
+  const isUserApiRoute = request.nextUrl.pathname.startsWith('/api/users');
+  
   // Check if user is authenticated
   let isAuthenticated = false;
   let userRole = null;
@@ -57,6 +60,11 @@ export function middleware(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       }
       
+      // If user is trying to access user API routes but is not admin
+      if (isUserApiRoute && userRole !== 'admin') {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
+      
       return NextResponse.next({
         request: {
           headers: requestHeaders,
@@ -90,6 +98,8 @@ export const config = {
     '/api/students',
     '/api/students/:path*',
     '/api/batches',
-    '/api/batches/:path*'
+    '/api/batches/:path*',
+    '/api/users',
+    '/api/users/:path*'
   ]
 };

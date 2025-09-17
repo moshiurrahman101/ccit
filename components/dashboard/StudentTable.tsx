@@ -7,39 +7,93 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   Search, 
-  Filter, 
-  MoreHorizontal, 
   Edit, 
   Trash2, 
-  Eye, 
   UserPlus,
   ChevronLeft,
   ChevronRight,
-  Loader2
+  Loader2,
+  GraduationCap,
+  Mail,
+  Phone,
+  Calendar,
+  MapPin,
+  CreditCard,
+  Eye,
+  MoreHorizontal,
+  AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/components/providers/AuthProvider';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Student {
   _id: string;
   name: string;
   email: string;
   phone: string;
-  batch: string;
-  status: 'active' | 'inactive' | 'suspended';
+  isActive: boolean;
   avatar?: string;
+  studentInfo?: {
+    studentId?: string;
+    dateOfBirth?: string;
+    gender?: 'male' | 'female' | 'other';
+    nid?: string;
+    bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+    address?: {
+      city?: string;
+      district?: string;
+    };
+    emergencyContact?: {
+      name?: string;
+      phone?: string;
+      relation?: string;
+    };
+    education?: {
+      level?: string;
+      institution?: string;
+      graduationYear?: number;
+    };
+    socialInfo?: {
+      facebook?: string;
+      linkedin?: string;
+      github?: string;
+    };
+    paymentInfo?: {
+      paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash';
+      paymentNumber?: string;
+      transactionId?: string;
+      paidAmount?: number;
+      dueAmount?: number;
+      paymentStatus?: 'paid' | 'partial' | 'due' | 'overdue';
+    };
+    batchInfo?: {
+      batchId?: string;
+      batchName?: string;
+      status?: 'enrolled' | 'active' | 'completed' | 'dropped' | 'suspended';
+    };
+    isOfflineStudent?: boolean;
+    isVerified?: boolean;
+  };
   createdAt: string;
 }
 
 interface StudentTableProps {
   students: Student[];
-  batches: string[];
   onRefresh: () => void;
   onEdit: (student: Student) => void;
+  onView: (student: Student) => void;
   onAdd: () => void;
   pagination: {
     currentPage: number;
@@ -54,11 +108,41 @@ interface StudentTableProps {
   isLoading: boolean;
 }
 
+const statusLabels = {
+  enrolled: 'নিবন্ধিত',
+  active: 'সক্রিয়',
+  completed: 'সম্পন্ন',
+  dropped: 'ত্যাগ',
+  suspended: 'স্থগিত'
+};
+
+const statusColors = {
+  enrolled: 'bg-blue-100 text-blue-800',
+  active: 'bg-green-100 text-green-800',
+  completed: 'bg-gray-100 text-gray-800',
+  dropped: 'bg-red-100 text-red-800',
+  suspended: 'bg-yellow-100 text-yellow-800'
+};
+
+const paymentStatusLabels = {
+  paid: 'পেইড',
+  partial: 'আংশিক',
+  due: 'বাকি',
+  overdue: 'অতিরিক্ত বাকি'
+};
+
+const paymentStatusColors = {
+  paid: 'bg-green-100 text-green-800',
+  partial: 'bg-yellow-100 text-yellow-800',
+  due: 'bg-orange-100 text-orange-800',
+  overdue: 'bg-red-100 text-red-800'
+};
+
 export default function StudentTable({
   students,
-  batches,
   onRefresh,
   onEdit,
+  onView,
   onAdd,
   pagination,
   onPageChange,
@@ -66,44 +150,18 @@ export default function StudentTable({
   onFilter,
   isLoading
 }: StudentTableProps) {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
-  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; student: Student | null }>({
-    isOpen: false,
-    student: null
-  });
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  const isAdmin = user?.role === 'admin';
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'inactive': return 'bg-gray-500';
-      case 'suspended': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return 'সক্রিয়';
-      case 'inactive': return 'নিষ্ক্রিয়';
-      case 'suspended': return 'স্থগিত';
-      default: return status;
-    }
-  };
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     onSearch(value);
-  };
-
-  const handleStatusFilter = (value: string) => {
-    setStatusFilter(value);
-    onFilter('status', value === 'all' ? '' : value);
   };
 
   const handleBatchFilter = (value: string) => {
@@ -111,22 +169,33 @@ export default function StudentTable({
     onFilter('batch', value === 'all' ? '' : value);
   };
 
-  const handleDelete = async (student: Student) => {
-    if (!isAdmin) {
-      toast.error('আপনার অনুমতি নেই');
-      return;
-    }
-
-    setDeleteDialog({ isOpen: true, student });
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    onFilter('status', value === 'all' ? '' : value);
   };
 
-  const confirmDelete = async () => {
-    if (!deleteDialog.student) return;
+  const handlePaymentFilter = (value: string) => {
+    setPaymentFilter(value);
+    onFilter('paymentStatus', value === 'all' ? '' : value);
+  };
+
+  const handleGenderFilter = (value: string) => {
+    setGenderFilter(value);
+    onFilter('gender', value === 'all' ? '' : value);
+  };
+
+  const handleDeleteClick = (student: Student) => {
+    setStudentToDelete(student);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!studentToDelete) return;
 
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/students/${deleteDialog.student._id}`, {
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch(`/api/students/${studentToDelete._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -136,18 +205,33 @@ export default function StudentTable({
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('শিক্ষার্থী মুছে ফেলা হয়েছে');
+        toast.success(data.message || 'শিক্ষার্থী সফলভাবে মুছে ফেলা হয়েছে');
         onRefresh();
-        setDeleteDialog({ isOpen: false, student: null });
+        setDeleteDialogOpen(false);
+        setStudentToDelete(null);
       } else {
-        toast.error(data.error || 'একটি সমস্যা হয়েছে');
+        toast.error(data.error || 'শিক্ষার্থী মুছতে সমস্যা হয়েছে');
       }
     } catch (error) {
       console.error('Error deleting student:', error);
-      toast.error('নেটওয়ার্ক সমস্যা');
+      toast.error('নেটওয়ার্ক সমস্যা হয়েছে');
     } finally {
       setIsDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setStudentToDelete(null);
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const formatDate = (dateString: string) => {
@@ -158,224 +242,366 @@ export default function StudentTable({
     });
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('bn-BD', {
+      style: 'currency',
+      currency: 'BDT',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">শিক্ষার্থী ব্যবস্থাপনা</h2>
-          <p className="text-gray-600">মোট {pagination.totalStudents} জন শিক্ষার্থী</p>
+    <div className="space-y-4">
+      {/* Header with Search and Filters */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-2 flex-1">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="শিক্ষার্থী খুঁজুন..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10 bg-white border-gray-300"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Select value={statusFilter} onValueChange={handleStatusFilter}>
+              <SelectTrigger className="w-32 bg-white border-gray-300">
+                <SelectValue placeholder="স্ট্যাটাস" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
+                <SelectItem value="active">সক্রিয়</SelectItem>
+                <SelectItem value="inactive">নিষ্ক্রিয়</SelectItem>
+                <SelectItem value="enrolled">নিবন্ধিত</SelectItem>
+                <SelectItem value="completed">সম্পন্ন</SelectItem>
+                <SelectItem value="dropped">ত্যাগ</SelectItem>
+                <SelectItem value="suspended">স্থগিত</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={paymentFilter} onValueChange={handlePaymentFilter}>
+              <SelectTrigger className="w-32 bg-white border-gray-300">
+                <SelectValue placeholder="পেমেন্ট" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem value="all">সব পেমেন্ট</SelectItem>
+                <SelectItem value="paid">পেইড</SelectItem>
+                <SelectItem value="partial">আংশিক</SelectItem>
+                <SelectItem value="due">বাকি</SelectItem>
+                <SelectItem value="overdue">অতিরিক্ত বাকি</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={genderFilter} onValueChange={handleGenderFilter}>
+              <SelectTrigger className="w-24 bg-white border-gray-300">
+                <SelectValue placeholder="লিঙ্গ" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem value="all">সব</SelectItem>
+                <SelectItem value="male">পুরুষ</SelectItem>
+                <SelectItem value="female">মহিলা</SelectItem>
+                <SelectItem value="other">অন্যান্য</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
+
+        {/* Add Student Button */}
         <AdminOnly>
-          <Button onClick={onAdd} className="w-full sm:w-auto">
-            <UserPlus className="h-4 w-4 mr-2" />
+          <Button onClick={onAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <UserPlus className="w-4 h-4 mr-2" />
             নতুন শিক্ষার্থী
           </Button>
         </AdminOnly>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="নাম, ইমেইল বা ফোন দিয়ে খুঁজুন..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={handleStatusFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="স্ট্যাটাস" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">সব</SelectItem>
-              <SelectItem value="active">সক্রিয়</SelectItem>
-              <SelectItem value="inactive">নিষ্ক্রিয়</SelectItem>
-              <SelectItem value="suspended">স্থগিত</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={batchFilter} onValueChange={handleBatchFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue placeholder="ব্যাচ" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">সব</SelectItem>
-              {batches.map((batch) => (
-                <SelectItem key={batch} value={batch}>
-                  {batch}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Table */}
-      <div className="bg-white rounded-lg border overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-          </div>
-        ) : (
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>শিক্ষার্থী</TableHead>
-                <TableHead>ইমেইল</TableHead>
-                <TableHead>ফোন</TableHead>
-                <TableHead>ব্যাচ</TableHead>
-                <TableHead>স্ট্যাটাস</TableHead>
-                <TableHead>যোগদান</TableHead>
-                <TableHead className="text-right">অ্যাকশন</TableHead>
+              <TableRow className="bg-gray-50">
+                <TableHead className="text-gray-700 font-semibold">শিক্ষার্থী</TableHead>
+                <TableHead className="text-gray-700 font-semibold">স্টুডেন্ট আইডি</TableHead>
+                <TableHead className="text-gray-700 font-semibold">ব্যাচ</TableHead>
+                <TableHead className="text-gray-700 font-semibold">যোগাযোগ</TableHead>
+                <TableHead className="text-gray-700 font-semibold">পেমেন্ট</TableHead>
+                <TableHead className="text-gray-700 font-semibold">স্ট্যাটাস</TableHead>
+                <TableHead className="text-gray-700 font-semibold">তারিখ</TableHead>
+                <TableHead className="text-gray-700 font-semibold text-right">অ্যাকশন</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                    <p className="text-gray-500">লোড হচ্ছে...</p>
+                  </TableCell>
+                </TableRow>
+              ) : students.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="text-gray-500">
-                      <UserPlus className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>কোন শিক্ষার্থী পাওয়া যায়নি</p>
+                      <GraduationCap className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium mb-2">কোন শিক্ষার্থী নেই</p>
+                      <p className="text-sm">এখনও কোন শিক্ষার্থী যোগ করা হয়নি</p>
                     </div>
                   </TableCell>
                 </TableRow>
               ) : (
                 students.map((student) => (
-                  <TableRow key={student._id}>
+                  <TableRow key={student._id} className="hover:bg-gray-50">
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={student.avatar} />
-                          <AvatarFallback className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
-                            {student.name.charAt(0)}
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={student.avatar} alt={student.name} />
+                          <AvatarFallback className="bg-blue-100 text-blue-800">
+                            {getInitials(student.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-gray-900">{student.name}</p>
+                          <button
+                            onClick={() => onView(student)}
+                            className="font-medium text-gray-900 hover:text-orange-600 transition-colors text-left"
+                          >
+                            {student.name}
+                          </button>
+                          <div className="flex items-center space-x-2 text-sm text-gray-500">
+                            {student.studentInfo?.gender && (
+                              <span className="capitalize">
+                                {student.studentInfo.gender === 'male' ? 'পুরুষ' : 
+                                 student.studentInfo.gender === 'female' ? 'মহিলা' : 'অন্যান্য'}
+                              </span>
+                            )}
+                            {student.studentInfo?.isVerified && (
+                              <Badge variant="outline" className="text-green-600 border-green-600">
+                                যাচাইকৃত
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-gray-600">{student.email}</p>
+                      <div className="font-mono text-sm">
+                        {student.studentInfo?.studentId || 'N/A'}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-gray-600">{student.phone}</p>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {student.studentInfo?.batchInfo?.batchName || 'N/A'}
+                        </p>
+                        {student.studentInfo?.isOfflineStudent && (
+                          <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs">
+                            অফলাইন
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{student.batch}</Badge>
+                      <div className="space-y-1">
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Mail className="w-3 h-3 mr-2" />
+                          {student.email}
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Phone className="w-3 h-3 mr-2" />
+                          {student.phone}
+                        </div>
+                        {student.studentInfo?.address?.city && (
+                          <div className="flex items-center text-sm text-gray-600">
+                            <MapPin className="w-3 h-3 mr-2" />
+                            {student.studentInfo.address.city}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={`${getStatusColor(student.status)} text-white`}>
-                        {getStatusLabel(student.status)}
-                      </Badge>
+                      <div className="space-y-1">
+                        <Badge 
+                          className={
+                            paymentStatusColors[student.studentInfo?.paymentInfo?.paymentStatus || 'due']
+                          }
+                        >
+                          {paymentStatusLabels[student.studentInfo?.paymentInfo?.paymentStatus || 'due']}
+                        </Badge>
+                        {student.studentInfo?.paymentInfo?.paidAmount !== undefined && (
+                          <div className="text-xs text-gray-600">
+                            {formatCurrency(student.studentInfo.paymentInfo.paidAmount)}
+                          </div>
+                        )}
+                        {student.studentInfo?.paymentInfo?.dueAmount !== undefined && 
+                         student.studentInfo.paymentInfo.dueAmount > 0 && (
+                          <div className="text-xs text-red-600">
+                            বাকি: {formatCurrency(student.studentInfo.paymentInfo.dueAmount)}
+                          </div>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <p className="text-gray-600 text-sm">
+                      <div className="space-y-1">
+                        <Badge 
+                          variant={student.isActive ? 'default' : 'secondary'}
+                        >
+                          {student.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                        </Badge>
+                        {student.studentInfo?.batchInfo?.status && (
+                          <Badge 
+                            className={statusColors[student.studentInfo.batchInfo.status]}
+                          >
+                            {statusLabels[student.studentInfo.batchInfo.status]}
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="w-3 h-3 mr-2" />
                         {formatDate(student.createdAt)}
-                      </p>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <AdminOnly>
-                        <div className="flex justify-end gap-2">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onView(student)}
+                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                        >
+                          <Eye className="w-3 h-3" />
+                        </Button>
+                        <AdminOnly>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
                             onClick={() => onEdit(student)}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="w-3 h-3" />
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(student)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteClick(student)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
-                        </div>
-                      </AdminOnly>
+                        </AdminOnly>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        )}
+        </div>
       </div>
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-600">
-            পৃষ্ঠা {pagination.currentPage} এর {pagination.totalPages} ({pagination.totalStudents} জন)
-          </p>
-          <div className="flex gap-2">
+          <div className="text-sm text-gray-600">
+            মোট {pagination.totalStudents} জন শিক্ষার্থী
+          </div>
+          <div className="flex items-center space-x-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => onPageChange(pagination.currentPage - 1)}
               disabled={!pagination.hasPrev}
+              className="bg-white border-gray-300"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="w-4 h-4" />
               পূর্ববর্তী
             </Button>
+            <span className="text-sm text-gray-600 px-3">
+              পৃষ্ঠা {pagination.currentPage} / {pagination.totalPages}
+            </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => onPageChange(pagination.currentPage + 1)}
               disabled={!pagination.hasNext}
+              className="bg-white border-gray-300"
             >
               পরবর্তী
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
         </div>
       )}
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialog.isOpen} onOpenChange={(open) => setDeleteDialog({ isOpen: open, student: null })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>শিক্ষার্থী মুছে ফেলুন</DialogTitle>
-          </DialogHeader>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white border border-gray-200 shadow-xl">
+          <AlertDialogHeader>
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+                  শিক্ষার্থী মুছে ফেলুন
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-gray-600 mt-1">
+                  এই অ্যাকশনটি পূর্বাবস্থায় ফেরানো যাবে না
+                </AlertDialogDescription>
+              </div>
+            </div>
+          </AlertDialogHeader>
+          
           <div className="py-4">
-            <p className="text-gray-600">
-              আপনি কি নিশ্চিত যে আপনি <strong>{deleteDialog.student?.name}</strong> কে মুছে ফেলতে চান?
+            <p className="text-gray-700">
+              আপনি কি <span className="font-semibold text-gray-900">&ldquo;{studentToDelete?.name}&rdquo;</span> শিক্ষার্থী মুছে ফেলতে চান?
             </p>
-            <p className="text-sm text-red-600 mt-2">
-              এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।
-            </p>
+            {studentToDelete && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-600">
+                  <p><span className="font-medium">ইমেইল:</span> {studentToDelete.email}</p>
+                  <p><span className="font-medium">ফোন:</span> {studentToDelete.phone}</p>
+                  {studentToDelete.studentInfo?.studentId && (
+                    <p><span className="font-medium">স্টুডেন্ট আইডি:</span> {studentToDelete.studentInfo.studentId}</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialog({ isOpen: false, student: null })}
+
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={handleDeleteCancel}
               disabled={isDeleting}
+              className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               বাতিল
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmDelete}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
               disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white focus:ring-red-500"
             >
               {isDeleting ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  মুছে ফেলছে...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  মুছে ফেলছেন...
                 </>
               ) : (
-                'মুছে ফেলুন'
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  মুছে ফেলুন
+                </>
               )}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

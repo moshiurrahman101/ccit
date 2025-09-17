@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2, Users, Calendar, CheckCircle, Clock } from 'lucide-react';
 import BatchTable from '@/components/dashboard/BatchTable';
-import BatchForm from '@/components/dashboard/BatchForm';
+import BatchForm from '@/components/dashboard/BatchFormNew';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { toast } from 'sonner';
 
@@ -12,12 +12,33 @@ interface Batch {
   _id: string;
   name: string;
   description?: string;
+  courseType: 'batch' | 'course';
+  duration: number;
+  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  fee: number;
+  currency: string;
   startDate: string;
   endDate: string;
   maxStudents: number;
   currentStudents: number;
+  prerequisites: string[];
+  modules: {
+    title: string;
+    description: string;
+    duration: number;
+    order: number;
+  }[];
   status: 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
+  isMandatory: boolean;
+  instructor: {
+    name: string;
+    email: string;
+    phone: string;
+    bio: string;
+  };
+  tags: string[];
+  level: 'beginner' | 'intermediate' | 'advanced';
   createdAt: string;
 }
 
@@ -53,7 +74,7 @@ export default function BatchesPage() {
   const fetchBatches = async (page = 1, search = '', status = '') => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth-token');
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
@@ -171,7 +192,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">আসন্ন</CardTitle>
+            <CardTitle className="text-sm font-medium">সামনে আসছে</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -180,7 +201,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">চলমান</CardTitle>
+            <CardTitle className="text-sm font-medium">চলছে</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -189,7 +210,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">সম্পন্ন</CardTitle>
+            <CardTitle className="text-sm font-medium">শেষ হয়েছে</CardTitle>
             <CheckCircle className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
@@ -198,7 +219,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">বাতিল</CardTitle>
+            <CardTitle className="text-sm font-medium">ক্যানসেল</CardTitle>
             <Clock className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -207,7 +228,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">সক্রিয়</CardTitle>
+            <CardTitle className="text-sm font-medium">অ্যাক্টিভ</CardTitle>
             <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
