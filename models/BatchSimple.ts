@@ -4,12 +4,16 @@ export interface IBatchSimple extends Document {
   name: string;
   description?: string;
   // Course/Batch Information
-  courseType: 'batch' | 'course';
+  courseType: 'online' | 'offline';
   duration: number; // Duration in specified unit
   durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  // Visual Information
+  coverPhoto?: string; // Cloudinary URL
   // Financial Information
-  fee: number;
+  regularPrice: number; // Regular price
+  discountPrice?: number; // Discounted price
   currency: string;
+  discountPercentage?: number; // Calculated discount percentage
   // Schedule Information
   startDate: Date;
   endDate: Date;
@@ -35,10 +39,19 @@ export interface IBatchSimple extends Document {
     email: string;
     phone: string;
     bio: string;
+    avatar?: string; // Instructor profile picture
   };
   // Additional Information
   tags: string[];
   level: 'beginner' | 'intermediate' | 'advanced';
+  // Course Features
+  features: string[]; // Course features like "Certificate", "Lifetime Access", etc.
+  requirements: string[]; // System requirements or prerequisites
+  whatYouWillLearn: string[]; // Learning outcomes
+  // SEO and Marketing
+  slug: string; // URL-friendly name
+  metaDescription?: string; // SEO description
+  // Additional Information
   createdBy: string; // User ID
   createdAt: Date;
   updatedAt: Date;
@@ -58,8 +71,8 @@ const BatchSimpleSchema = new Schema<IBatchSimple>({
   // Course/Batch Information
   courseType: {
     type: String,
-    enum: ['batch', 'course'],
-    default: 'batch'
+    enum: ['online', 'offline'],
+    default: 'online'
   },
   duration: {
     type: Number,
@@ -71,15 +84,29 @@ const BatchSimpleSchema = new Schema<IBatchSimple>({
     enum: ['days', 'weeks', 'months', 'years'],
     default: 'months'
   },
+  // Visual Information
+  coverPhoto: {
+    type: String,
+    trim: true
+  },
   // Financial Information
-  fee: {
+  regularPrice: {
     type: Number,
     required: true,
+    min: 0
+  },
+  discountPrice: {
+    type: Number,
     min: 0
   },
   currency: {
     type: String,
     default: 'BDT'
+  },
+  discountPercentage: {
+    type: Number,
+    min: 0,
+    max: 100
   },
   // Schedule Information
   startDate: {
@@ -131,7 +158,8 @@ const BatchSimpleSchema = new Schema<IBatchSimple>({
     name: String,
     email: String,
     phone: String,
-    bio: String
+    bio: String,
+    avatar: String
   },
   // Additional Information
   tags: [String],
@@ -139,6 +167,21 @@ const BatchSimpleSchema = new Schema<IBatchSimple>({
     type: String,
     enum: ['beginner', 'intermediate', 'advanced'],
     default: 'beginner'
+  },
+  // Course Features
+  features: [String], // Course features like "Certificate", "Lifetime Access", etc.
+  requirements: [String], // System requirements or prerequisites
+  whatYouWillLearn: [String], // Learning outcomes
+  // SEO and Marketing
+  slug: {
+    type: String,
+    required: true,
+    unique: true,
+    trim: true
+  },
+  metaDescription: {
+    type: String,
+    trim: true
   },
   createdBy: {
     type: String,
@@ -148,12 +191,24 @@ const BatchSimpleSchema = new Schema<IBatchSimple>({
   timestamps: true
 });
 
+// Pre-save middleware to generate slug
+BatchSimpleSchema.pre('save', function(next) {
+  if (this.isModified('name') && !this.slug) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  }
+  next();
+});
+
 // Index for efficient queries
 BatchSimpleSchema.index({ name: 1 });
+BatchSimpleSchema.index({ slug: 1 });
 BatchSimpleSchema.index({ status: 1 });
 BatchSimpleSchema.index({ isActive: 1 });
 BatchSimpleSchema.index({ courseType: 1, isActive: 1 });
-BatchSimpleSchema.index({ fee: 1 });
+BatchSimpleSchema.index({ regularPrice: 1 });
 BatchSimpleSchema.index({ level: 1 });
 
 const BatchSimple = mongoose.models.BatchSimple || mongoose.model<IBatchSimple>('BatchSimple', BatchSimpleSchema);

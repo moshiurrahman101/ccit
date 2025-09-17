@@ -15,11 +15,14 @@ interface Batch {
   _id?: string;
   name: string;
   description?: string;
-  courseType: 'batch' | 'course';
+  courseType: 'online' | 'offline';
   duration: number;
   durationUnit: 'days' | 'weeks' | 'months' | 'years';
-  fee: number;
+  coverPhoto?: string;
+  regularPrice: number;
+  discountPrice?: number;
   currency: string;
+  discountPercentage?: number;
   startDate: string;
   endDate: string;
   maxStudents: number;
@@ -39,9 +42,15 @@ interface Batch {
     email: string;
     phone: string;
     bio: string;
+    avatar?: string;
   };
   tags: string[];
   level: 'beginner' | 'intermediate' | 'advanced';
+  features: string[];
+  requirements: string[];
+  whatYouWillLearn: string[];
+  slug: string;
+  metaDescription?: string;
 }
 
 interface BatchFormProps {
@@ -60,11 +69,14 @@ export default function BatchFormNew({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    courseType: 'batch' as 'batch' | 'course',
+    courseType: 'online' as 'online' | 'offline',
     duration: 3,
     durationUnit: 'months' as 'days' | 'weeks' | 'months' | 'years',
-    fee: 0,
+    coverPhoto: '',
+    regularPrice: 0,
+    discountPrice: 0,
     currency: 'BDT',
+    discountPercentage: 0,
     startDate: '',
     endDate: '',
     maxStudents: 30,
@@ -77,10 +89,16 @@ export default function BatchFormNew({
       name: '',
       email: '',
       phone: '',
-      bio: ''
+      bio: '',
+      avatar: ''
     },
     tags: [] as string[],
-    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced'
+    level: 'beginner' as 'beginner' | 'intermediate' | 'advanced',
+    features: [] as string[],
+    requirements: [] as string[],
+    whatYouWillLearn: [] as string[],
+    slug: '',
+    metaDescription: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -88,20 +106,26 @@ export default function BatchFormNew({
   const [newPrerequisite, setNewPrerequisite] = useState('');
   const [newModule, setNewModule] = useState({ title: '', description: '', duration: 0, order: 0 });
   const [newTag, setNewTag] = useState('');
+  const [newFeature, setNewFeature] = useState('');
+  const [newRequirement, setNewRequirement] = useState('');
+  const [newLearningOutcome, setNewLearningOutcome] = useState('');
 
   const isEdit = !!batch;
-  const totalSteps = 4;
+  const totalSteps = 6;
 
   useEffect(() => {
     if (batch) {
       setFormData({
         name: batch.name || '',
         description: batch.description || '',
-        courseType: batch.courseType || 'batch',
+        courseType: batch.courseType || 'online',
         duration: batch.duration || 3,
         durationUnit: batch.durationUnit || 'months',
-        fee: batch.fee || 0,
+        coverPhoto: batch.coverPhoto || '',
+        regularPrice: batch.regularPrice || 0,
+        discountPrice: batch.discountPrice || 0,
         currency: batch.currency || 'BDT',
+        discountPercentage: batch.discountPercentage || 0,
         startDate: batch.startDate ? new Date(batch.startDate).toISOString().split('T')[0] : '',
         endDate: batch.endDate ? new Date(batch.endDate).toISOString().split('T')[0] : '',
         maxStudents: batch.maxStudents || 30,
@@ -110,19 +134,33 @@ export default function BatchFormNew({
         status: batch.status || 'upcoming',
         isActive: batch.isActive !== undefined ? batch.isActive : true,
         isMandatory: batch.isMandatory !== undefined ? batch.isMandatory : true,
-        instructor: batch.instructor || { name: '', email: '', phone: '', bio: '' },
+        instructor: {
+          name: batch.instructor?.name || '',
+          email: batch.instructor?.email || '',
+          phone: batch.instructor?.phone || '',
+          bio: batch.instructor?.bio || '',
+          avatar: batch.instructor?.avatar || ''
+        },
         tags: batch.tags || [],
-        level: batch.level || 'beginner'
+        level: batch.level || 'beginner',
+        features: batch.features || [],
+        requirements: batch.requirements || [],
+        whatYouWillLearn: batch.whatYouWillLearn || [],
+        slug: batch.slug || '',
+        metaDescription: batch.metaDescription || ''
       });
     } else {
       setFormData({
         name: '',
         description: '',
-        courseType: 'batch',
+        courseType: 'online',
         duration: 3,
         durationUnit: 'months',
-        fee: 0,
+        coverPhoto: '',
+        regularPrice: 0,
+        discountPrice: 0,
         currency: 'BDT',
+        discountPercentage: 0,
         startDate: '',
         endDate: '',
         maxStudents: 30,
@@ -131,9 +169,14 @@ export default function BatchFormNew({
         status: 'upcoming',
         isActive: true,
         isMandatory: true,
-        instructor: { name: '', email: '', phone: '', bio: '' },
+        instructor: { name: '', email: '', phone: '', bio: '', avatar: '' },
         tags: [],
-        level: 'beginner'
+        level: 'beginner',
+        features: [],
+        requirements: [],
+        whatYouWillLearn: [],
+        slug: '',
+        metaDescription: ''
       });
     }
     setErrors({});
@@ -150,8 +193,8 @@ export default function BatchFormNew({
       if (!formData.description.trim()) {
         newErrors.description = 'বিবরণ প্রয়োজন';
       }
-      if (formData.fee < 0) {
-        newErrors.fee = 'ফি শূন্য বা তার বেশি হতে হবে';
+      if (formData.regularPrice < 0) {
+        newErrors.regularPrice = 'নিয়মিত মূল্য শূন্য বা তার বেশি হতে হবে';
       }
     }
 
@@ -271,6 +314,57 @@ export default function BatchFormNew({
     }));
   };
 
+  const addFeature = () => {
+    if (newFeature.trim() && !formData.features.includes(newFeature.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        features: [...prev.features, newFeature.trim()]
+      }));
+      setNewFeature('');
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addRequirement = () => {
+    if (newRequirement.trim() && !formData.requirements.includes(newRequirement.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        requirements: [...prev.requirements, newRequirement.trim()]
+      }));
+      setNewRequirement('');
+    }
+  };
+
+  const removeRequirement = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      requirements: prev.requirements.filter((_, i) => i !== index)
+    }));
+  };
+
+  const addLearningOutcome = () => {
+    if (newLearningOutcome.trim() && !formData.whatYouWillLearn.includes(newLearningOutcome.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        whatYouWillLearn: [...prev.whatYouWillLearn, newLearningOutcome.trim()]
+      }));
+      setNewLearningOutcome('');
+    }
+  };
+
+  const removeLearningOutcome = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      whatYouWillLearn: prev.whatYouWillLearn.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -336,9 +430,22 @@ export default function BatchFormNew({
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 placeholder="ব্যাচ/কোর্সের বিবরণ"
                 rows={3}
-                className={errors.description ? 'border-red-500' : ''}
+                className={`bg-white border-gray-300 ${errors.description ? 'border-red-500' : ''}`}
               />
               {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="coverPhoto">কভার ফটো</Label>
+              <Input
+                id="coverPhoto"
+                type="url"
+                value={formData.coverPhoto}
+                onChange={(e) => handleInputChange('coverPhoto', e.target.value)}
+                placeholder="কভার ফটোর URL (Cloudinary)"
+                className="bg-white border-gray-300"
+              />
+              <p className="text-sm text-gray-500 mt-1">Cloudinary URL বা অন্য কোনো ইমেজ লিঙ্ক দিন</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -349,8 +456,8 @@ export default function BatchFormNew({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200">
-                    <SelectItem value="batch">ব্যাচ</SelectItem>
-                    <SelectItem value="course">কোর্স</SelectItem>
+                    <SelectItem value="online">অনলাইন</SelectItem>
+                    <SelectItem value="offline">অফলাইন</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -401,19 +508,34 @@ export default function BatchFormNew({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="fee">ফি *</Label>
+                <Label htmlFor="regularPrice">নিয়মিত মূল্য *</Label>
                 <Input
-                  id="fee"
+                  id="regularPrice"
                   type="number"
-                  value={formData.fee}
-                  onChange={(e) => handleInputChange('fee', parseFloat(e.target.value))}
+                  value={formData.regularPrice}
+                  onChange={(e) => handleInputChange('regularPrice', parseFloat(e.target.value))}
                   min="0"
                   step="0.01"
-                  className={`bg-white border-gray-300 ${errors.fee ? 'border-red-500' : ''}`}
+                  className={`bg-white border-gray-300 ${errors.regularPrice ? 'border-red-500' : ''}`}
                 />
-                {errors.fee && <p className="text-sm text-red-500 mt-1">{errors.fee}</p>}
+                {errors.regularPrice && <p className="text-sm text-red-500 mt-1">{errors.regularPrice}</p>}
               </div>
 
+              <div>
+                <Label htmlFor="discountPrice">ছাড়ের মূল্য</Label>
+                <Input
+                  id="discountPrice"
+                  type="number"
+                  value={formData.discountPrice}
+                  onChange={(e) => handleInputChange('discountPrice', parseFloat(e.target.value))}
+                  min="0"
+                  step="0.01"
+                  className="bg-white border-gray-300"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="currency">মুদ্রা</Label>
                 <Select value={formData.currency} onValueChange={(value) => handleInputChange('currency', value)}>
@@ -425,6 +547,20 @@ export default function BatchFormNew({
                     <SelectItem value="USD">USD</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="discountPercentage">ছাড়ের শতাংশ (%)</Label>
+                <Input
+                  id="discountPercentage"
+                  type="number"
+                  value={formData.discountPercentage}
+                  onChange={(e) => handleInputChange('discountPercentage', parseFloat(e.target.value))}
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="bg-white border-gray-300"
+                />
               </div>
             </div>
 
@@ -685,12 +821,185 @@ export default function BatchFormNew({
               <h4 className="font-medium mb-2">সারসংক্ষেপ</h4>
               <div className="space-y-1 text-sm">
                 <p><strong>নাম:</strong> {formData.name}</p>
-                <p><strong>ধরন:</strong> {formData.courseType === 'batch' ? 'ব্যাচ' : 'কোর্স'}</p>
+                <p><strong>ধরন:</strong> {formData.courseType === 'online' ? 'অনলাইন' : 'অফলাইন'}</p>
                 <p><strong>সময়কাল:</strong> {formData.duration} {formData.durationUnit}</p>
-                <p><strong>ফি:</strong> {formData.fee} {formData.currency}</p>
+                <p><strong>নিয়মিত মূল্য:</strong> {formData.regularPrice} {formData.currency}</p>
+                {formData.discountPrice && formData.discountPrice > 0 && (
+                  <p><strong>ছাড়ের মূল্য:</strong> {formData.discountPrice} {formData.currency}</p>
+                )}
                 <p><strong>শিক্ষার্থী:</strong> {formData.maxStudents} জন</p>
                 <p><strong>ইনস্ট্রাক্টর:</strong> {formData.instructor.name}</p>
                 <p><strong>মডিউল:</strong> {formData.modules.length} টি</p>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">কোর্স ফিচার এবং প্রয়োজনীয়তা</h3>
+            
+            <div>
+              <Label htmlFor="features">কোর্স ফিচার</Label>
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <Input
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    placeholder="ফিচার যোগ করুন (যেমন: সার্টিফিকেট, লাইফটাইম অ্যাক্সেস)"
+                    className="bg-white border-gray-300"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addFeature}
+                    disabled={!newFeature.trim()}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.features.map((feature, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {feature}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFeature(index)}
+                        className="h-auto p-0 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="requirements">প্রয়োজনীয়তা</Label>
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <Input
+                    value={newRequirement}
+                    onChange={(e) => setNewRequirement(e.target.value)}
+                    placeholder="প্রয়োজনীয়তা যোগ করুন"
+                    className="bg-white border-gray-300"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addRequirement}
+                    disabled={!newRequirement.trim()}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.requirements.map((requirement, index) => (
+                    <Badge key={index} variant="outline" className="flex items-center gap-1">
+                      {requirement}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeRequirement(index)}
+                        className="h-auto p-0 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="whatYouWillLearn">আপনি যা শিখবেন</Label>
+              <div className="space-y-2">
+                <div className="flex space-x-2">
+                  <Input
+                    value={newLearningOutcome}
+                    onChange={(e) => setNewLearningOutcome(e.target.value)}
+                    placeholder="শেখার ফলাফল যোগ করুন"
+                    className="bg-white border-gray-300"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addLearningOutcome}
+                    disabled={!newLearningOutcome.trim()}
+                    size="sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.whatYouWillLearn.map((outcome, index) => (
+                    <Badge key={index} variant="default" className="flex items-center gap-1">
+                      {outcome}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLearningOutcome(index)}
+                        className="h-auto p-0 ml-1"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 6:
+        return (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">SEO এবং মার্কেটিং</h3>
+            
+            <div>
+              <Label htmlFor="slug">URL Slug</Label>
+              <Input
+                id="slug"
+                value={formData.slug}
+                onChange={(e) => handleInputChange('slug', e.target.value)}
+                placeholder="url-friendly-name"
+                className="bg-white border-gray-300"
+              />
+              <p className="text-sm text-gray-500 mt-1">URL-এ ব্যবহৃত হবে: /batches/url-friendly-name</p>
+            </div>
+
+            <div>
+              <Label htmlFor="metaDescription">মেটা বিবরণ</Label>
+              <Textarea
+                id="metaDescription"
+                value={formData.metaDescription}
+                onChange={(e) => handleInputChange('metaDescription', e.target.value)}
+                placeholder="SEO এর জন্য সংক্ষিপ্ত বিবরণ"
+                rows={3}
+                className="bg-white border-gray-300"
+              />
+              <p className="text-sm text-gray-500 mt-1">গুগল সার্চে দেখাবে</p>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-medium mb-2">সারসংক্ষেপ</h4>
+              <div className="space-y-1 text-sm">
+                <p><strong>নাম:</strong> {formData.name}</p>
+                <p><strong>ধরন:</strong> {formData.courseType === 'online' ? 'অনলাইন' : 'অফলাইন'}</p>
+                <p><strong>সময়কাল:</strong> {formData.duration} {formData.durationUnit}</p>
+                <p><strong>নিয়মিত মূল্য:</strong> {formData.regularPrice} {formData.currency}</p>
+                {formData.discountPrice && formData.discountPrice > 0 && (
+                  <p><strong>ছাড়ের মূল্য:</strong> {formData.discountPrice} {formData.currency}</p>
+                )}
+                <p><strong>শিক্ষার্থী:</strong> {formData.maxStudents} জন</p>
+                <p><strong>ইনস্ট্রাক্টর:</strong> {formData.instructor.name}</p>
+                <p><strong>মডিউল:</strong> {formData.modules.length} টি</p>
+                <p><strong>ফিচার:</strong> {formData.features.length} টি</p>
               </div>
             </div>
           </div>

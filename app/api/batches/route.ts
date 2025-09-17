@@ -97,12 +97,39 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, startDate, endDate, maxStudents = 30 } = body;
+    const { 
+      name, 
+      description, 
+      courseType = 'online',
+      duration = 3,
+      durationUnit = 'months',
+      coverPhoto,
+      regularPrice,
+      discountPrice,
+      currency = 'BDT',
+      discountPercentage,
+      startDate, 
+      endDate, 
+      maxStudents = 30,
+      prerequisites = [],
+      modules = [],
+      status = 'upcoming',
+      isActive = true,
+      isMandatory = true,
+      instructor = { name: '', email: '', phone: '', bio: '', avatar: '' },
+      tags = [],
+      level = 'beginner',
+      features = [],
+      requirements = [],
+      whatYouWillLearn = [],
+      slug,
+      metaDescription
+    } = body;
 
     // Validate required fields
-    if (!name || !startDate || !endDate) {
+    if (!name || !startDate || !endDate || !regularPrice) {
       return NextResponse.json({ 
-        error: 'Name, start date, and end date are required' 
+        error: 'Name, start date, end date, and regular price are required' 
       }, { status: 400 });
     }
 
@@ -112,6 +139,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Batch name already exists' 
       }, { status: 400 });
+    }
+
+    // Check if slug already exists
+    if (slug) {
+      const existingSlug = await BatchSimple.findOne({ slug });
+      if (existingSlug) {
+        return NextResponse.json({ 
+          error: 'URL slug already exists' 
+        }, { status: 400 });
+      }
     }
 
     // Validate dates
@@ -124,16 +161,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Calculate discount percentage if not provided
+    let calculatedDiscountPercentage = discountPercentage;
+    if (discountPrice && discountPrice > 0 && !discountPercentage) {
+      calculatedDiscountPercentage = Math.round(((regularPrice - discountPrice) / regularPrice) * 100);
+    }
+
     // Create new batch
     const batch = new BatchSimple({
       name,
       description,
+      courseType,
+      duration,
+      durationUnit,
+      coverPhoto,
+      regularPrice,
+      discountPrice: discountPrice || 0,
+      currency,
+      discountPercentage: calculatedDiscountPercentage || 0,
       startDate: start,
       endDate: end,
       maxStudents,
       currentStudents: 0,
-      status: 'upcoming',
-      isActive: true
+      prerequisites,
+      modules,
+      status,
+      isActive,
+      isMandatory,
+      instructor,
+      tags,
+      level,
+      features,
+      requirements,
+      whatYouWillLearn,
+      slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+      metaDescription,
+      createdBy: payload.userId
     });
 
     await batch.save();

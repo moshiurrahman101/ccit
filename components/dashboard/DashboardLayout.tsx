@@ -71,20 +71,12 @@ const menuItems: MenuItem[] = [
     description: 'ব্যবহারকারী ব্যবস্থাপনা'
   },
   {
-    id: 'courses',
-    label: 'কোর্স',
-    icon: BookOpen,
-    path: '/dashboard/courses',
-    roles: ['admin', 'mentor', 'marketing'],
-    description: 'কোর্স ব্যবস্থাপনা'
-  },
-  {
     id: 'batches',
-    label: 'ব্যাচ',
+    label: 'ব্যাচ/কোর্স',
     icon: BookOpen,
     path: '/dashboard/batches',
-    roles: ['admin', 'mentor'],
-    description: 'অনলাইন/অফলাইন ব্যাচ'
+    roles: ['admin', 'mentor', 'marketing'],
+    description: 'অনলাইন/অফলাইন ব্যাচ ও কোর্স ব্যবস্থাপনা'
   },
   {
     id: 'blog',

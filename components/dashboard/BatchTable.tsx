@@ -30,11 +30,14 @@ interface Batch {
   _id: string;
   name: string;
   description?: string;
-  courseType: 'batch' | 'course';
+  courseType: 'online' | 'offline';
   duration: number;
   durationUnit: 'days' | 'weeks' | 'months' | 'years';
-  fee: number;
+  coverPhoto?: string;
+  regularPrice: number;
+  discountPrice?: number;
   currency: string;
+  discountPercentage?: number;
   startDate: string;
   endDate: string;
   maxStudents: number;
@@ -54,9 +57,15 @@ interface Batch {
     email: string;
     phone: string;
     bio: string;
+    avatar?: string;
   };
   tags: string[];
   level: 'beginner' | 'intermediate' | 'advanced';
+  features: string[];
+  requirements: string[];
+  whatYouWillLearn: string[];
+  slug: string;
+  metaDescription?: string;
   createdAt: string;
 }
 
