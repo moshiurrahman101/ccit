@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
+import { useAuth } from '@/components/providers/AuthProvider';
 
 interface Batch {
   _id: string;
@@ -98,6 +99,7 @@ export default function BatchTable({
   onFilter,
   isLoading
 }: BatchTableProps) {
+  const { user, isAuthenticated } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; batch: Batch | null }>({
@@ -423,7 +425,11 @@ export default function BatchTable({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(batch)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleDelete(batch);
+                            }}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             disabled={batch.currentStudents > 0}
                           >

@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import ImageUpload from '@/components/ui/ImageUpload';
+import MentorSearch from '@/components/ui/MentorSearch';
 import { Loader2, BookOpen, Edit, X, Calendar, Users, DollarSign, Clock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +40,7 @@ interface Batch {
   isActive: boolean;
   isMandatory: boolean;
   instructor: {
+    _id?: string;
     name: string;
     email: string;
     phone: string;
@@ -86,6 +89,7 @@ export default function BatchFormNew({
     isActive: true,
     isMandatory: true,
     instructor: {
+      _id: '',
       name: '',
       email: '',
       phone: '',
@@ -135,6 +139,7 @@ export default function BatchFormNew({
         isActive: batch.isActive !== undefined ? batch.isActive : true,
         isMandatory: batch.isMandatory !== undefined ? batch.isMandatory : true,
         instructor: {
+          _id: batch.instructor?._id || '',
           name: batch.instructor?.name || '',
           email: batch.instructor?.email || '',
           phone: batch.instructor?.phone || '',
@@ -169,7 +174,7 @@ export default function BatchFormNew({
         status: 'upcoming',
         isActive: true,
         isMandatory: true,
-        instructor: { name: '', email: '', phone: '', bio: '', avatar: '' },
+        instructor: { _id: '', name: '', email: '', phone: '', bio: '', avatar: '' },
         tags: [],
         level: 'beginner',
         features: [],
@@ -255,6 +260,20 @@ export default function BatchFormNew({
         ...prev,
         [field]: value
       }));
+
+      // Auto-generate slug when name changes
+      if (field === 'name' && typeof value === 'string') {
+        const autoSlug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '');
+        setFormData(prev => ({
+          ...prev,
+          slug: autoSlug
+        }));
+      }
     }
     
     // Clear error when user starts typing
@@ -435,18 +454,12 @@ export default function BatchFormNew({
               {errors.description && <p className="text-sm text-red-500 mt-1">{errors.description}</p>}
             </div>
 
-            <div>
-              <Label htmlFor="coverPhoto">কভার ফটো</Label>
-              <Input
-                id="coverPhoto"
-                type="url"
-                value={formData.coverPhoto}
-                onChange={(e) => handleInputChange('coverPhoto', e.target.value)}
-                placeholder="কভার ফটোর URL (Cloudinary)"
-                className="bg-white border-gray-300"
-              />
-              <p className="text-sm text-gray-500 mt-1">Cloudinary URL বা অন্য কোনো ইমেজ লিঙ্ক দিন</p>
-            </div>
+            <ImageUpload
+              value={formData.coverPhoto}
+              onChange={(url) => handleInputChange('coverPhoto', url)}
+              label="কভার ফটো"
+              placeholder="কোর্স/ব্যাচের কভার ফটো আপলোড করুন"
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -684,53 +697,66 @@ export default function BatchFormNew({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">ইনস্ট্রাক্টর তথ্য</h3>
             
-            <div>
-              <Label htmlFor="instructorName">নাম *</Label>
-              <Input
-                id="instructorName"
-                value={formData.instructor.name}
-                onChange={(e) => handleInputChange('instructor.name', e.target.value)}
-                placeholder="ইনস্ট্রাক্টরের নাম"
-                className={errors.instructorName ? 'border-red-500' : ''}
-              />
-              {errors.instructorName && <p className="text-sm text-red-500 mt-1">{errors.instructorName}</p>}
-            </div>
+            <MentorSearch
+              value={formData.instructor._id || ''}
+              onChange={(mentorId, mentor) => {
+                setFormData(prev => ({
+                  ...prev,
+                  instructor: {
+                    _id: mentorId,
+                    name: mentor.name || '',
+                    email: mentor.email || '',
+                    phone: mentor.phone || '',
+                    bio: mentor.bio || '',
+                    avatar: mentor.avatar || ''
+                  }
+                }));
+              }}
+              label="ইনস্ট্রাক্টর নির্বাচন করুন"
+              placeholder="ইনস্ট্রাক্টরের নাম দিয়ে খুঁজুন..."
+            />
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="instructorEmail">ইমেইল *</Label>
-                <Input
-                  id="instructorEmail"
-                  type="email"
-                  value={formData.instructor.email}
-                  onChange={(e) => handleInputChange('instructor.email', e.target.value)}
-                  placeholder="ইমেইল ঠিকানা"
-                  className={errors.instructorEmail ? 'border-red-500' : ''}
-                />
-                {errors.instructorEmail && <p className="text-sm text-red-500 mt-1">{errors.instructorEmail}</p>}
+            {formData.instructor.name && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="instructorEmail">ইমেইল *</Label>
+                  <Input
+                    id="instructorEmail"
+                    type="email"
+                    value={formData.instructor.email}
+                    onChange={(e) => handleInputChange('instructor.email', e.target.value)}
+                    placeholder="ইমেইল ঠিকানা"
+                    className={`bg-white border-gray-300 ${errors.instructorEmail ? 'border-red-500' : ''}`}
+                  />
+                  {errors.instructorEmail && <p className="text-sm text-red-500 mt-1">{errors.instructorEmail}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="instructorPhone">ফোন</Label>
+                  <Input
+                    id="instructorPhone"
+                    value={formData.instructor.phone}
+                    onChange={(e) => handleInputChange('instructor.phone', e.target.value)}
+                    placeholder="ফোন নম্বর"
+                    className="bg-white border-gray-300"
+                  />
+                </div>
               </div>
+            )}
 
+            {formData.instructor.name && (
               <div>
-                <Label htmlFor="instructorPhone">ফোন</Label>
-                <Input
-                  id="instructorPhone"
-                  value={formData.instructor.phone}
-                  onChange={(e) => handleInputChange('instructor.phone', e.target.value)}
-                  placeholder="ফোন নম্বর"
+                <Label htmlFor="instructorBio">বায়ো</Label>
+                <Textarea
+                  id="instructorBio"
+                  value={formData.instructor.bio}
+                  onChange={(e) => handleInputChange('instructor.bio', e.target.value)}
+                  placeholder="ইনস্ট্রাক্টরের সংক্ষিপ্ত পরিচয়"
+                  rows={3}
+                  className="bg-white border-gray-300"
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="instructorBio">বায়ো</Label>
-              <Textarea
-                id="instructorBio"
-                value={formData.instructor.bio}
-                onChange={(e) => handleInputChange('instructor.bio', e.target.value)}
-                placeholder="ইনস্ট্রাক্টরের সংক্ষিপ্ত পরিচয়"
-                rows={3}
-              />
-            </div>
+            )}
 
             <div>
               <Label>কোর্স মডিউল</Label>
@@ -745,7 +771,7 @@ export default function BatchFormNew({
                     type="number"
                     value={newModule.duration}
                     onChange={(e) => setNewModule(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                    placeholder="সময়কাল (ঘন্টা)"
+                    placeholder="ক্লাসের সময়কাল (ঘন্টা)"
                     min="0"
                   />
                 </div>
@@ -797,10 +823,10 @@ export default function BatchFormNew({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200">
-                    <SelectItem value="upcoming">আসন্ন</SelectItem>
-                    <SelectItem value="ongoing">চলমান</SelectItem>
-                    <SelectItem value="completed">সম্পন্ন</SelectItem>
-                    <SelectItem value="cancelled">বাতিল</SelectItem>
+                    <SelectItem value="upcoming">সামনে আসছে</SelectItem>
+                    <SelectItem value="ongoing">চলছে</SelectItem>
+                    <SelectItem value="completed">শেষ হয়েছে</SelectItem>
+                    <SelectItem value="cancelled">ক্যানসেল</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -963,14 +989,38 @@ export default function BatchFormNew({
             
             <div>
               <Label htmlFor="slug">URL Slug</Label>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) => handleInputChange('slug', e.target.value)}
-                placeholder="url-friendly-name"
-                className="bg-white border-gray-300"
-              />
-              <p className="text-sm text-gray-500 mt-1">URL-এ ব্যবহৃত হবে: /batches/url-friendly-name</p>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="slug"
+                    value={formData.slug}
+                    onChange={(e) => handleInputChange('slug', e.target.value)}
+                    placeholder="url-friendly-name"
+                    className="bg-white border-gray-300"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const autoSlug = formData.name
+                        .toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/^-|-$/g, '');
+                      handleInputChange('slug', autoSlug);
+                    }}
+                    className="whitespace-nowrap"
+                  >
+                    Auto Generate
+                  </Button>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <p>URL: <span className="font-mono bg-gray-100 px-2 py-1 rounded">/batches/{formData.slug || 'url-friendly-name'}</span></p>
+                  <p className="mt-1">SEO-friendly URL for your course/batch</p>
+                </div>
+              </div>
             </div>
 
             <div>
