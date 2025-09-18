@@ -177,20 +177,63 @@ export function Navbar() {
                 যোগাযোগ
               </Link>
               
-              {!isAuthenticated && (
-                <div className="pt-4 border-t space-y-2">
-                  <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50" asChild>
-                    <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                      লগইন
-                    </Link>
-                  </Button>
-                  <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 shadow-lg" asChild>
-                    <Link href="/register" onClick={() => setIsMenuOpen(false)}>
-                      রেজিস্ট্রেশন
-                    </Link>
-                  </Button>
-                </div>
-              )}
+              {/* Authentication Section */}
+              <div className="pt-4 border-t">
+                {isAuthenticated ? (
+                  <div className="space-y-3">
+                    {/* User Info */}
+                    <div className="flex items-center space-x-3 px-3 py-2">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback className="bg-orange-500 text-white">
+                          {user?.name?.charAt(0)?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{user?.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      </div>
+                    </div>
+                    
+                    {/* User Actions */}
+                    <div className="space-y-2">
+                      <Button variant="ghost" className="w-full justify-start text-gray-700 hover:text-orange-600" asChild>
+                        <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                          <User className="mr-2 h-4 w-4" />
+                          ড্যাশবোর্ড
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" className="w-full justify-start text-gray-700 hover:text-orange-600" asChild>
+                        <Link href="/profile" onClick={() => setIsMenuOpen(false)}>
+                          <Settings className="mr-2 h-4 w-4" />
+                          প্রোফাইল
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full justify-start text-gray-700 hover:text-red-600" 
+                        onClick={handleLogout}
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        লগআউট
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full border-orange-500 text-orange-600 hover:bg-orange-50" asChild>
+                      <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                        লগইন
+                      </Link>
+                    </Button>
+                    <Button className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 shadow-lg" asChild>
+                      <Link href="/register" onClick={() => setIsMenuOpen(false)}>
+                        রেজিস্ট্রেশন
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
