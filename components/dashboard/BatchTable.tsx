@@ -26,6 +26,7 @@ import {
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface Batch {
   _id: string;
@@ -125,13 +126,7 @@ export default function BatchTable({
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'upcoming': return 'সামনে আসছে';
-      case 'ongoing': return 'চলছে';
-      case 'completed': return 'শেষ হয়েছে';
-      case 'cancelled': return 'ক্যানসেল';
-      default: return status;
-    }
+    return getStatusText(status);
   };
 
   const getStatusIcon = (status: string) => {
@@ -304,10 +299,10 @@ export default function BatchTable({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">সব</SelectItem>
-              <SelectItem value="upcoming">সামনে আসছে</SelectItem>
-              <SelectItem value="ongoing">চলছে</SelectItem>
-              <SelectItem value="completed">শেষ হয়েছে</SelectItem>
-              <SelectItem value="cancelled">ক্যানসেল</SelectItem>
+              <SelectItem value="upcoming">{getStatusText('upcoming')}</SelectItem>
+              <SelectItem value="ongoing">{getStatusText('ongoing')}</SelectItem>
+              <SelectItem value="completed">{getStatusText('completed')}</SelectItem>
+              <SelectItem value="cancelled">{getStatusText('cancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -409,7 +404,7 @@ export default function BatchTable({
                     </TableCell>
                     <TableCell>
                       <Badge className={batch.isActive ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}>
-                        {batch.isActive ? 'অ্যাক্টিভ' : 'নিষ্ক্রিয়'}
+                        {getStatusText(batch.isActive ? 'active' : 'inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -495,7 +490,7 @@ export default function BatchTable({
               onClick={() => setDeleteDialog({ isOpen: false, batch: null })}
               disabled={isDeleting}
             >
-              বাতিল
+              {getStatusText('cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -535,7 +530,7 @@ export default function BatchTable({
               onClick={() => setBatchDeleteDialog({ isOpen: false, count: 0 })}
               disabled={isBatchDeleting}
             >
-              বাতিল
+              {getStatusText('cancel')}
             </Button>
             <Button
               variant="destructive"

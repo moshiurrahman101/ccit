@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -102,7 +103,7 @@ export function Navbar() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
-                    লগআউট
+                    {getStatusText('logout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -209,13 +210,13 @@ export function Navbar() {
                           প্রোফাইল
                         </Link>
                       </Button>
-                      <Button 
+                      <Button
                         variant="ghost" 
                         className="w-full justify-start text-gray-700 hover:text-red-600" 
                         onClick={handleLogout}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
-                        লগআউট
+                        {getStatusText('logout')}
                       </Button>
                     </div>
                   </div>

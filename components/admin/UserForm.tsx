@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface User {
   _id: string;
@@ -184,12 +185,12 @@ export function UserForm({ user, onSuccess, onCancel }: UserFormProps) {
           checked={formData.isActive}
           onCheckedChange={(checked) => handleChange('isActive', checked)}
         />
-        <Label htmlFor="isActive">সক্রিয় অ্যাকাউন্ট</Label>
+        <Label htmlFor="isActive">{getStatusText('active')} অ্যাকাউন্ট</Label>
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
-          বাতিল
+          {getStatusText('cancel')}
         </Button>
         <Button type="submit" disabled={loading}>
           {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

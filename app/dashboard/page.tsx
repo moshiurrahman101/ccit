@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -220,7 +221,7 @@ export default function DashboardPage() {
 
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300 hover:shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">সক্রিয় কোর্স</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">{getStatusText('active')} কোর্স</CardTitle>
             <BookOpen className="h-5 w-5 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -252,7 +253,7 @@ export default function DashboardPage() {
 
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300 hover:shadow-xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">সক্রিয় মেন্টর</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">{getStatusText('active')} মেন্টর</CardTitle>
             <GraduationCap className="h-5 w-5 text-orange-500" />
           </CardHeader>
           <CardContent>

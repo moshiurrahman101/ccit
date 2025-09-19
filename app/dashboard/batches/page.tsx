@@ -7,6 +7,7 @@ import BatchTable from '@/components/dashboard/BatchTable';
 import BatchForm from '@/components/dashboard/BatchFormNew';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { toast } from 'sonner';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface Batch {
   _id: string;
@@ -163,7 +164,7 @@ export default function BatchesPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
-          <p className="text-gray-600">ব্যাচের তথ্য লোড হচ্ছে...</p>
+          <p className="text-gray-600">{getStatusText('dashboard_loading')}</p>
         </div>
       </div>
     );
@@ -201,7 +202,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">সামনে আসছে</CardTitle>
+            <CardTitle className="text-sm font-medium">{getStatusText('upcoming')}</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -210,7 +211,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">চলছে</CardTitle>
+            <CardTitle className="text-sm font-medium">{getStatusText('ongoing')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -219,7 +220,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">শেষ হয়েছে</CardTitle>
+            <CardTitle className="text-sm font-medium">{getStatusText('completed')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
@@ -228,7 +229,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ক্যানসেল</CardTitle>
+            <CardTitle className="text-sm font-medium">{getStatusText('cancelled')}</CardTitle>
             <Clock className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -237,7 +238,7 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">অ্যাক্টিভ</CardTitle>
+            <CardTitle className="text-sm font-medium">{getStatusText('active')}</CardTitle>
             <Users className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>

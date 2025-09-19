@@ -27,6 +27,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 
@@ -199,22 +200,8 @@ export default function StudentProfilePage() {
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'active': return 'সক্রিয়';
-      case 'inactive': return 'নিষ্ক্রিয়';
-      case 'paid': return 'পরিশোধিত';
-      case 'pending': return 'বাকি';
-      case 'partial': return 'আংশিক';
-      case 'overdue': return 'মেয়াদোত্তীর্ণ';
-      case 'approved': return 'অনুমোদিত';
-      case 'rejected': return 'প্রত্যাখ্যান';
-      case 'enrolled': return 'নিবন্ধিত';
-      case 'completed': return 'সম্পন্ন';
-      case 'dropped': return 'ত্যাগ';
-      case 'suspended': return 'স্থগিত';
-      default: return status;
-    }
+  const getStatusTextLocal = (status: string) => {
+    return getStatusText(status);
   };
 
   const formatDate = (dateString: string) => {
@@ -238,7 +225,7 @@ export default function StudentProfilePage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">শিক্ষার্থীর তথ্য লোড হচ্ছে...</p>
+          <p className="text-gray-600">{getStatusText('dashboard_loading')}</p>
         </div>
       </div>
     );
@@ -330,12 +317,12 @@ export default function StudentProfilePage() {
                     <p className="text-gray-600">{student.studentInfo?.studentId}</p>
                     <div className="flex items-center space-x-4 mt-2">
                       <Badge className={getStatusColor(student.isActive ? 'active' : 'inactive')}>
-                        {getStatusText(student.isActive ? 'active' : 'inactive')}
+                        {getStatusTextLocal(student.isActive ? 'active' : 'inactive')}
                       </Badge>
                       {student.studentInfo?.isVerified && (
                         <Badge className="bg-blue-100 text-blue-800">
                           <Shield className="w-3 h-3 mr-1" />
-                          যাচাইকৃত
+                          {getStatusText('verified')}
                         </Badge>
                       )}
                     </div>

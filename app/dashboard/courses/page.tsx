@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -129,7 +130,7 @@ export default function CoursesPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'সক্রিয়';
+      case 'active': return getStatusText('active');
       case 'draft': return 'খসড়া';
       case 'archived': return 'আর্কাইভ';
       default: return status;
@@ -201,7 +202,7 @@ export default function CoursesPage() {
 
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">সক্রিয় কোর্স</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">{getStatusText('active')} কোর্স</CardTitle>
             <BookOpen className="h-5 w-5 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -254,7 +255,7 @@ export default function CoursesPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">সব অবস্থা</SelectItem>
-            <SelectItem value="active">সক্রিয়</SelectItem>
+            <SelectItem value="active">{getStatusText('active')}</SelectItem>
             <SelectItem value="draft">খসড়া</SelectItem>
             <SelectItem value="archived">আর্কাইভ</SelectItem>
           </SelectContent>

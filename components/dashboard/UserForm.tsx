@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Loader2, User, Mail, Phone, Shield, ToggleLeft } from 'lucide-react';
 
 interface User {
@@ -229,7 +230,7 @@ export default function UserForm({ user, isOpen, onClose, onSuccess }: UserFormP
             />
             <Label htmlFor="isActive" className="text-gray-700 font-medium flex items-center">
               <ToggleLeft className="inline w-4 h-4 mr-2" />
-              সক্রিয় অ্যাকাউন্ট
+              {getStatusText('active')} অ্যাকাউন্ট
             </Label>
           </div>
 
@@ -242,7 +243,7 @@ export default function UserForm({ user, isOpen, onClose, onSuccess }: UserFormP
               disabled={isLoading}
               className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
             >
-              বাতিল
+              {getStatusText('cancel')}
             </Button>
             <Button
               type="submit"

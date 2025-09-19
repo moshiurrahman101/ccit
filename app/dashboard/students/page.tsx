@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, Loader2, GraduationCap, Users, CheckCircle, XCircle, AlertCircle, CreditCard, Plus } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import StudentTable from '@/components/dashboard/StudentTable';
 import StudentForm from '@/components/dashboard/StudentForm';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
@@ -191,7 +192,7 @@ export default function StudentsPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">শিক্ষার্থীদের তথ্য লোড হচ্ছে...</p>
+          <p className="text-gray-600">{getStatusText('dashboard_loading')}</p>
         </div>
       </div>
     );
@@ -243,7 +244,7 @@ export default function StudentsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">সক্রিয়</p>
+                <p className="text-green-100 text-sm">{getStatusText('active')}</p>
                 <p className="text-2xl font-bold">{stats.active}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-200" />
@@ -255,7 +256,7 @@ export default function StudentsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm">যাচাইকৃত</p>
+                <p className="text-orange-100 text-sm">{getStatusText('verified')}</p>
                 <p className="text-2xl font-bold">{stats.verified}</p>
               </div>
               <Users className="w-8 h-8 text-orange-200" />
@@ -306,7 +307,7 @@ export default function StudentsPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">নিষ্ক্রিয়</p>
+                <p className="text-sm font-medium text-gray-600">{getStatusText('inactive')}</p>
                 <p className="text-2xl font-bold text-gray-600">{stats.inactive}</p>
               </div>
               <XCircle className="w-8 h-8 text-gray-500" />

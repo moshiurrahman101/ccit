@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -109,11 +110,11 @@ interface StudentTableProps {
 }
 
 const statusLabels = {
-  enrolled: 'নিবন্ধিত',
-  active: 'সক্রিয়',
-  completed: 'সম্পন্ন',
-  dropped: 'ত্যাগ',
-  suspended: 'স্থগিত'
+  enrolled: getStatusText('enrolled'),
+  active: getStatusText('active'),
+  completed: getStatusText('completed'),
+  dropped: getStatusText('dropped'),
+  suspended: getStatusText('suspended')
 };
 
 const statusColors = {
@@ -125,10 +126,10 @@ const statusColors = {
 };
 
 const paymentStatusLabels = {
-  paid: 'পেইড',
-  partial: 'আংশিক',
-  due: 'বাকি',
-  overdue: 'অতিরিক্ত বাকি'
+  paid: getStatusText('paid'),
+  partial: getStatusText('partial'),
+  due: getStatusText('unpaid'),
+  overdue: getStatusText('overdue')
 };
 
 const paymentStatusColors = {
@@ -274,12 +275,12 @@ export default function StudentTable({
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200">
                 <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
-                <SelectItem value="active">সক্রিয়</SelectItem>
-                <SelectItem value="inactive">নিষ্ক্রিয়</SelectItem>
-                <SelectItem value="enrolled">নিবন্ধিত</SelectItem>
-                <SelectItem value="completed">সম্পন্ন</SelectItem>
-                <SelectItem value="dropped">ত্যাগ</SelectItem>
-                <SelectItem value="suspended">স্থগিত</SelectItem>
+                <SelectItem value="active">{getStatusText('active')}</SelectItem>
+                <SelectItem value="inactive">{getStatusText('inactive')}</SelectItem>
+                <SelectItem value="enrolled">{getStatusText('enrolled')}</SelectItem>
+                <SelectItem value="completed">{getStatusText('completed')}</SelectItem>
+                <SelectItem value="dropped">{getStatusText('dropped')}</SelectItem>
+                <SelectItem value="suspended">{getStatusText('suspended')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -289,10 +290,10 @@ export default function StudentTable({
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200">
                 <SelectItem value="all">সব পেমেন্ট</SelectItem>
-                <SelectItem value="paid">পেইড</SelectItem>
-                <SelectItem value="partial">আংশিক</SelectItem>
-                <SelectItem value="due">বাকি</SelectItem>
-                <SelectItem value="overdue">অতিরিক্ত বাকি</SelectItem>
+                <SelectItem value="paid">{getStatusText('paid')}</SelectItem>
+                <SelectItem value="partial">{getStatusText('partial')}</SelectItem>
+                <SelectItem value="due">{getStatusText('unpaid')}</SelectItem>
+                <SelectItem value="overdue">{getStatusText('overdue')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -340,7 +341,7 @@ export default function StudentTable({
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    <p className="text-gray-500">লোড হচ্ছে...</p>
+                    <p className="text-gray-500">{getStatusText('dashboard_loading')}</p>
                   </TableCell>
                 </TableRow>
               ) : students.length === 0 ? (
@@ -380,7 +381,7 @@ export default function StudentTable({
                             )}
                             {student.studentInfo?.isVerified && (
                               <Badge variant="outline" className="text-green-600 border-green-600">
-                                যাচাইকৃত
+                                {getStatusText('verified')}
                               </Badge>
                             )}
                           </div>
@@ -449,7 +450,7 @@ export default function StudentTable({
                         <Badge 
                           variant={student.isActive ? 'default' : 'secondary'}
                         >
-                          {student.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                          {getStatusText(student.isActive ? 'active' : 'inactive')}
                         </Badge>
                         {student.studentInfo?.batchInfo?.status && (
                           <Badge 
@@ -580,7 +581,7 @@ export default function StudentTable({
               disabled={isDeleting}
               className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
             >
-              বাতিল
+              {getStatusText('cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}

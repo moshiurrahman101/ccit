@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
+import { getStatusText } from '@/lib/utils/statusDictionary';
+import { DeleteConfirmationDialog } from '@/components/ui/delete-confirmation-dialog';
 
 interface User {
   _id: string;
@@ -79,6 +81,14 @@ export default function UserTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    user: User | null;
+  }>({
+    isOpen: false,
+    user: null
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -95,14 +105,20 @@ export default function UserTable({
     onFilter('status', value === 'all' ? '' : value);
   };
 
-  const handleDelete = async (userId: string, userName: string) => {
-    if (!confirm(`আপনি কি "${userName}" ব্যবহারকারী মুছে ফেলতে চান?`)) {
-      return;
-    }
+  const handleDeleteClick = (user: User) => {
+    setDeleteDialog({
+      isOpen: true,
+      user
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.user) return;
 
     try {
+      setIsDeleting(true);
       const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await fetch(`/api/users/${deleteDialog.user._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -114,13 +130,20 @@ export default function UserTable({
       if (response.ok) {
         toast.success(data.message || 'ব্যবহারকারী সফলভাবে মুছে ফেলা হয়েছে');
         onRefresh();
+        setDeleteDialog({ isOpen: false, user: null });
       } else {
         toast.error(data.error || 'ব্যবহারকারী মুছতে সমস্যা হয়েছে');
       }
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error('নেটওয়ার্ক সমস্যা হয়েছে');
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({ isOpen: false, user: null });
   };
 
   const getInitials = (name: string) => {
@@ -177,8 +200,8 @@ export default function UserTable({
             </SelectTrigger>
             <SelectContent className="bg-white border border-gray-200">
               <SelectItem value="all">সব</SelectItem>
-              <SelectItem value="active">সক্রিয়</SelectItem>
-              <SelectItem value="inactive">নিষ্ক্রিয়</SelectItem>
+              <SelectItem value="active">{getStatusText('active')}</SelectItem>
+              <SelectItem value="inactive">{getStatusText('inactive')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -210,7 +233,7 @@ export default function UserTable({
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  <p className="text-gray-500">লোড হচ্ছে...</p>
+                  <p className="text-gray-500">{getStatusText('dashboard_loading')}</p>
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
@@ -261,7 +284,7 @@ export default function UserTable({
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                      {user.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                      {getStatusText(user.isActive ? 'active' : 'inactive')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -284,7 +307,7 @@ export default function UserTable({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDelete(user._id, user.name)}
+                          onClick={() => handleDeleteClick(user)}
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           <Trash2 className="w-3 h-3" />
@@ -332,6 +355,18 @@ export default function UserTable({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="ব্যবহারকারী মুছুন"
+        description="আপনি কি নিশ্চিত যে আপনি এই ব্যবহারকারীকে মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।"
+        itemName={deleteDialog.user?.name}
+        isLoading={isDeleting}
+        isDestructive={true}
+      />
     </div>
   );
 }

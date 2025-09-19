@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface NewsletterSubscriber {
   _id: string;
@@ -82,7 +83,7 @@ export function NewsletterSubscribers() {
         sub.email,
         sub.name || '',
         new Date(sub.subscribedAt).toLocaleDateString('bn-BD'),
-        sub.isActive ? 'Active' : 'Inactive',
+        getStatusText(sub.isActive ? 'active' : 'inactive'),
         sub.source
       ].join(','))
     ].join('\n');
@@ -138,7 +139,7 @@ export function NewsletterSubscribers() {
                 <p className="text-2xl font-bold text-gray-900">
                   {data?.subscribers.filter(s => s.isActive).length || 0}
                 </p>
-                <p className="text-gray-600">সক্রিয় সাবস্ক্রাইবার</p>
+                <p className="text-gray-600">{getStatusText('active')} সাবস্ক্রাইবার</p>
               </div>
             </div>
           </CardContent>
@@ -192,8 +193,8 @@ export function NewsletterSubscribers() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="active">সক্রিয়</option>
-                <option value="inactive">নিষ্ক্রিয়</option>
+                <option value="active">{getStatusText('active')}</option>
+                <option value="inactive">{getStatusText('inactive')}</option>
                 <option value="all">সব</option>
               </select>
               <Button onClick={fetchSubscribers} variant="outline">
@@ -216,7 +217,7 @@ export function NewsletterSubscribers() {
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-              <span className="ml-2 text-gray-600">লোড হচ্ছে...</span>
+              <span className="ml-2 text-gray-600">{getStatusText('dashboard_loading')}</span>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -245,7 +246,7 @@ export function NewsletterSubscribers() {
                             : 'bg-red-100 text-red-800'
                           }
                         >
-                          {subscriber.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                          {getStatusText(subscriber.isActive ? 'active' : 'inactive')}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">

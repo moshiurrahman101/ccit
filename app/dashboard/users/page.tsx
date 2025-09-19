@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, Users, Shield, UserCheck, UserX, Loader2 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import UserTable from '@/components/dashboard/UserTable';
 import UserForm from '@/components/dashboard/UserForm';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
@@ -29,6 +31,7 @@ interface Pagination {
 
 export default function UsersPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState<Pagination>({
@@ -105,8 +108,7 @@ export default function UsersPage() {
   };
 
   const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setFormOpen(true);
+    router.push(`/dashboard/users/${user._id}/edit`);
   };
 
   const handleFormSuccess = () => {
@@ -135,7 +137,7 @@ export default function UsersPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">ব্যবহারকারীদের তথ্য লোড হচ্ছে...</p>
+          <p className="text-gray-600">{getStatusText('dashboard_loading')}</p>
         </div>
       </div>
     );
@@ -178,7 +180,7 @@ export default function UsersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">সক্রিয়</p>
+                <p className="text-green-100 text-sm">{getStatusText('active')}</p>
                 <p className="text-2xl font-bold">{roleCounts.active}</p>
               </div>
               <UserCheck className="w-8 h-8 text-green-200" />
@@ -190,7 +192,7 @@ export default function UsersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm">নিষ্ক্রিয়</p>
+                <p className="text-orange-100 text-sm">{getStatusText('inactive')}</p>
                 <p className="text-2xl font-bold">{roleCounts.inactive}</p>
               </div>
               <UserX className="w-8 h-8 text-orange-200" />

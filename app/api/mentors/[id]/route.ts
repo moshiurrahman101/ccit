@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Mentor from '@/models/Mentor';
 import User from '@/models/User';
 import { verifyTokenEdge } from '@/lib/auth';
+import { deleteImage, getPublicIdFromUrl } from '@/lib/cloudinary-server';
 
 // GET single mentor
 export async function GET(
@@ -185,10 +186,47 @@ export async function DELETE(
     // Check if mentor is assigned to any courses
     // You can add this check later when course-mentor relationship is established
 
+    // Collect all image URLs to delete from Cloudinary
+    const imagesToDelete: string[] = [];
+    
+    // Add avatar if exists
+    if (mentor.avatar) {
+      imagesToDelete.push(mentor.avatar);
+    }
+
+    // Add any other image URLs from the mentor data
+    // You can add more image fields here if they exist in the future
+
+    // Delete images from Cloudinary
+    if (imagesToDelete.length > 0) {
+      console.log('Deleting images from Cloudinary:', imagesToDelete);
+      
+      for (const imageUrl of imagesToDelete) {
+        const publicId = getPublicIdFromUrl(imageUrl);
+        if (publicId) {
+          const deleted = await deleteImage(publicId);
+          if (deleted) {
+            console.log(`Successfully deleted image: ${imageUrl}`);
+          } else {
+            console.warn(`Failed to delete image: ${imageUrl}`);
+            // Continue with deletion even if image deletion fails
+          }
+        }
+      }
+    }
+
+    // Delete mentor from database
     await Mentor.findByIdAndDelete(id);
 
+    // Optionally, you might want to delete the associated user as well
+    // Uncomment the following lines if you want to delete the user account too
+    // if (mentor.userId) {
+    //   await User.findByIdAndDelete(mentor.userId);
+    // }
+
     return NextResponse.json({
-      message: 'Mentor deleted successfully'
+      message: 'Mentor deleted successfully',
+      deletedImages: imagesToDelete.length
     });
   } catch (error) {
     console.error('Error deleting mentor:', error);

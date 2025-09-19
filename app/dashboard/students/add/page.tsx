@@ -23,6 +23,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 
@@ -390,8 +391,8 @@ export default function AddStudentPage() {
                     <SelectValue placeholder="অবস্থা নির্বাচন করুন" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200">
-                    <SelectItem value="active">সক্রিয়</SelectItem>
-                    <SelectItem value="inactive">নিষ্ক্রিয়</SelectItem>
+                    <SelectItem value="active">{getStatusText('active')}</SelectItem>
+                    <SelectItem value="inactive">{getStatusText('inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -780,7 +781,7 @@ export default function AddStudentPage() {
                     <p><span className="font-medium">ইমেইল:</span> {formData.email || 'নির্দিষ্ট করা হয়নি'}</p>
                     <p><span className="font-medium">ফোন:</span> {formData.phone || 'নির্দিষ্ট করা হয়নি'}</p>
                     <p><span className="font-medium">ব্যাচ:</span> {batches.find(b => b._id === formData.batchId)?.name || 'নির্দিষ্ট করা হয়নি'}</p>
-                    <p><span className="font-medium">অবস্থা:</span> {formData.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}</p>
+                    <p><span className="font-medium">অবস্থা:</span> {getStatusText(formData.status)}</p>
                   </div>
                 </div>
 
@@ -803,7 +804,7 @@ export default function AddStudentPage() {
                     onCheckedChange={(checked) => handleInputChange('isVerified', checked)}
                   />
                   <Label htmlFor="isVerified" className="text-gray-700">
-                    তথ্য যাচাইকৃত
+                    {getStatusText('verified')}
                   </Label>
                 </div>
               </div>

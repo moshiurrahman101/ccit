@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -25,7 +26,8 @@ import {
   UserCheck,
   LogOut,
   Bell,
-  Search
+  Search,
+  UserPlus
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { User } from '@/types';
@@ -69,6 +71,14 @@ const menuItems: MenuItem[] = [
     path: '/dashboard/users',
     roles: ['admin'],
     description: 'ব্যবহারকারী ব্যবস্থাপনা'
+  },
+  {
+    id: 'mentors',
+    label: 'মেন্টর',
+    icon: UserPlus,
+    path: '/dashboard/mentors',
+    roles: ['admin'],
+    description: 'মেন্টর ব্যবস্থাপনা'
   },
   {
     id: 'batches',
@@ -120,7 +130,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'settings',
-    label: 'সেটিংস',
+    label: getStatusText('settings'),
     icon: Settings,
     path: '/dashboard/settings',
     roles: ['admin', 'mentor', 'student', 'marketing', 'support'],
@@ -262,7 +272,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
               className="w-full justify-start text-red-700 hover:text-red-800 hover:bg-red-50 text-xs sm:text-sm lg:text-red-600 lg:hover:text-red-700 lg:hover:bg-red-50/50"
             >
               <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3" />
-              লগআউট
+              {getStatusText('logout')}
             </Button>
           </div>
         </div>

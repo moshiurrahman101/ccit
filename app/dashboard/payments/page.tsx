@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -138,7 +139,7 @@ export default function PaymentsPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed': return 'সম্পন্ন';
-      case 'pending': return 'অপেক্ষমান';
+      case 'pending': return getStatusText('pending');
       case 'failed': return 'ব্যর্থ';
       case 'refunded': return 'ফেরত';
       default: return status;
@@ -291,7 +292,7 @@ export default function PaymentsPage() {
           <SelectContent>
             <SelectItem value="">সব অবস্থা</SelectItem>
             <SelectItem value="completed">সম্পন্ন</SelectItem>
-            <SelectItem value="pending">অপেক্ষমান</SelectItem>
+            <SelectItem value="pending">{getStatusText('pending')}</SelectItem>
             <SelectItem value="failed">ব্যর্থ</SelectItem>
             <SelectItem value="refunded">ফেরত</SelectItem>
           </SelectContent>

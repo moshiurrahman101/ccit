@@ -12,6 +12,7 @@ import ImageUpload from '@/components/ui/ImageUpload';
 import MentorSearch from '@/components/ui/MentorSearch';
 import { Loader2, BookOpen, Edit, X, Calendar, Users, DollarSign, Clock, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface Batch {
   _id?: string;
@@ -823,10 +824,10 @@ export default function BatchFormNew({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200">
-                    <SelectItem value="upcoming">সামনে আসছে</SelectItem>
-                    <SelectItem value="ongoing">চলছে</SelectItem>
-                    <SelectItem value="completed">শেষ হয়েছে</SelectItem>
-                    <SelectItem value="cancelled">ক্যানসেল</SelectItem>
+                    <SelectItem value="upcoming">{getStatusText('upcoming')}</SelectItem>
+                    <SelectItem value="ongoing">{getStatusText('ongoing')}</SelectItem>
+                    <SelectItem value="completed">{getStatusText('completed')}</SelectItem>
+                    <SelectItem value="cancelled">{getStatusText('cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -839,7 +840,7 @@ export default function BatchFormNew({
                   onChange={(e) => handleInputChange('isActive', e.target.checked)}
                   className="rounded"
                 />
-                <Label htmlFor="isActive">সক্রিয়</Label>
+                <Label htmlFor="isActive">{getStatusText('active')}</Label>
               </div>
             </div>
 
@@ -1110,7 +1111,7 @@ export default function BatchFormNew({
             
             <div className="flex space-x-2">
               <Button type="button" variant="outline" onClick={onClose}>
-                বাতিল
+                {getStatusText('cancel')}
               </Button>
               
               {currentStep < totalSteps ? (

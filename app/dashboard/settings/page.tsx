@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,11 +92,11 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-white/30">
             <Bell className="h-4 w-4 mr-2" />
-            নোটিফিকেশন
+            {getStatusText('notifications')}
           </TabsTrigger>
           <TabsTrigger value="preferences" className="data-[state=active]:bg-white/30">
             <Settings className="h-4 w-4 mr-2" />
-            পছন্দ
+            {getStatusText('settings')}
           </TabsTrigger>
         </TabsList>
 
@@ -172,7 +173,7 @@ export default function SettingsPage() {
               </div>
               <Button onClick={() => handleSave('profile')} className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                 <Save className="w-4 h-4 mr-2" />
-                সংরক্ষণ করুন
+                {getStatusText('save_changes')}
               </Button>
             </CardContent>
           </Card>
@@ -398,7 +399,7 @@ export default function SettingsPage() {
 
               <Button onClick={() => handleSave('notifications')} className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                 <Bell className="w-4 h-4 mr-2" />
-                সংরক্ষণ করুন
+                {getStatusText('save_changes')}
               </Button>
             </CardContent>
           </Card>
@@ -489,7 +490,7 @@ export default function SettingsPage() {
               </div>
               <Button onClick={() => handleSave('preferences')} className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
                 <Settings className="w-4 h-4 mr-2" />
-                সংরক্ষণ করুন
+                {getStatusText('save_changes')}
               </Button>
             </CardContent>
           </Card>

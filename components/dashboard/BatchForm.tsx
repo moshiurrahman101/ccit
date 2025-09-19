@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, BookOpen, Edit, X, Calendar, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface Batch {
   _id?: string;
@@ -340,7 +341,7 @@ export default function BatchForm({
                 </SelectTrigger>
                 <SelectContent className="bg-white border border-gray-200">
                   <SelectItem value="true">অ্যাক্টিভ</SelectItem>
-                  <SelectItem value="false">নিষ্ক্রিয়</SelectItem>
+                  <SelectItem value="false">{getStatusText('inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -368,7 +369,7 @@ export default function BatchForm({
               disabled={isLoading}
             >
               <X className="h-4 w-4 mr-2" />
-              বাতিল
+              {getStatusText('cancel')}
             </Button>
             <Button type="submit" disabled={isLoading}>
               {isLoading ? (

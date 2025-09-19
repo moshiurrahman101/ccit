@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -184,7 +185,7 @@ export default function NewsletterPage() {
 
   const getSubscriberStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'সক্রিয়';
+      case 'active': return getStatusText('active');
       case 'unsubscribed': return 'সাবস্ক্রিপশন বাতিল';
       case 'bounced': return 'বাউন্স';
       default: return status;
@@ -327,7 +328,7 @@ export default function NewsletterPage() {
               </>
             ) : (
               <>
-                <SelectItem value="active">সক্রিয়</SelectItem>
+                <SelectItem value="active">{getStatusText('active')}</SelectItem>
                 <SelectItem value="unsubscribed">সাবস্ক্রিপশন বাতিল</SelectItem>
                 <SelectItem value="bounced">বাউন্স</SelectItem>
               </>

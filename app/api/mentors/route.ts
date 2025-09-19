@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Mentor from '@/models/Mentor';
 import User from '@/models/User';
 import { verifyTokenEdge } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 // GET all mentors
 export async function GET(request: NextRequest) {
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
       avatar,
       bio,
       designation,
+      password,
       experience,
       expertise = [],
       education = [],
@@ -130,9 +132,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!name || !email || !experience) {
+    if (!name || !email || !password || !experience) {
       return NextResponse.json({ 
-        error: 'Name, email, and experience are required' 
+        error: 'Name, email, password, and experience are required' 
       }, { status: 400 });
     }
 
@@ -144,25 +146,40 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if user exists and is not already a mentor
-    const user = await User.findOne({ email });
+    // Check if user exists, create if not
+    let user = await User.findOne({ email });
     if (!user) {
-      return NextResponse.json({ 
-        error: 'User with this email does not exist. Please create user first.' 
-      }, { status: 400 });
-    }
-
-    if (user.role !== 'mentor') {
-      return NextResponse.json({ 
-        error: 'User is not assigned mentor role' 
-      }, { status: 400 });
-    }
-
-    const existingMentorProfile = await Mentor.findOne({ userId: user._id });
-    if (existingMentorProfile) {
-      return NextResponse.json({ 
-        error: 'Mentor profile already exists for this user' 
-      }, { status: 400 });
+      // Hash the provided password
+      const hashedPassword = await bcrypt.hash(password, 12);
+      
+      // Create new user with mentor role
+      user = new User({
+        name,
+        email,
+        password: hashedPassword,
+        role: 'mentor',
+        isActive: true
+      });
+      await user.save();
+    } else {
+      // Check if user already has a mentor profile
+      const existingMentorProfile = await Mentor.findOne({ userId: user._id });
+      if (existingMentorProfile) {
+        return NextResponse.json({ 
+          error: 'Mentor profile already exists for this user' 
+        }, { status: 400 });
+      }
+      
+      // Update user role to mentor if not already
+      if (user.role !== 'mentor') {
+        await User.findByIdAndUpdate(user._id, { role: 'mentor' });
+      }
+      
+      // Update password if provided
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+      }
     }
 
     // Create new mentor
@@ -195,11 +212,6 @@ export async function POST(request: NextRequest) {
     });
 
     await mentor.save();
-
-    // Update user role to mentor if not already
-    if (user.role !== 'mentor') {
-      await User.findByIdAndUpdate(user._id, { role: 'mentor' });
-    }
 
     return NextResponse.json({
       message: 'Mentor created successfully',

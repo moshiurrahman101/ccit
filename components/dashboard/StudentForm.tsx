@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, User, Mail, Phone, Calendar, MapPin, GraduationCap, CreditCard, Users, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { getStatusText } from '@/lib/utils/statusDictionary';
 
 interface Student {
   _id?: string;
@@ -1036,7 +1037,7 @@ export default function StudentForm({
               disabled={isLoading}
               className="bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100 text-sm sm:text-base"
             >
-              বাতিল
+              {getStatusText('cancel')}
             </Button>
             <Button
               type="submit"
