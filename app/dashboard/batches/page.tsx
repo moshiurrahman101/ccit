@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2, Users, Calendar, CheckCircle, Clock } from 'lucide-react';
 import BatchTable from '@/components/dashboard/BatchTable';
+import BatchForm from '@/components/dashboard/BatchForm';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { toast } from 'sonner';
 import { getStatusText } from '@/lib/utils/statusDictionary';
@@ -61,9 +61,10 @@ interface Pagination {
 }
 
 export default function BatchesPage() {
-  const router = useRouter();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [pagination, setPagination] = useState<Pagination>({
     currentPage: 1,
     totalPages: 1,
@@ -129,11 +130,13 @@ export default function BatchesPage() {
   };
 
   const handleAdd = () => {
-    router.push('/dashboard/batches/add');
+    setFormOpen(true);
+    setEditingBatch(null);
   };
 
   const handleEdit = (batch: Batch) => {
-    router.push(`/dashboard/batches/${batch._id}/edit`);
+    setEditingBatch(batch);
+    setFormOpen(true);
   };
 
   const handleFormSuccess = () => {
@@ -250,6 +253,17 @@ export default function BatchesPage() {
         onSearch={handleSearch}
         onFilter={handleFilter}
         isLoading={isLoading}
+      />
+
+      {/* Batch Form Modal */}
+      <BatchForm
+        batch={editingBatch}
+        isOpen={formOpen}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingBatch(null);
+        }}
+        onSuccess={handleFormSuccess}
       />
 
     </div>

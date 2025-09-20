@@ -87,6 +87,13 @@ export default function BatchForm({
   const [newPrerequisite, setNewPrerequisite] = useState('');
   const [newModule, setNewModule] = useState({ title: '', description: '', duration: 0, order: 0 });
   const [newTag, setNewTag] = useState('');
+  
+  // Mentor search states
+  const [mentors, setMentors] = useState<Array<{_id: string, name: string, email: string, designation: string, avatar?: string}>>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredMentors, setFilteredMentors] = useState<Array<{_id: string, name: string, email: string, designation: string, avatar?: string}>>([]);
+  const [showMentorDropdown, setShowMentorDropdown] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   const isEdit = !!batch;
   const totalSteps = 4;
@@ -113,6 +120,9 @@ export default function BatchForm({
         tags: batch.tags || [],
         level: batch.level || 'beginner'
       });
+      if (batch.instructor?.name) {
+        setSearchTerm(batch.instructor.name);
+      }
     } else {
       setFormData({
         name: '',
@@ -134,9 +144,60 @@ export default function BatchForm({
         tags: [],
         level: 'beginner'
       });
+      setSearchTerm('');
     }
     setErrors({});
   }, [batch, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMentors();
+    }
+  }, [isOpen]);
+
+  const fetchMentors = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch('/api/mentors?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMentors(data.mentors);
+        setFilteredMentors(data.mentors);
+      }
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
+    }
+  };
+
+  const handleMentorSearch = (term: string) => {
+    setSearchTerm(term);
+    const filtered = mentors.filter((mentor) =>
+      mentor.name.toLowerCase().includes(term.toLowerCase()) ||
+      mentor.email.toLowerCase().includes(term.toLowerCase()) ||
+      mentor.designation.toLowerCase().includes(term.toLowerCase())
+    );
+    setFilteredMentors(filtered);
+    setShowMentorDropdown(isFocused && (term.length > 0 || mentors.length > 0));
+  };
+
+  const handleMentorSelect = (mentor: {_id: string, name: string, email: string, designation: string, avatar?: string}) => {
+    setFormData(prev => ({
+      ...prev,
+      instructor: {
+        name: mentor.name,
+        email: mentor.email,
+        phone: '',
+        bio: ''
+      }
+    }));
+    setSearchTerm(mentor.name);
+    setShowMentorDropdown(false);
+    setIsFocused(false);
+  };
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -345,6 +406,79 @@ export default function BatchForm({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Instructor Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="instructor" className="text-gray-700 font-medium">ইনস্ট্রাক্টর নির্বাচন</Label>
+            <div className="relative">
+              <Input
+                id="instructor"
+                placeholder="ইনস্ট্রাক্টর খুঁজুন... (নাম, ইমেইল, বা ডিজাইনেশন)"
+                value={searchTerm}
+                onChange={(e) => handleMentorSearch(e.target.value)}
+                onFocus={() => {
+                  setIsFocused(true);
+                  setShowMentorDropdown(true);
+                }}
+                onBlur={() => {
+                  setIsFocused(false);
+                  setTimeout(() => setShowMentorDropdown(false), 200);
+                }}
+                className="bg-white border-gray-300"
+              />
+              {showMentorDropdown && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                  {filteredMentors.length > 0 ? (
+                    filteredMentors.map((mentor) => (
+                      <div
+                        key={mentor._id}
+                        className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                        onClick={() => handleMentorSelect(mentor)}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {mentor.avatar ? (
+                              <img
+                                src={mentor.avatar}
+                                alt={mentor.name}
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                            ) : (
+                              mentor.name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{mentor.name}</p>
+                            <p className="text-sm text-gray-600">{mentor.designation}</p>
+                            <p className="text-xs text-gray-500">{mentor.email}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-gray-500">
+                      {searchTerm.length > 0 ? 'কোন মেন্টর পাওয়া যায়নি' : 'মেন্টর খুঁজতে টাইপ করুন'}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {formData.instructor.name && (
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">নির্বাচিত ইনস্ট্রাক্টর:</h4>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                    {formData.instructor.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium">{formData.instructor.name}</p>
+                    <p className="text-sm text-gray-600">{formData.instructor.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
