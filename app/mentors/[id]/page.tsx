@@ -46,6 +46,8 @@ interface Mentor {
   teachingStyle?: string;
   phone?: string;
   email?: string;
+  isVerified?: boolean;
+  status?: string;
 }
 
 export default function MentorDetailPage() {
@@ -157,7 +159,15 @@ export default function MentorDetailPage() {
             </div>
 
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{mentor.name}</h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-900">{mentor.name}</h1>
+                {mentor.isVerified && (
+                  <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
+                    <Award className="w-3 h-3" />
+                    Verified
+                  </Badge>
+                )}
+              </div>
               <p className="text-xl text-blue-600 font-medium mb-4">{mentor.designation}</p>
               <p className="text-gray-700 mb-6 leading-relaxed">{mentor.bio}</p>
 
@@ -167,7 +177,7 @@ export default function MentorDetailPage() {
                   <div className="flex items-center justify-center mb-2">
                     <Star className="w-5 h-5 text-yellow-500 fill-current" />
                   </div>
-                  <div className="text-2xl font-bold text-gray-900">{mentor.rating || '4.8'}</div>
+                  <div className="text-2xl font-bold text-gray-900">{mentor.rating ? mentor.rating.toFixed(1) : 'N/A'}</div>
                   <div className="text-sm text-gray-600">রেটিং</div>
                 </div>
                 <div className="bg-green-50 rounded-lg p-4 text-center">

@@ -26,18 +26,27 @@ export async function GET(
 
     await connectDB();
     
-    // Check if user is admin
+    // Get current user
     const currentUser = await User.findById(payload.userId);
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Get mentor
     const mentor = await Mentor.findById(id)
       .populate('userId', 'name email role')
       .populate('createdBy', 'name email');
 
     if (!mentor) {
       return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    }
+
+    // Check permissions: Admin can see all, profile owner can see their own
+    const isAdmin = currentUser.role === 'admin';
+    const isProfileOwner = mentor.userId && mentor.userId.toString() === currentUser._id.toString();
+    
+    if (!isAdmin && !isProfileOwner) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
     return NextResponse.json({ mentor });
@@ -68,9 +77,23 @@ export async function PUT(
 
     await connectDB();
     
-    // Check if user is admin
+    // Get current user
     const currentUser = await User.findById(payload.userId);
-    if (!currentUser || currentUser.role !== 'admin') {
+    if (!currentUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Check if mentor exists
+    const mentor = await Mentor.findById(id);
+    if (!mentor) {
+      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    }
+
+    // Check permissions: Admin can edit all, profile owner can edit their own
+    const isAdmin = currentUser.role === 'admin';
+    const isProfileOwner = mentor.userId && mentor.userId.toString() === currentUser._id.toString();
+    
+    if (!isAdmin && !isProfileOwner) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -95,12 +118,6 @@ export async function PUT(
       status,
       isVerified
     } = body;
-
-    // Check if mentor exists
-    const mentor = await Mentor.findById(id);
-    if (!mentor) {
-      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
-    }
 
     // Check if email is being changed and if it conflicts
     if (email && email !== mentor.email) {
@@ -170,10 +187,10 @@ export async function DELETE(
 
     await connectDB();
     
-    // Check if user is admin
+    // Only admins can delete mentor profiles
     const currentUser = await User.findById(payload.userId);
     if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      return NextResponse.json({ error: 'Unauthorized - Only admins can delete mentor profiles' }, { status: 403 });
     }
 
     const mentor = await Mentor.findById(id);

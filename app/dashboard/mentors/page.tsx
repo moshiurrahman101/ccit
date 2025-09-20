@@ -43,31 +43,26 @@ interface Mentor {
   _id: string;
   name: string;
   email: string;
-  phone?: string;
+  phone: string;
   avatar?: string;
-  bio?: string;
-  designation?: string;
+  bio: string;
+  designation: string;
   experience: number;
   expertise: string[];
   skills: string[];
-  status: 'active' | 'inactive' | 'pending' | 'suspended';
-  isVerified: boolean;
-  rating: number;
-  totalStudents: number;
-  totalCourses: number;
+  socialLinks: {
+    linkedin?: string;
+    github?: string;
+    website?: string;
+  };
+  teachingExperience: number;
+  rating?: number;
+  studentsCount?: number;
+  coursesCount?: number;
+  achievements: string[];
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  userId: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  };
-  createdBy: {
-    _id: string;
-    name: string;
-    email: string;
-  };
 }
 
 interface MentorsResponse {
@@ -111,11 +106,6 @@ export default function MentorsPage() {
   const fetchMentors = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('auth-token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
 
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -124,12 +114,7 @@ export default function MentorsPage() {
         ...(statusFilter && { status: statusFilter })
       });
 
-      const response = await fetch(`/api/mentors?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(`/api/public/mentors?${params}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch mentors');
@@ -166,7 +151,7 @@ export default function MentorsPage() {
         return;
       }
 
-      const response = await fetch(`/api/mentors/${deleteDialog.mentor._id}`, {
+      const response = await fetch(`/api/mentors?id=${deleteDialog.mentor._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -183,9 +168,7 @@ export default function MentorsPage() {
       
       // Show success message
       toast.success(`মেন্টর "${deleteDialog.mentor.name}" সফলভাবে মুছে ফেলা হয়েছে`, {
-        description: result.deletedImages > 0 
-          ? `${result.deletedImages}টি ছবি Cloudinary থেকে মুছে ফেলা হয়েছে`
-          : 'সমস্ত ডেটা মুছে ফেলা হয়েছে'
+        description: 'মেন্টর প্রোফাইল, ব্যবহারকারী অ্যাকাউন্ট এবং Cloudinary ছবি মুছে ফেলা হয়েছে'
       });
 
       // Close dialog and refresh list
@@ -293,7 +276,7 @@ export default function MentorsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {mentors.filter(m => m.isVerified).length}
+              {mentors.filter(m => (m as any).isVerified).length}
             </div>
             <p className="text-xs text-muted-foreground">
               {getStatusText('verified')} মেন্টর
@@ -308,7 +291,7 @@ export default function MentorsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {mentors.reduce((sum, m) => sum + m.totalStudents, 0)}
+              {mentors.reduce((sum, m) => sum + (m.studentsCount || 0), 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               সমস্ত মেন্টরের শিক্ষার্থী
@@ -323,7 +306,7 @@ export default function MentorsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {mentors.reduce((sum, m) => sum + m.totalCourses, 0)}
+              {mentors.reduce((sum, m) => sum + (m.coursesCount || 0), 0)}
             </div>
             <p className="text-xs text-muted-foreground">
               সমস্ত মেন্টরের কোর্স
@@ -417,7 +400,7 @@ export default function MentorsPage() {
                         <h3 className="text-lg font-semibold text-gray-900 truncate">
                           {mentor.name}
                         </h3>
-                        {getStatusBadge(mentor.status, mentor.isVerified)}
+                        {getStatusBadge((mentor as any).status, (mentor as any).isVerified)}
                       </div>
                       
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm text-gray-600 mb-2">
@@ -461,15 +444,15 @@ export default function MentorsPage() {
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-500" />
-                          <span>{mentor.rating.toFixed(1)}</span>
+                          <span>{(mentor.rating || 0).toFixed(1)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-blue-500" />
-                          <span>{mentor.totalStudents} students</span>
+                          <span>{mentor.studentsCount || 0} students</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <BookOpen className="w-4 h-4 text-green-500" />
-                          <span>{mentor.totalCourses} courses</span>
+                          <span>{mentor.coursesCount || 0} courses</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4 text-purple-500" />

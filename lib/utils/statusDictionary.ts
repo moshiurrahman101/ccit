@@ -14,19 +14,19 @@ export const statusDictionary = {
   'active': 'অ্যাক্টিভ',
   'inactive': 'ইনঅ্যাক্টিভ',
   'pending': 'পেন্ডিং',
-  'completed': 'কমপ্লিট',
-  'cancelled': 'ক্যানসেল',
   'ongoing': 'রানিং',
   'running': 'রানিং',
-  'upcoming': 'আপকামিং',
   
   // Batch Status
-  'draft': 'ড্রাফ্ট',
-  'published': 'পাবলিশড',
+  'draft': 'খসড়া',
+  'published': 'প্রকাশিত',
   'archived': 'আর্কাইভড',
   'scheduled': 'সিডিউলড',
   'in_progress': 'চলমান',
   'finished': 'শেষ',
+  'upcoming': 'আসন্ন',
+  'completed': 'সম্পন্ন',
+  'cancelled': 'বাতিল',
   
   // Enrollment Status
   'enrolled': 'এনরোলড',

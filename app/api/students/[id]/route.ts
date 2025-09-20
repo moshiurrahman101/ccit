@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import BatchSimple from '@/models/BatchSimple';
+import Batch from '@/models/Batch';
 import { verifyTokenEdge } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
@@ -185,7 +185,7 @@ export async function PUT(
 
     // Handle batch change
     if (batchId && batchId !== student.studentInfo?.batchInfo?.batchId?.toString()) {
-      const newBatch = await BatchSimple.findById(batchId);
+      const newBatch = await Batch.findById(batchId);
       if (!newBatch) {
         return NextResponse.json({ error: 'ব্যাচ পাওয়া যায়নি' }, { status: 404 });
       }
@@ -196,13 +196,13 @@ export async function PUT(
 
       // Update old batch count
       if (student.studentInfo?.batchInfo?.batchId) {
-        await BatchSimple.findByIdAndUpdate(student.studentInfo.batchInfo.batchId, {
+        await Batch.findByIdAndUpdate(student.studentInfo.batchInfo.batchId, {
           $inc: { currentStudents: -1 }
         });
       }
 
       // Update new batch count
-      await BatchSimple.findByIdAndUpdate(batchId, {
+      await Batch.findByIdAndUpdate(batchId, {
         $inc: { currentStudents: 1 }
       });
 
@@ -264,7 +264,7 @@ export async function DELETE(
 
     // Update batch student count
     if (student.studentInfo?.batchInfo?.batchId) {
-      await BatchSimple.findByIdAndUpdate(student.studentInfo.batchInfo.batchId, {
+      await Batch.findByIdAndUpdate(student.studentInfo.batchInfo.batchId, {
         $inc: { currentStudents: -1 }
       });
     }

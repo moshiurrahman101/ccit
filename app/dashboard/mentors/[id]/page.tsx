@@ -38,13 +38,13 @@ interface Mentor {
   bio?: string;
   designation?: string;
   experience: number;
-  expertise: string[];
-  education: Array<{
+  expertise?: string[];
+  education?: Array<{
     degree: string;
     institution: string;
     year: number;
   }>;
-  socialLinks: {
+  socialLinks?: {
     website?: string;
     linkedin?: string;
     github?: string;
@@ -54,9 +54,9 @@ interface Mentor {
     youtube?: string;
     portfolio?: string;
   };
-  skills: string[];
-  languages: string[];
-  certifications: Array<{
+  skills?: string[];
+  languages?: string[];
+  certifications?: Array<{
     name: string;
     issuer: string;
     date: string;
@@ -69,12 +69,12 @@ interface Mentor {
   };
   teachingExperience: number;
   teachingStyle?: string;
-  specializations: string[];
-  status: 'active' | 'inactive' | 'pending' | 'suspended';
-  isVerified: boolean;
-  rating: number;
-  totalStudents: number;
-  totalCourses: number;
+  specializations?: string[];
+  status?: 'active' | 'inactive' | 'pending' | 'suspended';
+  isVerified?: boolean;
+  rating?: number;
+  studentsCount?: number;
+  coursesCount?: number;
   createdAt: string;
   updatedAt: string;
   userId: {
@@ -94,7 +94,7 @@ export default function MentorDetailsPage() {
   const [mentor, setMentor] = useState<Mentor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const mentorId = params.id as string;
@@ -116,7 +116,20 @@ export default function MentorDetailsPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch mentor');
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        
+        if (response.status === 401) {
+          console.log('Unauthorized, redirecting to login');
+          router.push('/login');
+          return;
+        }
+        if (response.status === 403) {
+          console.log('Forbidden, redirecting to dashboard');
+          router.push('/dashboard');
+          return;
+        }
+        throw new Error(errorData.error || 'Failed to fetch mentor');
       }
 
       const data = await response.json();
@@ -130,12 +143,31 @@ export default function MentorDetailsPage() {
   }, [mentorId, router]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user || user.role !== 'admin') {
+    console.log('Auth state:', { authLoading, isAuthenticated, user: user?.email, role: user?.role });
+    
+    // Wait for authentication state to load
+    if (authLoading) {
+      console.log('Still loading auth...');
+      return;
+    }
+    
+    if (!isAuthenticated || !user) {
+      console.log('Not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
+    
+    // For now, allow both admin and mentor roles to access mentor profiles
+    // Later we can add more specific permission checks
+    if (user.role !== 'admin' && user.role !== 'mentor') {
+      console.log('Insufficient permissions, redirecting to login');
+      router.push('/login');
+      return;
+    }
+    
+    console.log('Fetching mentor data...');
     fetchMentor();
-  }, [isAuthenticated, user, router, mentorId, fetchMentor]);
+  }, [authLoading, isAuthenticated, user, router, mentorId, fetchMentor]);
 
   const handleDeleteClick = () => {
     if (confirm('আপনি কি নিশ্চিত যে আপনি এই মেন্টরকে মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।')) {
@@ -199,10 +231,18 @@ export default function MentorDetailsPage() {
     const Icon = config.icon;
 
     return (
-      <Badge className={`${config.color} flex items-center gap-1`}>
-        <Icon className="w-3 h-3" />
-        {status === 'active' && isVerified ? getStatusText('verified') : getStatusText(status)}
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge className={`${config.color} flex items-center gap-1`}>
+          <Icon className="w-3 h-3" />
+          {getStatusText(status)}
+        </Badge>
+        {isVerified && (
+          <Badge className="bg-blue-100 text-blue-800 flex items-center gap-1">
+            <CheckCircle className="w-3 h-3" />
+            {getStatusText('verified')}
+          </Badge>
+        )}
+      </div>
     );
   };
 
@@ -213,6 +253,25 @@ export default function MentorDetailsPage() {
       day: 'numeric'
     });
   };
+
+  // Show loading while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto">
+            <div className="w-8 h-8 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">
+            প্রমাণীকরণ চেক করা হচ্ছে...
+          </h1>
+          <p className="text-gray-600">
+            অনুগ্রহ করে অপেক্ষা করুন
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -276,7 +335,7 @@ export default function MentorDetailsPage() {
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <h1 className="text-3xl font-bold text-gray-900">{mentor.name}</h1>
-                {getStatusBadge(mentor.status, mentor.isVerified)}
+                {getStatusBadge(mentor.status || 'pending', mentor.isVerified || false)}
               </div>
               <p className="text-lg text-gray-600">{mentor.designation}</p>
               <p className="text-sm text-gray-500">{mentor.email}</p>
@@ -347,7 +406,9 @@ export default function MentorDetailsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Star className="w-4 h-4 text-yellow-500" />
-                  <span className="text-sm text-gray-600">{mentor.rating.toFixed(1)} rating</span>
+                  <span className="text-sm text-gray-600">
+                    {mentor.rating ? `${mentor.rating.toFixed(1)} rating` : 'No rating yet'}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -363,7 +424,7 @@ export default function MentorDetailsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Expertise */}
-              {mentor.expertise.length > 0 && (
+              {mentor.expertise && mentor.expertise.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">বিশেষজ্ঞতা</h4>
                   <div className="flex flex-wrap gap-2">
@@ -375,7 +436,7 @@ export default function MentorDetailsPage() {
               )}
 
               {/* Skills */}
-              {mentor.skills.length > 0 && (
+              {mentor.skills && mentor.skills.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">টেকনিক্যাল স্কিল</h4>
                   <div className="flex flex-wrap gap-2">
@@ -387,7 +448,7 @@ export default function MentorDetailsPage() {
               )}
 
               {/* Education */}
-              {mentor.education.length > 0 && (
+              {mentor.education && mentor.education.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">শিক্ষাগত যোগ্যতা</h4>
                   <div className="space-y-2">
@@ -403,7 +464,7 @@ export default function MentorDetailsPage() {
               )}
 
               {/* Certifications */}
-              {mentor.certifications.length > 0 && (
+              {mentor.certifications && mentor.certifications.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">সার্টিফিকেশন</h4>
                   <div className="space-y-2">
@@ -439,11 +500,11 @@ export default function MentorDetailsPage() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">মোট শিক্ষার্থী</h4>
-                  <p className="text-gray-600">{mentor.totalStudents}</p>
+                  <p className="text-gray-600">{mentor.studentsCount || 0}</p>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">মোট কোর্স</h4>
-                  <p className="text-gray-600">{mentor.totalCourses}</p>
+                  <p className="text-gray-600">{mentor.coursesCount || 0}</p>
                 </div>
               </div>
 
@@ -454,7 +515,7 @@ export default function MentorDetailsPage() {
                 </div>
               )}
 
-              {mentor.specializations.length > 0 && (
+              {mentor.specializations && mentor.specializations.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">বিশেষায়িত বিষয়</h4>
                   <div className="flex flex-wrap gap-2">
@@ -465,7 +526,7 @@ export default function MentorDetailsPage() {
                 </div>
               )}
 
-              {mentor.languages.length > 0 && (
+              {mentor.languages && mentor.languages.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">ভাষা</h4>
                   <div className="flex flex-wrap gap-2">
@@ -489,14 +550,14 @@ export default function MentorDetailsPage() {
             <CardContent className="space-y-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600 mb-1">
-                  {mentor.rating.toFixed(1)}
+                  {mentor.rating ? mentor.rating.toFixed(1) : 'N/A'}
                 </div>
                 <div className="flex justify-center mb-2">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       className={`w-4 h-4 ${
-                        i < Math.floor(mentor.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'
+                        i < Math.floor(mentor.rating || 0) ? 'text-yellow-400 fill-current' : 'text-gray-300'
                       }`}
                     />
                   ))}
@@ -506,11 +567,11 @@ export default function MentorDetailsPage() {
 
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">{mentor.totalStudents}</div>
+                  <div className="text-2xl font-bold text-blue-600">{mentor.studentsCount || 0}</div>
                   <p className="text-xs text-gray-600">শিক্ষার্থী</p>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-green-600">{mentor.totalCourses}</div>
+                  <div className="text-2xl font-bold text-green-600">{mentor.coursesCount || 0}</div>
                   <p className="text-xs text-gray-600">কোর্স</p>
                 </div>
               </div>
@@ -528,20 +589,24 @@ export default function MentorDetailsPage() {
             <CardContent className="space-y-3">
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">টাইমজোন</h4>
-                <p className="text-sm text-gray-600">{mentor.availability.timezone}</p>
+                <p className="text-sm text-gray-600">{mentor.availability?.timezone || 'Not specified'}</p>
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">কাজের সময়</h4>
-                <p className="text-sm text-gray-600">{mentor.availability.workingHours}</p>
+                <p className="text-sm text-gray-600">{mentor.availability?.workingHours || 'Not specified'}</p>
               </div>
               <div>
                 <h4 className="font-semibold text-gray-900 mb-1">উপলব্ধ দিন</h4>
                 <div className="flex flex-wrap gap-1">
-                  {mentor.availability.availableDays.map((day) => (
-                    <Badge key={day} variant="outline" className="text-xs capitalize">
-                      {day}
-                    </Badge>
-                  ))}
+                  {mentor.availability?.availableDays && mentor.availability.availableDays.length > 0 ? (
+                    mentor.availability.availableDays.map((day) => (
+                      <Badge key={day} variant="outline" className="text-xs capitalize">
+                        {day}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">Not specified</span>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -556,7 +621,7 @@ export default function MentorDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {Object.entries(mentor.socialLinks).map(([platform, url]) => {
+              {mentor.socialLinks && Object.entries(mentor.socialLinks).map(([platform, url]) => {
                 if (!url) return null;
                 return (
                   <a
@@ -590,7 +655,7 @@ export default function MentorDetailsPage() {
               </div>
               <div>
                 <span className="font-medium text-gray-900">তৈরি করেছেন:</span>
-                <p className="text-gray-600">{mentor.createdBy.name}</p>
+                <p className="text-gray-600">{mentor.createdBy?.name || 'Unknown'}</p>
               </div>
             </CardContent>
           </Card>

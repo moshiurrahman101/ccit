@@ -4,29 +4,19 @@ import Mentor from '@/models/Mentor';
 import User from '@/models/User';
 import { verifyTokenEdge } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { v2 as cloudinary } from 'cloudinary';
 
-// GET all mentors
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// GET all mentors (public endpoint)
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
-
-    if (!token) {
-      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
-    }
-
-    const payload = verifyTokenEdge(token);
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
     await connectDB();
-    
-    // Check if user is admin
-    const currentUser = await User.findById(payload.userId);
-    if (!currentUser || currentUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-    }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -59,8 +49,6 @@ export async function GET(request: NextRequest) {
     }
 
     const mentors = await Mentor.find(filter)
-      .populate('userId', 'name email role')
-      .populate('createdBy', 'name email')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -160,6 +148,7 @@ export async function POST(request: NextRequest) {
         isActive: true
       });
       await user.save();
+      console.log('✅ New user created for mentor:', email);
     } else {
       // Check if user already has a mentor profile
       const existingMentorProfile = await Mentor.findOne({ userId: user._id });
@@ -172,13 +161,17 @@ export async function POST(request: NextRequest) {
       // Update user role to mentor if not already
       if (user.role !== 'mentor') {
         await User.findByIdAndUpdate(user._id, { role: 'mentor' });
+        console.log('✅ User role updated to mentor:', email);
       }
       
       // Update password if provided
       if (password) {
         const hashedPassword = await bcrypt.hash(password, 12);
         await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+        console.log('✅ Password updated for user:', email);
       }
+      
+      console.log('✅ Using existing user account for mentor:', email);
     }
 
     // Create new mentor
@@ -217,6 +210,76 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating mentor:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE mentor
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 });
+    }
+
+    const payload = verifyTokenEdge(token);
+    if (!payload) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    await connectDB();
+    
+    // Check if user is admin
+    const currentUser = await User.findById(payload.userId);
+    if (!currentUser || currentUser.role !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const mentorId = searchParams.get('id');
+
+    if (!mentorId) {
+      return NextResponse.json({ error: 'Mentor ID is required' }, { status: 400 });
+    }
+
+    // Find the mentor
+    const mentor = await Mentor.findById(mentorId);
+    if (!mentor) {
+      return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
+    }
+
+    // Delete Cloudinary image if exists
+    if (mentor.avatar) {
+      try {
+        // Extract public ID from Cloudinary URL
+        const publicId = mentor.avatar.split('/').pop()?.split('.')[0];
+        if (publicId) {
+          await cloudinary.uploader.destroy(`mentor-avatars/${publicId}`);
+          console.log('✅ Cloudinary image deleted:', publicId);
+        }
+      } catch (cloudinaryError) {
+        console.error('Error deleting Cloudinary image:', cloudinaryError);
+        // Continue with mentor deletion even if image deletion fails
+      }
+    }
+
+    // Delete associated user account
+    if (mentor.userId) {
+      await User.findByIdAndDelete(mentor.userId);
+      console.log('✅ User account deleted for mentor:', mentor.email);
+    }
+
+    // Delete the mentor
+    await Mentor.findByIdAndDelete(mentorId);
+    console.log('✅ Mentor profile deleted:', mentor.email);
+
+    return NextResponse.json({
+      message: 'Mentor and associated user account deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting mentor:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

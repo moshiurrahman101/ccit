@@ -47,8 +47,8 @@ export function Navbar() {
             <Link href="/" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
               হোম
             </Link>
-            <Link href="/courses" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
-              কোর্স
+            <Link href="/batches" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
+              ব্যাচ
             </Link>
             <Link href="/mentors" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
               মেন্টর
@@ -143,11 +143,11 @@ export function Navbar() {
                 হোম
               </Link>
               <Link
-                href="/courses"
+                href="/batches"
                 className="block px-3 py-2 text-gray-700 hover:text-orange-600 transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                কোর্স
+                ব্যাচ
               </Link>
               <Link
                 href="/mentors"

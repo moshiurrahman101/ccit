@@ -12,15 +12,15 @@ export async function GET(
     await connectDB();
 
     const mentor = await Mentor.findById(id)
-      .select('name designation experience expertise skills avatar bio socialLinks teachingExperience rating students courses achievements education certifications languages availability teachingStyle phone email')
+      .select('name designation experience expertise skills avatar bio socialLinks teachingExperience rating studentsCount coursesCount achievements education certifications languages availability teachingStyle phone email isVerified status isActive')
       .lean();
 
-    if (!mentor) {
+    if (!mentor || Array.isArray(mentor)) {
       return NextResponse.json({ error: 'Mentor not found' }, { status: 404 });
     }
 
     // Only show active mentors to public
-    if (mentor.status !== 'active') {
+    if (mentor.isActive === false || (mentor.status && mentor.status !== 'active')) {
       return NextResponse.json({ error: 'Mentor not available' }, { status: 404 });
     }
 

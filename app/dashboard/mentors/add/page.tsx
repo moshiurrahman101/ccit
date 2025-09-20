@@ -142,6 +142,9 @@ export default function AddMentorPage() {
     languages: '',
     certifications: '',
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [emailExists, setEmailExists] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -156,6 +159,42 @@ export default function AddMentorPage() {
       ...prev,
       [field]: value
     }));
+
+    // Clear field error when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+
+    // Validate specific fields
+    if (field === 'bio' && typeof value === 'string') {
+      if (value.length > 500) {
+        setFieldErrors(prev => ({
+          ...prev,
+          bio: 'বায়ো ৫০০ অক্ষরের বেশি হতে পারবে না'
+        }));
+      }
+    }
+
+    if (field === 'name' && typeof value === 'string') {
+      if (value.length > 50) {
+        setFieldErrors(prev => ({
+          ...prev,
+          name: 'নাম ৫০ অক্ষরের বেশি হতে পারবে না'
+        }));
+      }
+    }
+
+    if (field === 'designation' && typeof value === 'string') {
+      if (value.length > 100) {
+        setFieldErrors(prev => ({
+          ...prev,
+          designation: 'পদবি ১০০ অক্ষরের বেশি হতে পারবে না'
+        }));
+      }
+    }
   };
 
   const handleNestedInputChange = (parentField: string, field: string, value: string | string[]) => {
@@ -166,6 +205,42 @@ export default function AddMentorPage() {
         [field]: value
       }
     }));
+  };
+
+  const checkEmailExists = async (email: string) => {
+    if (!email || !email.includes('@')) return;
+    
+    setCheckingEmail(true);
+    try {
+      const response = await fetch(`/api/mentors/check-email?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+      setEmailExists(data.exists);
+      
+      if (data.exists) {
+        let errorMessage = '';
+        if (data.mentorExists && data.userExists) {
+          errorMessage = 'এই ইমেইল দিয়ে ইতিমধ্যে একটি মেন্টর প্রোফাইল এবং ব্যবহারকারী অ্যাকাউন্ট আছে';
+        } else if (data.mentorExists) {
+          errorMessage = 'এই ইমেইল দিয়ে ইতিমধ্যে একটি মেন্টর প্রোফাইল আছে';
+        } else if (data.userExists) {
+          errorMessage = 'এই ইমেইল দিয়ে ইতিমধ্যে একটি ব্যবহারকারী অ্যাকাউন্ট আছে';
+        }
+        
+        setFieldErrors(prev => ({
+          ...prev,
+          email: errorMessage
+        }));
+      } else {
+        setFieldErrors(prev => ({
+          ...prev,
+          email: ''
+        }));
+      }
+    } catch (error) {
+      console.error('Error checking email:', error);
+    } finally {
+      setCheckingEmail(false);
+    }
   };
 
   const handleArrayAdd = (field: string, value: string) => {
@@ -265,6 +340,21 @@ export default function AddMentorPage() {
         return;
       }
 
+      // Check for field errors
+      const hasFieldErrors = Object.values(fieldErrors).some(error => error !== '');
+      if (hasFieldErrors) {
+        setError('দয়া করে সব ভুল তথ্য ঠিক করুন');
+        setLoading(false);
+        return;
+      }
+
+      // Check if email exists
+      if (emailExists) {
+        setError('এই ইমেইল দিয়ে ইতিমধ্যে একটি মেন্টর অ্যাকাউন্ট আছে');
+        setLoading(false);
+        return;
+      }
+
       const token = localStorage.getItem('auth-token');
       if (!token) {
         router.push('/login');
@@ -347,7 +437,12 @@ export default function AddMentorPage() {
                   onChange={(e) => handleInputChange('name', e.target.value)}
                   placeholder="মেন্টরের পূর্ণ নাম"
                   required
+                  className={fieldErrors.name ? 'border-red-500' : ''}
                 />
+                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                  <span>{fieldErrors.name && <span className="text-red-600">{fieldErrors.name}</span>}</span>
+                  <span>{formData.name.length}/50</span>
+                </div>
               </div>
 
               <div>
@@ -356,10 +451,24 @@ export default function AddMentorPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={(e) => {
+                    handleInputChange('email', e.target.value);
+                    // Debounce email check
+                    const timeoutId = setTimeout(() => {
+                      checkEmailExists(e.target.value);
+                    }, 500);
+                    return () => clearTimeout(timeoutId);
+                  }}
                   placeholder="mentor@example.com"
                   required
+                  className={fieldErrors.email ? 'border-red-500' : ''}
                 />
+                {checkingEmail && (
+                  <p className="text-sm text-blue-600 mt-1">ইমেইল চেক করা হচ্ছে...</p>
+                )}
+                {fieldErrors.email && (
+                  <p className="text-sm text-red-600 mt-1">{fieldErrors.email}</p>
+                )}
               </div>
 
               <div>
@@ -379,7 +488,12 @@ export default function AddMentorPage() {
                   value={formData.designation}
                   onChange={(e) => handleInputChange('designation', e.target.value)}
                   placeholder="Senior Developer, UI/UX Expert"
+                  className={fieldErrors.designation ? 'border-red-500' : ''}
                 />
+                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                  <span>{fieldErrors.designation && <span className="text-red-600">{fieldErrors.designation}</span>}</span>
+                  <span>{formData.designation.length}/100</span>
+                </div>
               </div>
 
               <div>
@@ -406,7 +520,12 @@ export default function AddMentorPage() {
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 placeholder="মেন্টরের সম্পর্কে সংক্ষিপ্ত বর্ণনা"
                 rows={4}
+                className={fieldErrors.bio ? 'border-red-500' : ''}
               />
+              <div className="flex justify-between text-sm text-gray-500 mt-1">
+                <span>{fieldErrors.bio && <span className="text-red-600">{fieldErrors.bio}</span>}</span>
+                <span>{formData.bio.length}/500</span>
+              </div>
             </div>
           </div>
         );

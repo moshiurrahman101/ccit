@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import { verifyTokenEdge } from '@/lib/auth';
 import Invoice from '@/models/Invoice';
-import BatchSimple from '@/models/BatchSimple';
+import Batch from '@/models/Batch';
 import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
     const { studentId, batchId, promoCode } = body;
 
     // Get batch information
-    const batch = await BatchSimple.findById(batchId);
+    const batch = await Batch.findById(batchId);
     if (!batch) {
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     }

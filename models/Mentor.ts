@@ -1,24 +1,27 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMentor extends Document {
-  // Basic Information
   name: string;
   email: string;
   phone?: string;
-  avatar?: string; // Cloudinary URL
   bio?: string;
-  designation?: string; // e.g., "Senior Developer", "UI/UX Expert"
-  
-  // Professional Information
+  avatar?: string;
+  designation?: string;
   experience: number; // years of experience
   expertise: string[]; // areas of expertise
-  education: {
+  education: Array<{
     degree: string;
     institution: string;
     year: number;
-  }[];
-  
-  // Social Links
+  }>;
+  skills: string[]; // technical skills
+  languages: string[];
+  certifications: Array<{
+    name: string;
+    issuer: string;
+    date: string;
+    credentialId: string;
+  }>;
   socialLinks: {
     website?: string;
     linkedin?: string;
@@ -29,80 +32,64 @@ export interface IMentor extends Document {
     youtube?: string;
     portfolio?: string;
   };
-  
-  // Professional Details
-  skills: string[]; // technical skills
-  languages: string[]; // spoken languages
-  certifications: {
-    name: string;
-    issuer: string;
-    date: Date;
-    credentialId?: string;
-  }[];
-  
-  // Availability & Preferences
+  teachingExperience: number; // years of teaching experience
+  teachingStyle?: string;
   availability: {
     timezone: string;
     workingHours: string;
-    availableDays: string[]; // ['monday', 'tuesday', etc.]
+    availableDays: string[];
   };
-  
-  // Teaching Information
-  teachingExperience: number; // years of teaching
-  teachingStyle: string;
-  
-  // Status & Management
+  rating?: number; // average rating
+  studentsCount?: number; // total students taught
+  coursesCount?: number; // total courses taught
+  achievements: string[];
   status: 'active' | 'inactive' | 'pending' | 'suspended';
   isVerified: boolean;
-  rating: number; // average rating from students
-  totalStudents: number; // total students taught
-  totalCourses: number; // total courses taught
-  
-  // System Information
-  userId: mongoose.Schema.Types.ObjectId; // Reference to User model
-  createdBy: mongoose.Schema.Types.ObjectId; // Admin who created this mentor
+  isActive: boolean;
+  userId?: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const MentorSchema = new Schema<IMentor>({
-  // Basic Information
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, 'Mentor name is required'],
+    trim: true,
+    maxlength: [50, 'Name cannot exceed 50 characters']
   },
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
+    lowercase: true,
     trim: true,
-    lowercase: true
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
   phone: {
     type: String,
-    trim: true
+    trim: true,
+    match: [/^(\+88)?01[3-9]\d{8}$/, 'Please enter a valid Bangladeshi phone number']
+  },
+  bio: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Bio cannot exceed 500 characters']
   },
   avatar: {
     type: String,
     trim: true
   },
-  bio: {
-    type: String,
-    trim: true,
-    maxlength: 1000
-  },
   designation: {
     type: String,
-    trim: true
+    trim: true,
+    maxlength: [100, 'Designation cannot exceed 100 characters']
   },
-  
-  // Professional Information
   experience: {
     type: Number,
-    required: true,
-    min: 0,
-    max: 50
+    required: [true, 'Experience is required'],
+    min: [0, 'Experience cannot be negative']
   },
   expertise: [{
     type: String,
@@ -122,12 +109,39 @@ const MentorSchema = new Schema<IMentor>({
     year: {
       type: Number,
       required: true,
-      min: 1950,
-      max: new Date().getFullYear() + 5
+      min: [1900, 'Year must be after 1900'],
+      max: [new Date().getFullYear() + 10, 'Year cannot be more than 10 years in the future']
     }
   }],
-  
-  // Social Links
+  skills: [{
+    type: String,
+    trim: true
+  }],
+  languages: [{
+    type: String,
+    trim: true
+  }],
+  certifications: [{
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    issuer: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    date: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    credentialId: {
+      type: String,
+      trim: true
+    }
+  }],
   socialLinks: {
     website: {
       type: String,
@@ -162,38 +176,15 @@ const MentorSchema = new Schema<IMentor>({
       trim: true
     }
   },
-  
-  // Professional Details
-  skills: [{
+  teachingExperience: {
+    type: Number,
+    required: [true, 'Teaching experience is required'],
+    min: [0, 'Teaching experience cannot be negative']
+  },
+  teachingStyle: {
     type: String,
     trim: true
-  }],
-  languages: [{
-    type: String,
-    trim: true
-  }],
-  certifications: [{
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    issuer: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    date: {
-      type: Date,
-      required: true
-    },
-    credentialId: {
-      type: String,
-      trim: true
-    }
-  }],
-  
-  // Availability & Preferences
+  },
   availability: {
     timezone: {
       type: String,
@@ -208,20 +199,25 @@ const MentorSchema = new Schema<IMentor>({
       enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
     }]
   },
-  
-  // Teaching Information
-  teachingExperience: {
+  rating: {
+    type: Number,
+    min: [0, 'Rating cannot be negative'],
+    max: [5, 'Rating cannot exceed 5']
+  },
+  studentsCount: {
     type: Number,
     default: 0,
-    min: 0,
-    max: 50
+    min: [0, 'Students count cannot be negative']
   },
-  teachingStyle: {
+  coursesCount: {
+    type: Number,
+    default: 0,
+    min: [0, 'Courses count cannot be negative']
+  },
+  achievements: [{
     type: String,
     trim: true
-  },
-  
-  // Status & Management
+  }],
   status: {
     type: String,
     enum: ['active', 'inactive', 'pending', 'suspended'],
@@ -231,34 +227,17 @@ const MentorSchema = new Schema<IMentor>({
     type: Boolean,
     default: false
   },
-  rating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
+  isActive: {
+    type: Boolean,
+    default: true
   },
-  totalStudents: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  totalCourses: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  
-  // System Information
   userId: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-    unique: true
+    ref: 'User'
   },
   createdBy: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   }
 }, {
   timestamps: true
@@ -266,45 +245,11 @@ const MentorSchema = new Schema<IMentor>({
 
 // Indexes for efficient queries
 MentorSchema.index({ name: 1 });
-MentorSchema.index({ email: 1 });
-MentorSchema.index({ status: 1 });
-MentorSchema.index({ isVerified: 1 });
+// Note: email index is automatically created by unique: true
+MentorSchema.index({ isActive: 1 });
 MentorSchema.index({ expertise: 1 });
 MentorSchema.index({ skills: 1 });
 MentorSchema.index({ rating: -1 });
-MentorSchema.index({ userId: 1 });
 
-// Virtual for full name
-MentorSchema.virtual('fullName').get(function() {
-  return this.name;
-});
-
-// Virtual for profile completeness
-MentorSchema.virtual('profileCompleteness').get(function() {
-  let score = 0;
-  const fields = [
-    'name', 'email', 'bio', 'designation', 'experience', 'expertise',
-    'education', 'skills', 'languages', 'avatar', 'socialLinks'
-  ];
-  
-  fields.forEach(field => {
-    if (field === 'socialLinks') {
-      const hasSocialLinks = Object.values(this.socialLinks).some(link => link && link.trim());
-      if (hasSocialLinks) score += 1;
-    } else if (field === 'expertise' || field === 'education' || field === 'skills' || field === 'languages') {
-      const fieldValue = (this as any)[field];
-      if (fieldValue && fieldValue.length > 0) score += 1;
-    } else {
-      const fieldValue = (this as any)[field];
-      if (fieldValue && fieldValue.toString().trim()) {
-        score += 1;
-      }
-    }
-  });
-  
-  return Math.round((score / fields.length) * 100);
-});
-
-const Mentor = mongoose.models.Mentor || mongoose.model<IMentor>('Mentor', MentorSchema);
-
+export const Mentor = mongoose.models.Mentor || mongoose.model<IMentor>('Mentor', MentorSchema);
 export default Mentor;

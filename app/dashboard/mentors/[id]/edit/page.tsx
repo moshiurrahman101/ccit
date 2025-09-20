@@ -141,7 +141,7 @@ export default function EditMentorPage() {
     languages: '',
     certifications: '',
   });
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const mentorId = params.id as string;
@@ -212,12 +212,31 @@ export default function EditMentorPage() {
   }, [mentorId, router]);
 
   useEffect(() => {
-    if (!isAuthenticated || !user || user.role !== 'admin') {
+    console.log('Edit page - Auth state:', { authLoading, isAuthenticated, user: user?.email, role: user?.role });
+    
+    // Wait for authentication state to load
+    if (authLoading) {
+      console.log('Edit page - Still loading auth...');
+      return;
+    }
+    
+    if (!isAuthenticated || !user) {
+      console.log('Edit page - Not authenticated, redirecting to login');
       router.push('/login');
       return;
     }
+    
+    // For now, allow both admin and mentor roles to access mentor profiles
+    // Later we can add more specific permission checks
+    if (user.role !== 'admin' && user.role !== 'mentor') {
+      console.log('Edit page - Insufficient permissions, redirecting to login');
+      router.push('/login');
+      return;
+    }
+    
+    console.log('Edit page - Fetching mentor data...');
     fetchMentor();
-  }, [isAuthenticated, user, router, mentorId, fetchMentor]);
+  }, [authLoading, isAuthenticated, user, router, mentorId, fetchMentor]);
 
   const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
@@ -843,6 +862,25 @@ export default function EditMentorPage() {
         return null;
     }
   };
+
+  // Show loading while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mb-4 mx-auto">
+            <div className="w-8 h-8 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-800 mb-2">
+            প্রমাণীকরণ চেক করা হচ্ছে...
+          </h1>
+          <p className="text-gray-600">
+            অনুগ্রহ করে অপেক্ষা করুন
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated || !user || user.role !== 'admin') {
     return null;

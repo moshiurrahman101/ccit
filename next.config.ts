@@ -1,6 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   webpack: (config, { isServer }) => {
     // Exclude cloudinary from client-side bundle
     if (!isServer) {

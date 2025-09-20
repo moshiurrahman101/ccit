@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import BatchSimple from '@/models/BatchSimple';
+import Batch from '@/models/Batch';
 import { verifyTokenEdge } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { generateStudentId } from '@/lib/utils/studentIdGenerator';
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if batch exists
-    const batch = await BatchSimple.findById(batchId);
+    const batch = await Batch.findById(batchId);
     if (!batch) {
       return NextResponse.json({ 
         error: 'ব্যাচ পাওয়া যায়নি' 
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
     await student.save();
 
     // Update batch student count
-    await BatchSimple.findByIdAndUpdate(batchId, {
+    await Batch.findByIdAndUpdate(batchId, {
       $inc: { currentStudents: 1 }
     });
 
