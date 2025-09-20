@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, Loader2, Users, Calendar, CheckCircle, Clock } from 'lucide-react';
 import BatchTable from '@/components/dashboard/BatchTable';
-import BatchForm from '@/components/dashboard/BatchFormNew';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { toast } from 'sonner';
 import { getStatusText } from '@/lib/utils/statusDictionary';
@@ -61,6 +61,7 @@ interface Pagination {
 }
 
 export default function BatchesPage() {
+  const router = useRouter();
   const [batches, setBatches] = useState<Batch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pagination, setPagination] = useState<Pagination>({
@@ -74,8 +75,6 @@ export default function BatchesPage() {
     search: '',
     status: ''
   });
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
 
   useEffect(() => {
     fetchBatches();
@@ -130,22 +129,15 @@ export default function BatchesPage() {
   };
 
   const handleAdd = () => {
-    setEditingBatch(null);
-    setFormOpen(true);
+    router.push('/dashboard/batches/add');
   };
 
   const handleEdit = (batch: Batch) => {
-    setEditingBatch(batch);
-    setFormOpen(true);
+    router.push(`/dashboard/batches/${batch._id}/edit`);
   };
 
   const handleFormSuccess = () => {
     fetchBatches(pagination.currentPage, filters.search, filters.status);
-  };
-
-  const handleFormClose = () => {
-    setFormOpen(false);
-    setEditingBatch(null);
   };
 
   const getStatusCounts = () => {
@@ -260,15 +252,6 @@ export default function BatchesPage() {
         isLoading={isLoading}
       />
 
-      {/* Batch Form Modal */}
-      <AdminOnly>
-        <BatchForm
-          batch={editingBatch}
-          isOpen={formOpen}
-          onClose={handleFormClose}
-          onSuccess={handleFormSuccess}
-        />
-      </AdminOnly>
     </div>
   );
 }

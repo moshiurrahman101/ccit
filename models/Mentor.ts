@@ -50,7 +50,6 @@ export interface IMentor extends Document {
   // Teaching Information
   teachingExperience: number; // years of teaching
   teachingStyle: string;
-  specializations: string[]; // what they teach
   
   // Status & Management
   status: 'active' | 'inactive' | 'pending' | 'suspended';
@@ -221,10 +220,6 @@ const MentorSchema = new Schema<IMentor>({
     type: String,
     trim: true
   },
-  specializations: [{
-    type: String,
-    trim: true
-  }],
   
   // Status & Management
   status: {

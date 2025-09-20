@@ -92,7 +92,6 @@ export async function PUT(
       availability,
       teachingExperience,
       teachingStyle,
-      specializations,
       status,
       isVerified
     } = body;
@@ -133,7 +132,6 @@ export async function PUT(
         availability,
         teachingExperience,
         teachingStyle,
-        specializations,
         status,
         isVerified
       },
@@ -218,11 +216,11 @@ export async function DELETE(
     // Delete mentor from database
     await Mentor.findByIdAndDelete(id);
 
-    // Optionally, you might want to delete the associated user as well
-    // Uncomment the following lines if you want to delete the user account too
-    // if (mentor.userId) {
-    //   await User.findByIdAndDelete(mentor.userId);
-    // }
+    // Delete the associated user as well
+    if (mentor.userId) {
+      await User.findByIdAndDelete(mentor.userId);
+      console.log(`Successfully deleted user: ${mentor.userId}`);
+    }
 
     return NextResponse.json({
       message: 'Mentor deleted successfully',

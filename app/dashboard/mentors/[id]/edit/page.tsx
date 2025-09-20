@@ -72,7 +72,6 @@ interface FormData {
   // Step 5: Teaching & Availability
   teachingExperience: number;
   teachingStyle: string;
-  specializations: string[];
   availability: {
     timezone: string;
     workingHours: string;
@@ -109,7 +108,6 @@ const initialFormData: FormData = {
   },
   teachingExperience: 0,
   teachingStyle: '',
-  specializations: [],
   availability: {
     timezone: 'Asia/Dhaka',
     workingHours: '9:00 AM - 6:00 PM',
@@ -142,7 +140,6 @@ export default function EditMentorPage() {
     skills: '',
     languages: '',
     certifications: '',
-    specializations: ''
   });
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -198,7 +195,6 @@ export default function EditMentorPage() {
         },
         teachingExperience: mentor.teachingExperience || 0,
         teachingStyle: mentor.teachingStyle || '',
-        specializations: mentor.specializations || [],
         availability: {
           timezone: mentor.availability?.timezone || 'Asia/Dhaka',
           workingHours: mentor.availability?.workingHours || '9:00 AM - 6:00 PM',
@@ -254,10 +250,13 @@ export default function EditMentorPage() {
   };
 
   const handleArrayRemove = (field: string, index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: (prev[field as keyof FormData] as string[]).filter((_, i) => i !== index)
-    }));
+    setFormData(prev => {
+      const currentArray = prev[field as keyof FormData] as any[];
+      return {
+        ...prev,
+        [field]: currentArray.filter((_, i) => i !== index)
+      };
+    });
   };
 
   const handleEducationAdd = () => {
@@ -497,7 +496,7 @@ export default function EditMentorPage() {
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
                     <X
-                      className="w-3 h-3 cursor-pointer"
+                      className="w-3 h-3 cursor-pointer hover:text-red-500"
                       onClick={() => handleArrayRemove('expertise', index)}
                     />
                   </Badge>
@@ -525,14 +524,11 @@ export default function EditMentorPage() {
               <div className="space-y-2">
                 {formData.education.map((edu, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span>{edu.degree} - {edu.institution} ({edu.year})</span>
-                    <X
-                      className="w-4 h-4 cursor-pointer text-red-500"
-                      onClick={() => setFormData(prev => ({
-                        ...prev,
-                        education: prev.education.filter((_, i) => i !== index)
-                      }))}
-                    />
+                      <span>{edu.degree} - {edu.institution} ({edu.year})</span>
+                      <X
+                        className="w-4 h-4 cursor-pointer text-red-500 hover:text-red-700"
+                        onClick={() => handleArrayRemove('education', index)}
+                      />
                   </div>
                 ))}
               </div>
@@ -565,7 +561,7 @@ export default function EditMentorPage() {
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
                     <X
-                      className="w-3 h-3 cursor-pointer"
+                      className="w-3 h-3 cursor-pointer hover:text-red-500"
                       onClick={() => handleArrayRemove('skills', index)}
                     />
                   </Badge>
@@ -595,7 +591,7 @@ export default function EditMentorPage() {
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
                     <X
-                      className="w-3 h-3 cursor-pointer"
+                      className="w-3 h-3 cursor-pointer hover:text-red-500"
                       onClick={() => handleArrayRemove('languages', index)}
                     />
                   </Badge>
@@ -623,14 +619,11 @@ export default function EditMentorPage() {
               <div className="space-y-2">
                 {formData.certifications.map((cert, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                    <span>{cert.name} - {cert.issuer} ({cert.date})</span>
-                    <X
-                      className="w-4 h-4 cursor-pointer text-red-500"
-                      onClick={() => setFormData(prev => ({
-                        ...prev,
-                        certifications: prev.certifications.filter((_, i) => i !== index)
-                      }))}
-                    />
+                      <span>{cert.name} - {cert.issuer} ({cert.date})</span>
+                      <X
+                        className="w-4 h-4 cursor-pointer text-red-500 hover:text-red-700"
+                        onClick={() => handleArrayRemove('certifications', index)}
+                      />
                   </div>
                 ))}
               </div>
@@ -752,35 +745,6 @@ export default function EditMentorPage() {
               />
             </div>
 
-            <div>
-              <Label>বিশেষায়িত বিষয়</Label>
-              <div className="flex gap-2 mb-2">
-                <Input
-                  value={tempInputs.specializations}
-                  onChange={(e) => setTempInputs(prev => ({ ...prev, specializations: e.target.value }))}
-                  placeholder="বিশেষায়িত বিষয় যোগ করুন"
-                  onKeyPress={(e) => e.key === 'Enter' && handleArrayAdd('specializations', tempInputs.specializations)}
-                />
-                <Button
-                  type="button"
-                  onClick={() => handleArrayAdd('specializations', tempInputs.specializations)}
-                  size="sm"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.specializations.map((item, index) => (
-                  <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                    {item}
-                    <X
-                      className="w-3 h-3 cursor-pointer"
-                      onClick={() => handleArrayRemove('specializations', index)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>

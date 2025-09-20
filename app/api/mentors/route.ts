@@ -127,7 +127,6 @@ export async function POST(request: NextRequest) {
       availability = {},
       teachingExperience = 0,
       teachingStyle,
-      specializations = [],
       status = 'pending'
     } = body;
 
@@ -205,7 +204,6 @@ export async function POST(request: NextRequest) {
       },
       teachingExperience,
       teachingStyle,
-      specializations,
       status,
       userId: user._id,
       createdBy: payload.userId
