@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get('auth-token')?.value;
   
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/register', '/', '/courses', '/blog', '/contact', '/about', '/mentors'];
+  const publicRoutes = ['/login', '/register', '/', '/courses', '/blog', '/contact', '/about', '/mentors', '/batches'];
   const isPublicRoute = publicRoutes.some(route => request.nextUrl.pathname.startsWith(route));
   
   // Dashboard routes that require authentication
@@ -19,7 +19,8 @@ export function middleware(request: NextRequest) {
   
   // Batch management API routes that require admin authentication
   const isBatchApiRoute = request.nextUrl.pathname.startsWith('/api/batches') && 
-    !request.nextUrl.pathname.startsWith('/api/batches/active');
+    !request.nextUrl.pathname.startsWith('/api/batches/active') &&
+    !request.nextUrl.pathname.startsWith('/api/batches/slug');
   
   // User management API routes that require admin authentication
   const isUserApiRoute = request.nextUrl.pathname.startsWith('/api/users');

@@ -11,12 +11,20 @@ export async function GET(
     await connectDB();
 
     const { slug } = await params;
+    
+    console.log('Fetching batch with slug:', slug);
 
     const batch = await Batch.findOne({ 
       'marketing.slug': slug,
       isActive: true,
       status: { $in: ['published', 'upcoming', 'ongoing'] }
     }).populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks rating studentsCount coursesCount');
+
+    console.log('Batch found:', batch ? 'Yes' : 'No');
+    if (batch) {
+      console.log('Batch name:', batch.name);
+      console.log('Batch status:', batch.status);
+    }
 
     if (!batch) {
       return NextResponse.json(

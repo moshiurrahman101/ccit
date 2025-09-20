@@ -112,10 +112,25 @@ export default function BatchDetailPage() {
   const fetchBatch = async (slug: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/batches/slug/${slug}`);
+      // Use absolute URL to ensure it works in all environments
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/batches/slug/${slug}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add cache control for better performance
+        cache: 'no-store'
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.status === 404) {
+          throw new Error('ব্যাচটি পাওয়া যায়নি');
+        } else if (response.status === 401) {
+          throw new Error('অনুমতি নেই');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
       }
       
       const data = await response.json();
