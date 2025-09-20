@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Batch from '@/models/Batch';
+import Mentor from '@/models/Mentor';
 
 // GET /api/batches/slug/[slug] - Get batch by slug (public endpoint)
 export async function GET(
@@ -18,7 +19,7 @@ export async function GET(
       'marketing.slug': slug,
       isActive: true,
       status: { $in: ['published', 'upcoming', 'ongoing'] }
-    }).populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks rating studentsCount coursesCount');
+    });
 
     console.log('Batch found:', batch ? 'Yes' : 'No');
     if (batch) {
@@ -33,7 +34,18 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ batch });
+    // Manually populate mentor data
+    let mentor = null;
+    if (batch.mentorId) {
+      mentor = await Mentor.findById(batch.mentorId).select('name email avatar designation experience expertise bio skills socialLinks rating studentsCount coursesCount');
+    }
+
+    const batchWithMentor = {
+      ...batch.toObject(),
+      mentorId: mentor
+    };
+
+    return NextResponse.json({ batch: batchWithMentor });
 
   } catch (error) {
     console.error('Error fetching batch by slug:', error);
