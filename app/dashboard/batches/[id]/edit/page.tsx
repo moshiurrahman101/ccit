@@ -74,6 +74,7 @@ export default function EditBatchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredMentors, setFilteredMentors] = useState<Mentor[]>([]);
   const [showMentorDropdown, setShowMentorDropdown] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [tempInputs, setTempInputs] = useState({
     prerequisites: '',
     tags: '',
@@ -171,14 +172,14 @@ export default function EditBatchPage() {
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleInstructorChange = (field: string, value: any) => {
+  const handleInstructorChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       instructor: {
@@ -204,7 +205,7 @@ export default function EditBatchPage() {
 
   const handleArrayRemove = (field: string, index: number) => {
     setFormData(prev => {
-      const currentArray = prev[field as keyof Batch] as any[];
+      const currentArray = prev[field as keyof Batch] as string[];
       return {
         ...prev,
         [field]: currentArray.filter((_, i) => i !== index)
@@ -225,7 +226,7 @@ export default function EditBatchPage() {
     }));
   };
 
-  const handleModuleChange = (index: number, field: string, value: any) => {
+  const handleModuleChange = (index: number, field: string, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       modules: prev.modules.map((module, i) => 
@@ -263,7 +264,7 @@ export default function EditBatchPage() {
       mentor.designation.toLowerCase().includes(term.toLowerCase())
     );
     setFilteredMentors(filtered);
-    setShowMentorDropdown(term.length > 0);
+    setShowMentorDropdown(isFocused && (term.length > 0 || mentors.length > 0));
   };
 
   const handleMentorSelect = (mentor: Mentor) => {
@@ -280,6 +281,7 @@ export default function EditBatchPage() {
     }));
     setSearchTerm(mentor.name);
     setShowMentorDropdown(false);
+    setIsFocused(false);
   };
 
   const generateSlug = (name: string) => {
@@ -527,36 +529,50 @@ export default function EditBatchPage() {
                     placeholder="ইনস্ট্রাক্টর খুঁজুন... (নাম, ইমেইল, বা ডিজাইনেশন)"
                     value={searchTerm}
                     onChange={(e) => handleMentorSearch(e.target.value)}
-                    onFocus={() => setShowMentorDropdown(searchTerm.length > 0)}
+                    onFocus={() => {
+                      setIsFocused(true);
+                      setShowMentorDropdown(true);
+                    }}
+                    onBlur={() => {
+                      setIsFocused(false);
+                      // Delay hiding dropdown to allow click on mentor item
+                      setTimeout(() => setShowMentorDropdown(false), 200);
+                    }}
                   />
                   {showMentorDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {filteredMentors.map((mentor) => (
-                        <div
-                          key={mentor._id}
-                          className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                          onClick={() => handleMentorSelect(mentor)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                              {mentor.avatar ? (
-                                <img
-                                  src={mentor.avatar}
-                                  alt={mentor.name}
-                                  className="w-8 h-8 rounded-full object-cover"
-                                />
-                              ) : (
-                                mentor.name.charAt(0).toUpperCase()
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium">{mentor.name}</p>
-                              <p className="text-sm text-gray-600">{mentor.designation}</p>
-                              <p className="text-xs text-gray-500">{mentor.email}</p>
+                      {filteredMentors.length > 0 ? (
+                        filteredMentors.map((mentor) => (
+                          <div
+                            key={mentor._id}
+                            className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                            onClick={() => handleMentorSelect(mentor)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                {mentor.avatar ? (
+                                  <img
+                                    src={mentor.avatar}
+                                    alt={mentor.name}
+                                    className="w-8 h-8 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  mentor.name.charAt(0).toUpperCase()
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium">{mentor.name}</p>
+                                <p className="text-sm text-gray-600">{mentor.designation}</p>
+                                <p className="text-xs text-gray-500">{mentor.email}</p>
+                              </div>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-gray-500">
+                          {searchTerm.length > 0 ? 'কোন মেন্টর পাওয়া যায়নি' : 'মেন্টর খুঁজতে টাইপ করুন'}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
                 </div>
