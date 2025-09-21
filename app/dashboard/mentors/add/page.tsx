@@ -568,10 +568,13 @@ export default function AddMentorPage() {
                 {formData.expertise.map((item, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
-                    <X
-                      className="w-3 h-3 cursor-pointer hover:text-red-500"
+                    <button
+                      type="button"
                       onClick={() => handleArrayRemove('expertise', index)}
-                    />
+                      className="hover:text-red-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
                 ))}
               </div>
@@ -598,10 +601,13 @@ export default function AddMentorPage() {
                 {formData.education.map((edu, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <span>{edu.degree} - {edu.institution} ({edu.year})</span>
-                      <X
-                        className="w-4 h-4 cursor-pointer text-red-500 hover:text-red-700"
+                      <button
+                        type="button"
                         onClick={() => handleArrayRemove('education', index)}
-                      />
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                   </div>
                 ))}
               </div>
@@ -633,10 +639,13 @@ export default function AddMentorPage() {
                 {formData.skills.map((item, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
-                    <X
-                      className="w-3 h-3 cursor-pointer hover:text-red-500"
+                    <button
+                      type="button"
                       onClick={() => handleArrayRemove('skills', index)}
-                    />
+                      className="hover:text-red-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
                 ))}
               </div>
@@ -663,10 +672,13 @@ export default function AddMentorPage() {
                 {formData.languages.map((item, index) => (
                   <Badge key={index} variant="secondary" className="flex items-center gap-1">
                     {item}
-                    <X
-                      className="w-3 h-3 cursor-pointer hover:text-red-500"
+                    <button
+                      type="button"
                       onClick={() => handleArrayRemove('languages', index)}
-                    />
+                      className="hover:text-red-500"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </Badge>
                 ))}
               </div>
@@ -693,10 +705,13 @@ export default function AddMentorPage() {
                 {formData.certifications.map((cert, index) => (
                   <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <span>{cert.name} - {cert.issuer} ({cert.date})</span>
-                      <X
-                        className="w-4 h-4 cursor-pointer text-red-500 hover:text-red-700"
+                      <button
+                        type="button"
                         onClick={() => handleArrayRemove('certifications', index)}
-                      />
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                   </div>
                 ))}
               </div>

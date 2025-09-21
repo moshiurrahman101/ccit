@@ -19,7 +19,7 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {showIcon && <BDTIcon size={size} className="text-orange-600" />}
+      {showIcon && <BDTIcon size={size} className="text-black" />}
       <span className="font-medium">{banglaAmount}</span>
     </div>
   );

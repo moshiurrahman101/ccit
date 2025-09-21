@@ -114,7 +114,13 @@ export default function MentorsPage() {
         ...(statusFilter && { status: statusFilter })
       });
 
-      const response = await fetch(`/api/public/mentors?${params}`);
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch(`/api/mentors?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (!response.ok) {
         throw new Error('Failed to fetch mentors');

@@ -26,11 +26,12 @@ export interface IInvoice extends Document {
   // Payment History
   payments: {
     amount: number;
-    method: string;
-    transactionId: string;
-    status: 'pending' | 'approved' | 'rejected';
+    method: 'bkash' | 'nagad' | 'bank_transfer' | 'cash';
+    senderNumber: string;
+    transactionId?: string;
+    status: 'pending' | 'verified' | 'rejected';
     submittedAt: Date;
-    approvedAt?: Date;
+    verifiedAt?: Date;
     adminNotes?: string;
   }[];
   
@@ -130,22 +131,26 @@ const InvoiceSchema = new Schema<IInvoice>({
     method: {
       type: String,
       required: true,
-      enum: ['cash', 'bank_transfer', 'mobile_banking', 'card', 'check']
+      enum: ['bkash', 'nagad', 'bank_transfer', 'cash']
     },
-    transactionId: {
+    senderNumber: {
       type: String,
       required: true
     },
+    transactionId: {
+      type: String,
+      required: false
+    },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
+      enum: ['pending', 'verified', 'rejected'],
       default: 'pending'
     },
     submittedAt: {
       type: Date,
       default: Date.now
     },
-    approvedAt: Date,
+    verifiedAt: Date,
     adminNotes: String
   }],
   

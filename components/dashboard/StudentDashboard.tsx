@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Clock, Award, Download, Calendar, Users, CheckCircle, XCircle, AlertCircle, TrendingUp, BarChart3 } from 'lucide-react';
+import { BookOpen, Clock, Award, Download, Calendar, Users, CheckCircle, XCircle, AlertCircle, TrendingUp, BarChart3, CreditCard } from 'lucide-react';
 import { formatBanglaNumber, formatBanglaPercentage, formatBanglaDate } from '@/lib/utils/banglaNumbers';
 
 export function StudentDashboard() {
@@ -97,6 +97,38 @@ export function StudentDashboard() {
           আপনার নিবন্ধিত কোর্সগুলি দেখুন এবং আপনার শিক্ষার অগ্রগতি ট্র্যাক করুন
         </p>
       </div>
+
+      {/* Quick Enrollment Section */}
+      <Card className="mb-8 bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-800">
+            <BookOpen className="h-5 w-5" />
+            নতুন কোর্সে এনরোল করুন
+          </CardTitle>
+          <CardDescription className="text-orange-700">
+            আমাদের নতুন ব্যাচসমূহ দেখুন এবং আপনার পছন্দের কোর্সে যোগ দিন
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button 
+              className="bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={() => window.open('/batches', '_blank')}
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              ব্যাচ ব্রাউজ করুন
+            </Button>
+            <Button 
+              variant="outline" 
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={() => window.location.href = '/dashboard/accounts'}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              পেমেন্ট দেখুন
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

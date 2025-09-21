@@ -26,10 +26,8 @@ import {
   UserCheck,
   LogOut,
   Bell,
-  Search,
   UserPlus
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { User } from '@/types';
 
 interface DashboardLayoutProps {
@@ -129,6 +127,30 @@ const menuItems: MenuItem[] = [
     description: 'মেসেজ ও যোগাযোগ'
   },
   {
+    id: 'enrollment',
+    label: 'এনরোলমেন্ট',
+    icon: BookOpen,
+    path: '/dashboard/enrollment',
+    roles: ['student'],
+    description: 'আপনার কোর্স এবং নতুন কোর্সে এনরোল করুন'
+  },
+  {
+    id: 'accounts',
+    label: 'অ্যাকাউন্টস',
+    icon: DollarSign,
+    path: '/dashboard/accounts',
+    roles: ['student'],
+    description: 'পেমেন্ট ও বিলিং ব্যবস্থাপনা'
+  },
+  {
+    id: 'cleanup',
+    label: 'ডেটা ক্লিনআপ',
+    icon: Settings,
+    path: '/dashboard/cleanup',
+    roles: ['admin'],
+    description: 'এনরোলমেন্ট ডেটা ক্লিনআপ'
+  },
+  {
     id: 'settings',
     label: getStatusText('settings'),
     icon: Settings,
@@ -140,7 +162,6 @@ const menuItems: MenuItem[] = [
 
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
   const pathname = usePathname();
   const { logout } = useAuth();
@@ -183,21 +204,33 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-white">
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-80 transform transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       } lg:translate-x-0 lg:static lg:inset-0`}>
-        <div className="flex h-full flex-col bg-white border-r border-gray-200 lg:bg-white/10 lg:backdrop-blur-md lg:border-white/20">
+        <div className="flex h-full flex-col bg-white border-r border-gray-200">
           {/* Logo */}
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6 border-b border-gray-200 lg:border-white/20">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">CC</span>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                <img 
+                  src="/icon.png" 
+                  alt="CCIT Logo" 
+                  className="w-10 h-10 object-contain"
+                  onError={(e) => {
+                    // Fallback if icon not found
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg items-center justify-center hidden">
+                  <span className="text-white font-bold text-lg">CC</span>
+                </div>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 lg:text-gray-800">CCIT</h1>
-                <p className="text-xs text-gray-700 lg:text-gray-600">ড্যাশবোর্ড</p>
+                <h1 className="text-xl font-bold text-gray-900">CCIT</h1>
+                <p className="text-xs text-gray-700">ড্যাশবোর্ড</p>
               </div>
             </div>
             <Button
@@ -210,18 +243,6 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             </Button>
           </div>
 
-          {/* Search */}
-          <div className="p-3 sm:p-4 border-b border-gray-200 lg:border-white/20">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 lg:text-gray-400" />
-              <Input
-                placeholder="খুঁজুন..."
-                className="pl-10 bg-gray-50 border-gray-300 text-gray-900 placeholder:text-gray-600 lg:bg-white/20 lg:border-white/30 lg:text-gray-800 lg:placeholder:text-gray-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1 sm:space-y-2">
@@ -235,21 +256,21 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   onClick={() => handleMenuClick(item.path)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-200 group ${
                     isActive
-                      ? 'bg-indigo-50 shadow-sm border border-indigo-200 lg:bg-white/30 lg:border-white/40 lg:shadow-lg lg:backdrop-blur-sm'
-                      : 'hover:bg-gray-50 lg:hover:bg-white/20 lg:hover:backdrop-blur-sm'
+                      ? 'bg-green-50 shadow-sm border border-green-200'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
                   <Icon className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${
-                    isActive ? 'text-indigo-600' : 'text-gray-700 group-hover:text-indigo-600 lg:text-gray-600'
+                    isActive ? 'text-green-600' : 'text-gray-700 group-hover:text-green-600'
                   }`} />
                   <div className="flex-1 text-left">
                     <p className={`text-xs sm:text-sm font-medium transition-colors ${
-                      isActive ? 'text-gray-900 lg:text-gray-800' : 'text-gray-800 group-hover:text-gray-900 lg:text-gray-700 lg:group-hover:text-gray-800'
+                      isActive ? 'text-gray-900' : 'text-gray-800 group-hover:text-gray-900'
                     }`}>
                       {item.label}
                     </p>
                     {item.description && (
-                      <p className="text-xs text-gray-600 mt-0.5 lg:text-gray-500 hidden sm:block">
+                      <p className="text-xs text-gray-600 mt-0.5 hidden sm:block">
                         {item.description}
                       </p>
                     )}
@@ -265,11 +286,11 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-3 sm:p-4 border-t border-gray-200 lg:border-white/20">
+          <div className="p-3 sm:p-4 border-t border-gray-200">
             <Button
               onClick={handleLogout}
               variant="ghost"
-              className="w-full justify-start text-red-700 hover:text-red-800 hover:bg-red-50 text-xs sm:text-sm lg:text-red-600 lg:hover:text-red-700 lg:hover:bg-red-50/50"
+              className="w-full justify-start text-red-700 hover:text-red-800 hover:bg-red-50 text-xs sm:text-sm"
             >
               <LogOut className="h-3 w-3 sm:h-4 sm:w-4 mr-2 sm:mr-3" />
               {getStatusText('logout')}
@@ -279,10 +300,10 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white">
         {/* Top Bar */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4 lg:bg-white/10 lg:backdrop-blur-md lg:border-white/20">
-          <div className="flex items-center justify-between">
+        <header className="bg-white border-b border-gray-200 px-4 sm:px-6 h-16 flex items-center">
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-3 sm:space-x-4">
               <Button
                 variant="ghost"
@@ -293,10 +314,10 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                 <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               <div>
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 lg:text-gray-800">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
                   {filteredMenuItems.find(item => item.path === pathname)?.label || 'ড্যাশবোর্ড'}
                 </h2>
-                <p className="text-xs sm:text-sm text-gray-700 lg:text-gray-600 hidden sm:block">
+                <p className="text-xs sm:text-sm text-gray-700 hidden sm:block">
                   {filteredMenuItems.find(item => item.path === pathname)?.description || 'সিস্টেম ড্যাশবোর্ড'}
                 </p>
               </div>
@@ -318,8 +339,8 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden sm:block">
-                  <p className="text-xs sm:text-sm font-medium text-gray-900 lg:text-gray-800">{user.name}</p>
-                  <p className="text-xs text-gray-700 lg:text-gray-600">{getRoleLabel(user.role)}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-700">{getRoleLabel(user.role)}</p>
                 </div>
               </div>
 
@@ -328,7 +349,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-6">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-6 bg-white">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

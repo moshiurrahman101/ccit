@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build filter
+    // Build filter - admin should see ALL mentors regardless of status
     const filter: Record<string, unknown> = {};
     
     if (search) {

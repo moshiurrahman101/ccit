@@ -14,8 +14,10 @@ export function middleware(request: NextRequest) {
   // Admin routes that require admin authentication
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
   
-  // Student management API routes that require admin authentication
-  const isStudentApiRoute = request.nextUrl.pathname.startsWith('/api/students');
+  // Student management API routes that require admin authentication (except invoices)
+  const isStudentApiRoute = request.nextUrl.pathname.startsWith('/api/students') && 
+    !request.nextUrl.pathname.startsWith('/api/students/invoices') &&
+    !request.nextUrl.pathname.startsWith('/api/students/check-enrollment');
   
   // Batch management API routes that require admin authentication
   const isBatchApiRoute = request.nextUrl.pathname.startsWith('/api/batches') && 
@@ -74,9 +76,13 @@ export function middleware(request: NextRequest) {
     }
   }
   
+  // Student invoice and enrollment check routes that require student authentication
+  const isStudentInvoiceRoute = request.nextUrl.pathname.startsWith('/api/students/invoices') ||
+    request.nextUrl.pathname.startsWith('/api/students/check-enrollment');
+  
   // If not authenticated and trying to access protected routes
-  if ((isDashboardRoute || isAdminRoute || isStudentApiRoute || isBatchApiRoute) && !isAuthenticated) {
-    if (isStudentApiRoute || isBatchApiRoute) {
+  if ((isDashboardRoute || isAdminRoute || isStudentApiRoute || isBatchApiRoute || isStudentInvoiceRoute) && !isAuthenticated) {
+    if (isStudentApiRoute || isBatchApiRoute || isStudentInvoiceRoute) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.redirect(new URL('/login', request.url));

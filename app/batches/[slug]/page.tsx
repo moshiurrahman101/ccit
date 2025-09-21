@@ -69,6 +69,7 @@ export default function BatchDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -81,6 +82,29 @@ export default function BatchDetailPage() {
       fetchBatch(params.slug as string);
     }
   }, [params.slug]);
+
+  const checkEnrollmentStatus = async () => {
+    try {
+      // Use the new debug endpoint for more reliable checking
+      const response = await fetch(`/api/students/check-enrollment/${batch?._id}`, {
+        headers: {
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Direct enrollment check result:', data);
+        setIsAlreadyEnrolled(data.isEnrolled || false);
+      } else {
+        console.log('Failed to check enrollment status:', response.status);
+        setIsAlreadyEnrolled(false);
+      }
+    } catch (error) {
+      console.error('Error checking enrollment status:', error);
+      setIsAlreadyEnrolled(false);
+    }
+  };
 
   // Countdown timer effect
   useEffect(() => {
@@ -137,6 +161,8 @@ export default function BatchDetailPage() {
 
       if (data.batch) {
         setBatch(data.batch);
+        // Check enrollment status after batch is loaded
+        setTimeout(() => checkEnrollmentStatus(), 100);
       } else {
         setError(data.error || 'Batch not found');
       }
@@ -156,15 +182,49 @@ export default function BatchDetailPage() {
       const authData = await authResponse.json();
       
       if (authData.authenticated) {
-        // User is authenticated, redirect to enrollment page
-        router.push(`/dashboard/enroll/${batch?._id}`);
+        // User is authenticated, proceed with enrollment
+        try {
+          // Get token from cookies more reliably
+          const getCookie = (name: string) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop()?.split(';').shift();
+            return '';
+          };
+          
+          const token = getCookie('auth-token');
+          
+          const enrollmentResponse = await fetch('/api/enrollment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              batchId: batch?._id
+            })
+          });
+
+          if (enrollmentResponse.ok) {
+            const successData = await enrollmentResponse.json();
+            // Enrollment successful, show success message and redirect to dashboard
+            alert(`Successfully enrolled in ${batch?.name}! Redirecting to dashboard...`);
+            router.push('/dashboard');
+          } else {
+            const errorData = await enrollmentResponse.json();
+            alert(errorData.error || 'Enrollment failed. Please try again.');
+          }
+        } catch (enrollmentError) {
+          console.error('Enrollment error:', enrollmentError);
+          alert('Enrollment failed. Please try again.');
+        }
       } else {
         // User is not authenticated, redirect to registration
-        router.push(`/register?redirect=/courses/${batch?.marketing.slug}`);
+        router.push(`/register?redirect=/batches/${batch?.marketing.slug}`);
       }
     } catch (error) {
       console.error('Error checking authentication:', error);
-      router.push(`/register?redirect=/courses/${batch?.marketing.slug}`);
+      router.push(`/register?redirect=/batches/${batch?.marketing.slug}`);
     } finally {
       setIsCheckingAuth(false);
     }
@@ -240,10 +300,10 @@ export default function BatchDetailPage() {
           <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Batch Not Found</h1>
           <p className="text-gray-600 mb-4">{error || 'The batch you are looking for does not exist.'}</p>
-          <Link href="/courses">
+          <Link href="/batches">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Courses
+              Back to Batches
             </Button>
           </Link>
         </div>
@@ -256,10 +316,10 @@ export default function BatchDetailPage() {
       {/* Header with back button */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
-          <Link href="/courses">
+          <Link href="/batches">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Courses
+              Back to Batches
             </Button>
           </Link>
         </div>
@@ -675,7 +735,7 @@ export default function BatchDetailPage() {
                     <div className="text-center mb-2">
                       <h3 className="font-semibold text-orange-800 text-sm flex items-center justify-center gap-1">
                         <Timer className="h-3 w-3" />
-                        কোর্স শুরু হবে&colon;
+                        কোর্স শুরু হবে:
                       </h3>
                     </div>
                     <div className="grid grid-cols-4 gap-1">
@@ -719,28 +779,38 @@ export default function BatchDetailPage() {
                 </div>
 
                 {/* Enrollment Button */}
-                <Button 
-                  className="w-full h-10 text-base font-semibold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" 
-                  onClick={handleEnrollClick}
-                  disabled={isCheckingAuth}
-                >
-                  {isCheckingAuth ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      চেক করা হচ্ছে...
-                    </>
-                  ) : isCourseStarted() ? (
-                    <>
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      কোর্সে যোগ দিন
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      আপনার সিট বুক করুন
-                    </>
-                  )}
-                </Button>
+                {isAlreadyEnrolled ? (
+                  <Button 
+                    className="w-full h-10 text-base font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg" 
+                    onClick={() => window.location.href = '/dashboard'}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    আপনি ইতিমধ্যে এনরোল করেছেন - ড্যাশবোর্ডে যান
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full h-10 text-base font-semibold bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200" 
+                    onClick={handleEnrollClick}
+                    disabled={isCheckingAuth}
+                  >
+                    {isCheckingAuth ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        চেক করা হচ্ছে...
+                      </>
+                    ) : isCourseStarted() ? (
+                      <>
+                        <BookOpen className="h-4 w-4 mr-2" />
+                        কোর্সে যোগ দিন
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        আপনার সিট বুক করুন
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {/* Course Status */}
                 <div className="text-center space-y-1">

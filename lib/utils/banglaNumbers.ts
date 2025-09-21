@@ -44,18 +44,24 @@ export function formatBanglaNumber(num: number): string {
 }
 
 // Format date in Bangla
-export function formatBanglaDate(date: Date): string {
-  const day = toBanglaNumbers(date.getDate());
-  const month = toBanglaNumbers(date.getMonth() + 1);
-  const year = toBanglaNumbers(date.getFullYear());
+export function formatBanglaDate(date: Date | string): string {
+  // Convert string to Date if needed
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  const day = toBanglaNumbers(dateObj.getDate());
+  const month = toBanglaNumbers(dateObj.getMonth() + 1);
+  const year = toBanglaNumbers(dateObj.getFullYear());
   
   return `${day}/${month}/${year}`;
 }
 
 // Format time in Bangla
-export function formatBanglaTime(date: Date): string {
-  const hours = toBanglaNumbers(date.getHours());
-  const minutes = toBanglaNumbers(date.getMinutes());
+export function formatBanglaTime(date: Date | string): string {
+  // Convert string to Date if needed
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  const hours = toBanglaNumbers(dateObj.getHours());
+  const minutes = toBanglaNumbers(dateObj.getMinutes());
   
   return `${hours}:${minutes}`;
 }
