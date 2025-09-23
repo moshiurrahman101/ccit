@@ -225,6 +225,7 @@ export default function BatchesPage() {
           </p>
         </div>
 
+
         {/* Batches Grid */}
         {batches.length === 0 ? (
           <div className="text-center py-12">
@@ -237,19 +238,16 @@ export default function BatchesPage() {
             {batches.map((batch) => (
               <Link key={batch._id} href={`/batches/${batch.marketing.slug}`} className="group">
                 <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-orange-200 transform hover:-translate-y-1">
-                  <div className="relative">
-                    {batch.coverPhoto && batch.coverPhoto.trim() !== '' ? (
-                      <div className="w-full h-48 overflow-hidden">
-                        <Image
-                          src={batch.coverPhoto}
-                          alt={batch.name}
-                          width={400}
-                          height={200}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-full h-48 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-300">
+                  {/* Cover Image Section */}
+                  <div className="w-full h-48 bg-gray-200 relative overflow-hidden">
+                    <img
+                      src={batch.coverPhoto || ''}
+                      alt={batch.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      style={{ display: batch.coverPhoto ? 'block' : 'none' }}
+                    />
+                    {!batch.coverPhoto && (
+                      <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-300">
                         <div className="text-center text-white">
                           <BookOpen className="h-12 w-12 mx-auto mb-2" />
                           <p className="text-sm opacity-90">{batch.name}</p>

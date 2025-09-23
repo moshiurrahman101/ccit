@@ -369,19 +369,19 @@ export default function BatchDetailPage() {
                 
                 {/* Key Benefits */}
                 <div className="flex flex-wrap gap-4 mt-6">
-                  <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                  <div className="flex items-center gap-2 text-green-600 font-semibold">
                     <CheckCircle className="h-5 w-5" />
                     <span>Live Sessions</span>
                   </div>
-                  <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                  <div className="flex items-center gap-2 text-green-600 font-semibold">
                     <CheckCircle className="h-5 w-5" />
                     <span>Job Placement</span>
                   </div>
-                  <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                  <div className="flex items-center gap-2 text-green-600 font-semibold">
                     <CheckCircle className="h-5 w-5" />
                     <span>Certificate</span>
                   </div>
-                  <div className="flex items-center gap-2 text-orange-600 font-semibold">
+                  <div className="flex items-center gap-2 text-green-600 font-semibold">
                     <CheckCircle className="h-5 w-5" />
                     <span>Lifetime Access</span>
                   </div>

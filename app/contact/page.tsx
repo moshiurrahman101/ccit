@@ -1,6 +1,10 @@
+'use client';
+
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Mail, MapPin, Clock, MessageCircle, Send, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, MessageCircle, Send, Facebook, Twitter, Instagram, Linkedin, Loader2 } from 'lucide-react';
+// import { toast } from 'react-hot-toast';
 
 const contactInfo = [
   {
@@ -37,6 +41,58 @@ const socialLinks = [
 ];
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(data.message);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        alert(data.error || 'বার্তা পাঠাতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('নেটওয়ার্ক সমস্যা। দয়া করে আবার চেষ্টা করুন।');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Hero Section */}
@@ -98,7 +154,7 @@ export default function ContactPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-6">
+                  <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -106,6 +162,9 @@ export default function ContactPage() {
                         </label>
                         <input
                           type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="আপনার পূর্ণ নাম"
@@ -117,6 +176,9 @@ export default function ContactPage() {
                         </label>
                         <input
                           type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
                           required
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="your@email.com"
@@ -130,6 +192,9 @@ export default function ContactPage() {
                       </label>
                       <input
                         type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="০১৭১২৩৪৫৬৭৮"
                       />
@@ -140,15 +205,18 @@ export default function ContactPage() {
                         বিষয় *
                       </label>
                       <select
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
                         required
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       >
                         <option value="">বিষয় নির্বাচন করুন</option>
-                        <option value="course">কোর্স সম্পর্কে প্রশ্ন</option>
-                        <option value="enrollment">এনরোলমেন্ট</option>
-                        <option value="payment">পেমেন্ট সমস্যা</option>
-                        <option value="technical">টেকনিক্যাল সহায়তা</option>
-                        <option value="other">অন্যান্য</option>
+                        <option value="কোর্স সম্পর্কে প্রশ্ন">কোর্স সম্পর্কে প্রশ্ন</option>
+                        <option value="এনরোলমেন্ট">এনরোলমেন্ট</option>
+                        <option value="পেমেন্ট সমস্যা">পেমেন্ট সমস্যা</option>
+                        <option value="টেকনিক্যাল সহায়তা">টেকনিক্যাল সহায়তা</option>
+                        <option value="অন্যান্য">অন্যান্য</option>
                       </select>
                     </div>
 
@@ -157,6 +225,9 @@ export default function ContactPage() {
                         আপনার বার্তা *
                       </label>
                       <textarea
+                        name="message"
+                        value={formData.message}
+                        onChange={handleInputChange}
                         required
                         rows={5}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -166,10 +237,20 @@ export default function ContactPage() {
 
                     <Button 
                       type="submit" 
+                      disabled={isSubmitting}
                       className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 py-3"
                     >
-                      <Send className="w-5 h-5 mr-2" />
-                      বার্তা পাঠান
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                          পাঠানো হচ্ছে...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5 mr-2" />
+                          বার্তা পাঠান
+                        </>
+                      )}
                     </Button>
                   </form>
                 </CardContent>
