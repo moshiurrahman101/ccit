@@ -239,32 +239,23 @@ export default function BatchesPage() {
                 <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-orange-200 transform hover:-translate-y-1">
                   <div className="relative">
                     {batch.coverPhoto && batch.coverPhoto.trim() !== '' ? (
-                      <Image
-                        src={batch.coverPhoto}
-                        alt={batch.name}
-                        width={400}
-                        height={200}
-                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          // Hide the image and show fallback if it fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const fallback = target.nextElementSibling as HTMLElement;
-                          if (fallback) {
-                            fallback.style.display = 'flex';
-                          }
-                        }}
-                      />
-                    ) : null}
-                    <div 
-                      className="w-full h-48 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-300"
-                      style={{ display: batch.coverPhoto && batch.coverPhoto.trim() !== '' ? 'none' : 'flex' }}
-                    >
-                      <div className="text-center text-white">
-                        <BookOpen className="h-12 w-12 mx-auto mb-2" />
-                        <p className="text-sm opacity-90">{batch.name}</p>
+                      <div className="w-full h-48 overflow-hidden">
+                        <Image
+                          src={batch.coverPhoto}
+                          alt={batch.name}
+                          width={400}
+                          height={200}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
                       </div>
-                    </div>
+                    ) : (
+                      <div className="w-full h-48 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-300">
+                        <div className="text-center text-white">
+                          <BookOpen className="h-12 w-12 mx-auto mb-2" />
+                          <p className="text-sm opacity-90">{batch.name}</p>
+                        </div>
+                      </div>
+                    )}
                     <Badge className={`absolute top-3 right-3 ${getStatusColor(batch.status)}`}>
                       {getStatusText(batch.status)}
                     </Badge>

@@ -108,7 +108,18 @@ export default function BatchesPage() {
         ...(status && { status })
       });
 
-      const response = await fetch(`/api/public/batches?${params}`);
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        toast.error('অনুমোদন প্রয়োজন');
+        return;
+      }
+
+      const response = await fetch(`/api/batches?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       const data = await response.json();
 
@@ -117,7 +128,13 @@ export default function BatchesPage() {
         setBatches(data.batches);
         setPagination(data.pagination);
       } else {
-        toast.error(data.error || 'ব্যাচের তথ্য লোড করতে সমস্যা হয়েছে');
+        if (response.status === 401) {
+          toast.error('সেশন শেষ হয়ে গেছে। আবার লগইন করুন');
+          localStorage.removeItem('auth-token');
+          window.location.href = '/login';
+        } else {
+          toast.error(data.error || 'ব্যাচের তথ্য লোড করতে সমস্যা হয়েছে');
+        }
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -190,12 +207,14 @@ export default function BatchesPage() {
 
 
   const getStatusCounts = () => {
+    const draft = batches.filter(b => b.status === 'draft').length;
+    const published = batches.filter(b => b.status === 'published').length;
     const upcoming = batches.filter(b => b.status === 'upcoming').length;
     const ongoing = batches.filter(b => b.status === 'ongoing').length;
     const completed = batches.filter(b => b.status === 'completed').length;
     const cancelled = batches.filter(b => b.status === 'cancelled').length;
     const active = batches.filter(b => b.isActive).length;
-    return { upcoming, ongoing, completed, cancelled, active, total: batches.length };
+    return { draft, published, upcoming, ongoing, completed, cancelled, active, total: batches.length };
   };
 
   const statusCounts = getStatusCounts();
@@ -231,7 +250,7 @@ export default function BatchesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">মোট ব্যাচ</CardTitle>
@@ -243,6 +262,24 @@ export default function BatchesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{getStatusText('draft')}</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statusCounts.draft}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{getStatusText('published')}</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{statusCounts.published}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{getStatusText('upcoming')}</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
@@ -250,10 +287,14 @@ export default function BatchesPage() {
             <div className="text-2xl font-bold">{statusCounts.upcoming}</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Additional Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{getStatusText('ongoing')}</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-500" />
+            <CheckCircle className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusCounts.ongoing}</div>
@@ -275,15 +316,6 @@ export default function BatchesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{statusCounts.cancelled}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{getStatusText('active')}</CardTitle>
-            <Users className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{statusCounts.active}</div>
           </CardContent>
         </Card>
       </div>
