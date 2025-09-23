@@ -294,6 +294,8 @@ export default function EditMentorPage() {
           ...prev,
           education: ''
         }));
+      } else {
+        setError('Please provide all three fields: Degree | Institution | Year');
       }
     }
   };
@@ -315,6 +317,8 @@ export default function EditMentorPage() {
           ...prev,
           certifications: ''
         }));
+      } else {
+        setError('Please provide at least: Name | Issuer | Date');
       }
     }
   };

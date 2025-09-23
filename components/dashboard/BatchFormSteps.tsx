@@ -352,10 +352,13 @@ export function Step2CourseDetails({
             {formData.whatYouWillLearn.map((item, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1">
                 {item}
-                <X
-                  className="h-3 w-3 cursor-pointer"
+                <button
+                  type="button"
                   onClick={() => onRemoveArrayItem('whatYouWillLearn', index)}
-                />
+                  className="hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </Badge>
             ))}
           </div>
@@ -393,10 +396,13 @@ export function Step2CourseDetails({
             {formData.requirements.map((item, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1">
                 {item}
-                <X
-                  className="h-3 w-3 cursor-pointer"
+                <button
+                  type="button"
                   onClick={() => onRemoveArrayItem('requirements', index)}
-                />
+                  className="hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </Badge>
             ))}
           </div>
@@ -433,10 +439,13 @@ export function Step2CourseDetails({
             {formData.features.map((item, index) => (
               <Badge key={index} variant="secondary" className="flex items-center gap-1">
                 {item}
-                <X
-                  className="h-3 w-3 cursor-pointer"
+                <button
+                  type="button"
                   onClick={() => onRemoveArrayItem('features', index)}
-                />
+                  className="hover:text-red-500"
+                >
+                  <X className="w-3 h-3" />
+                </button>
               </Badge>
             ))}
           </div>
@@ -591,10 +600,13 @@ export function Step4SEOMarketing({
           {formData.marketing.tags.map((tag, index) => (
             <Badge key={index} variant="secondary" className="flex items-center gap-1">
               {tag}
-              <X
-                className="h-3 w-3 cursor-pointer"
+              <button
+                type="button"
                 onClick={() => onRemoveArrayItem('marketing.tags', index)}
-              />
+                className="hover:text-red-500"
+              >
+                <X className="w-3 h-3" />
+              </button>
             </Badge>
           ))}
         </div>
