@@ -60,82 +60,33 @@ export default function NewsletterPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState('newsletters');
 
-  // Mock data - replace with real API calls
+  // Fetch real data from API
   useEffect(() => {
     const fetchData = async () => {
-      setTimeout(() => {
-        setNewsletters([
-          {
-            _id: '1',
-            title: 'সাপ্তাহিক টেক আপডেট',
-            subject: 'এই সপ্তাহের গুরুত্বপূর্ণ টেকনোলজি আপডেট',
-            content: 'Newsletter content here...',
-            status: 'sent',
-            sentAt: '2024-01-15T10:00:00Z',
-            recipients: 5000,
-            opened: 3200,
-            clicked: 450,
-            unsubscribed: 12,
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-15'
-          },
-          {
-            _id: '2',
-            title: 'নতুন কোর্স ঘোষণা',
-            subject: 'আমাদের নতুন Python কোর্সে অংশ নিন',
-            content: 'Newsletter content here...',
-            status: 'scheduled',
-            scheduledAt: '2024-01-25T09:00:00Z',
-            recipients: 0,
-            opened: 0,
-            clicked: 0,
-            unsubscribed: 0,
-            createdAt: '2024-01-20',
-            updatedAt: '2024-01-20'
-          },
-          {
-            _id: '3',
-            title: 'মাসিক রিপোর্ট',
-            subject: 'জানুয়ারি মাসের অর্জনসমূহ',
-            content: 'Newsletter content here...',
-            status: 'draft',
-            recipients: 0,
-            opened: 0,
-            clicked: 0,
-            unsubscribed: 0,
-            createdAt: '2024-01-18',
-            updatedAt: '2024-01-22'
-          }
-        ]);
-
-        setSubscribers([
-          {
-            _id: '1',
-            email: 'ahmed@example.com',
-            name: 'আহমেদ রহমান',
-            status: 'active',
-            subscribedAt: '2024-01-01',
-            lastOpened: '2024-01-15'
-          },
-          {
-            _id: '2',
-            email: 'fatema@example.com',
-            name: 'ফাতেমা খাতুন',
-            status: 'active',
-            subscribedAt: '2024-01-05',
-            lastOpened: '2024-01-14'
-          },
-          {
-            _id: '3',
-            email: 'karim@example.com',
-            status: 'unsubscribed',
-            subscribedAt: '2023-12-15',
-            lastOpened: '2024-01-10'
-          }
-        ]);
-
+      try {
+        // Fetch subscribers
+        const response = await fetch('/api/newsletter/subscribe');
+        const data = await response.json();
+        
+        if (response.ok) {
+          setSubscribers(data.subscribers.map((sub: any) => ({
+            _id: sub._id,
+            email: sub.email,
+            name: sub.name,
+            status: sub.isActive ? 'active' : 'unsubscribed',
+            subscribedAt: sub.subscribedAt,
+            lastOpened: sub.lastOpened
+          })));
+        }
+        
+        // For now, newsletters are empty since we don't have newsletter sending functionality yet
+        setNewsletters([]);
+        
         setLoading(false);
-      }, 1000);
+      } catch (error) {
+        console.error('Error fetching newsletter data:', error);
+        setLoading(false);
+      }
     };
 
     fetchData();

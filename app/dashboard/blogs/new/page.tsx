@@ -1,0 +1,396 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Save, Eye, ArrowLeft } from 'lucide-react';
+import RichTextEditor from '@/components/editor/RichTextEditor';
+
+interface BlogFormData {
+  title: string;
+  excerpt: string;
+  content: string;
+  featuredImage: string;
+  category: string;
+  tags: string[];
+  status: 'draft' | 'published';
+  seo: {
+    metaTitle: string;
+    metaDescription: string;
+    keywords: string[];
+  };
+}
+
+export default function NewBlogPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [formData, setFormData] = useState<BlogFormData>({
+    title: '',
+    excerpt: '',
+    content: '',
+    featuredImage: '',
+    category: '',
+    tags: [],
+    status: 'draft',
+    seo: {
+      metaTitle: '',
+      metaDescription: '',
+      keywords: []
+    }
+  });
+
+  const categories = [
+    'প্রোগ্রামিং',
+    'ওয়েব ডেভেলপমেন্ট',
+    'মোবাইল অ্যাপ',
+    'ডেটা সায়েন্স',
+    'আর্টিফিশিয়াল ইন্টেলিজেন্স',
+    'সাইবার সিকিউরিটি',
+    'নেটওয়ার্কিং',
+    'অন্যান্য'
+  ];
+
+  const handleInputChange = (field: string, value: any) => {
+    if (field.includes('.')) {
+      const [parent, child] = field.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent as keyof BlogFormData] as any),
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const addKeyword = () => {
+    const keyword = prompt('Enter keyword:');
+    if (keyword && !formData.seo.keywords.includes(keyword)) {
+      setFormData(prev => ({
+        ...prev,
+        seo: {
+          ...prev.seo,
+          keywords: [...prev.seo.keywords, keyword]
+        }
+      }));
+    }
+  };
+
+  const removeKeyword = (keywordToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      seo: {
+        ...prev.seo,
+        keywords: prev.seo.keywords.filter(keyword => keyword !== keywordToRemove)
+      }
+    }));
+  };
+
+  const handleSubmit = async (status: 'draft' | 'published') => {
+    setIsLoading(true);
+
+    try {
+      const submitData = {
+        ...formData,
+        status,
+        author: {
+          name: 'Admin User', // You can get this from auth context
+          email: 'admin@example.com'
+        }
+      };
+
+      const response = await fetch('/api/blogs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        router.push('/dashboard/blogs');
+      } else {
+        console.error('Error creating blog:', data.error);
+        alert('ব্লগ তৈরি করতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error creating blog:', error);
+      alert('নেটওয়ার্ক সমস্যা');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="outline"
+            onClick={() => router.back()}
+            className="bg-white/20 border-white/30"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            ফিরে যান
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">নতুন ব্লগ পোস্ট</h1>
+            <p className="text-gray-600">একটি নতুন ব্লগ পোস্ট তৈরি করুন</p>
+          </div>
+        </div>
+        
+        <div className="flex space-x-2">
+          <Button
+            variant="outline"
+            onClick={() => handleSubmit('draft')}
+            disabled={isLoading}
+            className="bg-white/20 border-white/30"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            খসড়া সংরক্ষণ
+          </Button>
+          <Button
+            onClick={() => handleSubmit('published')}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+          >
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Eye className="w-4 h-4 mr-2" />
+            )}
+            প্রকাশ করুন
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Basic Info */}
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardHeader>
+              <CardTitle>বেসিক তথ্য</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  শিরোনাম *
+                </label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="ব্লগ পোস্টের শিরোনাম লিখুন"
+                  className="bg-white/20 border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  সংক্ষিপ্ত বিবরণ *
+                </label>
+                <Textarea
+                  value={formData.excerpt}
+                  onChange={(e) => handleInputChange('excerpt', e.target.value)}
+                  placeholder="ব্লগ পোস্টের সংক্ষিপ্ত বিবরণ লিখুন"
+                  rows={3}
+                  className="bg-white/20 border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ক্যাটেগরি *
+                </label>
+                <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
+                  <SelectTrigger className="bg-white/20 border-white/30">
+                    <SelectValue placeholder="ক্যাটেগরি নির্বাচন করুন" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ফিচার্ড ইমেজ URL
+                </label>
+                <Input
+                  value={formData.featuredImage}
+                  onChange={(e) => handleInputChange('featuredImage', e.target.value)}
+                  placeholder="ইমেজ URL দিন"
+                  className="bg-white/20 border-white/30"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Content Editor */}
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardHeader>
+              <CardTitle>ব্লগ কন্টেন্ট</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RichTextEditor
+                content={formData.content}
+                onChange={(content) => handleInputChange('content', content)}
+                placeholder="আপনার ব্লগ পোস্ট লিখুন..."
+                className="min-h-[500px]"
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Tags */}
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardHeader>
+              <CardTitle>ট্যাগ</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex space-x-2">
+                <Input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  placeholder="ট্যাগ যোগ করুন"
+                  className="bg-white/20 border-white/30"
+                  onKeyPress={(e) => e.key === 'Enter' && addTag()}
+                />
+                <Button onClick={addTag} size="sm">
+                  যোগ
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="cursor-pointer" onClick={() => removeTag(tag)}>
+                    {tag} ×
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SEO */}
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardHeader>
+              <CardTitle>SEO সেটিংস</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  মেটা টাইটেল
+                </label>
+                <Input
+                  value={formData.seo.metaTitle}
+                  onChange={(e) => handleInputChange('seo.metaTitle', e.target.value)}
+                  placeholder="SEO টাইটেল"
+                  className="bg-white/20 border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  মেটা বিবরণ
+                </label>
+                <Textarea
+                  value={formData.seo.metaDescription}
+                  onChange={(e) => handleInputChange('seo.metaDescription', e.target.value)}
+                  placeholder="SEO বিবরণ"
+                  rows={3}
+                  className="bg-white/20 border-white/30"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  কীওয়ার্ড
+                </label>
+                <div className="flex space-x-2 mb-2">
+                  <Input
+                    placeholder="কীওয়ার্ড যোগ করুন"
+                    className="bg-white/20 border-white/30"
+                    onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
+                  />
+                  <Button onClick={addKeyword} size="sm">
+                    যোগ
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.seo.keywords.map((keyword) => (
+                    <Badge key={keyword} variant="secondary" className="cursor-pointer" onClick={() => removeKeyword(keyword)}>
+                      {keyword} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Preview */}
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardHeader>
+              <CardTitle>প্রিভিউ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-600">
+                  শিরোনাম: {formData.title || 'শিরোনাম যোগ করুন'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  ক্যাটেগরি: {formData.category || 'ক্যাটেগরি নির্বাচন করুন'}
+                </p>
+                <p className="text-sm text-gray-600">
+                  ট্যাগ: {formData.tags.length} টি
+                </p>
+                <p className="text-sm text-gray-600">
+                  শব্দ সংখ্যা: {formData.content.split(' ').length}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
