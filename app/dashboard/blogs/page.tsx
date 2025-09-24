@@ -51,7 +51,7 @@ export default function BlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('publishedAt');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -70,7 +70,7 @@ export default function BlogsPage() {
       });
       
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       if (categoryFilter) params.append('category', categoryFilter);
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
@@ -245,7 +245,7 @@ export default function BlogsPage() {
                 <SelectValue placeholder="স্ট্যাটাস" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">সব স্ট্যাটাস</SelectItem>
+                <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
                 <SelectItem value="published">প্রকাশিত</SelectItem>
                 <SelectItem value="draft">খসড়া</SelectItem>
                 <SelectItem value="archived">আর্কাইভ</SelectItem>

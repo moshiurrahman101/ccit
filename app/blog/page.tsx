@@ -41,7 +41,7 @@ export default function BlogPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [tagFilter, setTagFilter] = useState('');
   const [sortBy, setSortBy] = useState('publishedAt');
   const [sortOrder, setSortOrder] = useState('desc');
@@ -63,7 +63,7 @@ export default function BlogPage() {
       });
       
       if (searchTerm) params.append('search', searchTerm);
-      if (categoryFilter) params.append('category', categoryFilter);
+      if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter);
       if (tagFilter) params.append('tag', tagFilter);
       if (sortBy) params.append('sortBy', sortBy);
       if (sortOrder) params.append('sortOrder', sortOrder);
@@ -131,7 +131,7 @@ export default function BlogPage() {
                     <SelectValue placeholder="ক্যাটেগরি" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">সব ক্যাটেগরি</SelectItem>
+                    <SelectItem value="all">সব ক্যাটেগরি</SelectItem>
                     {categories.map((category) => (
                       <SelectItem key={category} value={category}>
                         {category}
@@ -154,7 +154,7 @@ export default function BlogPage() {
                 <Button
                   onClick={() => {
                     setSearchTerm('');
-                    setCategoryFilter('');
+                    setCategoryFilter('all');
                     setTagFilter('');
                     setSortBy('publishedAt');
                     setSortOrder('desc');

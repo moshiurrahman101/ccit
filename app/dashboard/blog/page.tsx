@@ -48,8 +48,8 @@ export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   // Mock data - replace with real API calls
   useEffect(() => {
@@ -251,7 +251,7 @@ export default function BlogPage() {
             <SelectValue placeholder="অবস্থা" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">সব অবস্থা</SelectItem>
+            <SelectItem value="all">সব অবস্থা</SelectItem>
             <SelectItem value="published">প্রকাশিত</SelectItem>
             <SelectItem value="draft">খসড়া</SelectItem>
             <SelectItem value="archived">আর্কাইভ</SelectItem>
@@ -263,7 +263,7 @@ export default function BlogPage() {
             <SelectValue placeholder="ক্যাটাগরি" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">সব ক্যাটাগরি</SelectItem>
+            <SelectItem value="all">সব ক্যাটাগরি</SelectItem>
             <SelectItem value="Web Development">Web Development</SelectItem>
             <SelectItem value="Data Science">Data Science</SelectItem>
             <SelectItem value="Design">Design</SelectItem>

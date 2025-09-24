@@ -57,7 +57,7 @@ export default function NewsletterPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('newsletters');
 
   // Fetch real data from API
@@ -269,7 +269,7 @@ export default function NewsletterPage() {
             <SelectValue placeholder="অবস্থা" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">সব অবস্থা</SelectItem>
+            <SelectItem value="all">সব অবস্থা</SelectItem>
             {activeTab === 'newsletters' ? (
               <>
                 <SelectItem value="sent">পাঠানো হয়েছে</SelectItem>
