@@ -234,137 +234,193 @@ export default function BatchesPage() {
             <p className="text-gray-600">আপনার অনুসন্ধান বা ফিল্টার মানদণ্ড সামঞ্জস্য করার চেষ্টা করুন।</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {batches.map((batch) => (
-              <Link key={batch._id} href={`/batches/${batch.marketing.slug}`} className="group">
-                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-orange-200 transform hover:-translate-y-1">
-                  {/* Cover Image Section */}
-                  <div className="w-full h-48 bg-gray-200 relative overflow-hidden">
-                    <img
-                      src={batch.coverPhoto || ''}
-                      alt={batch.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      style={{ display: batch.coverPhoto ? 'block' : 'none' }}
-                    />
-                    {!batch.coverPhoto && (
-                      <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center group-hover:from-orange-500 group-hover:to-orange-700 transition-all duration-300">
-                        <div className="text-center text-white">
-                          <BookOpen className="h-12 w-12 mx-auto mb-2" />
-                          <p className="text-sm opacity-90">{batch.name}</p>
-                        </div>
-                      </div>
-                    )}
-                    <Badge className={`absolute top-3 right-3 ${getStatusColor(batch.status)}`}>
-                      {getStatusText(batch.status)}
-                    </Badge>
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
-                  </div>
-
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2 group-hover:text-orange-600 transition-colors duration-200">{batch.name}</CardTitle>
-                      <Badge variant="outline" className="ml-2">
-                        {batch.courseType}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{batch.description}</p>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Mentor Info */}
-                    <div className="flex items-center gap-3">
-                      {batch.mentorId.avatar ? (
-                        <Image
-                          src={batch.mentorId.avatar}
-                          alt={batch.mentorId.name}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {batches.map((batch) => {
+              // Calculate days until start
+              const now = new Date().getTime();
+              const startDate = new Date(batch.startDate).getTime();
+              const daysUntilStart = Math.ceil((startDate - now) / (1000 * 60 * 60 * 24));
+              const isStarted = daysUntilStart <= 0;
+              
+              return (
+                <Link key={batch._id} href={`/batches/${batch.marketing.slug}`} className="group block">
+                  {/* New Card Design */}
+                  <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100 h-full flex flex-col">
+                    
+                    {/* Cover Image Section */}
+                    <div className="relative h-56 overflow-hidden">
+                      {batch.coverPhoto ? (
+                        <img
+                          src={batch.coverPhoto}
+                          alt={batch.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium">{batch.mentorId.name.charAt(0)}</span>
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-sm">{batch.mentorId.name}</p>
-                        <p className="text-xs text-gray-500">{batch.mentorId.designation}</p>
-                      </div>
-                      {batch.mentorId.rating && (
-                        <div className="flex items-center gap-1 ml-auto">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="text-sm font-medium">{batch.mentorId.rating}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Duration & Dates */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{batch.duration} {batch.durationUnit}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(batch.startDate)}</span>
-                      </div>
-                    </div>
-
-                    {/* Students Count */}
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Users className="h-4 w-4" />
-                      <span>{batch.currentStudents}/{batch.maxStudents} students</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {batch.discountPrice ? (
-                          <div>
-                            <span className="text-2xl font-bold text-orange-600">
-                              ৳{formatPrice(batch.discountPrice)}
-                            </span>
-                            <span className="text-lg text-gray-500 line-through ml-2">
-                              ৳{formatPrice(batch.regularPrice)}
-                            </span>
-                            {batch.discountPercentage && (
-                              <Badge variant="destructive" className="ml-2">
-                                {batch.discountPercentage}% OFF
-                              </Badge>
-                            )}
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <BookOpen className="h-16 w-16 mx-auto mb-3 opacity-80" />
+                            <p className="text-sm font-medium opacity-90">{batch.name}</p>
                           </div>
+                        </div>
+                      )}
+                      
+                      {/* Overlay Gradient */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                      
+                      
+                      {/* Smart Countdown Badge */}
+                      <div className="absolute top-4 left-4">
+                        {batch.status === 'upcoming' ? (
+                          <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg animate-pulse">
+                            <Star className="h-4 w-4 inline mr-1" />
+                            Coming Soon!
+                          </span>
+                        ) : batch.currentStudents >= batch.maxStudents ? (
+                          <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                            <Users className="h-3 w-3 inline mr-1" />
+                            No Seat Available
+                          </span>
+                        ) : isStarted ? (
+                          <span className="bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                            <Calendar className="h-3 w-3 inline mr-1" />
+                            Batch is Running
+                          </span>
+                        ) : batch.status === 'published' ? (
+                          <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                            <Clock className="h-3 w-3 inline mr-1" />
+                            {daysUntilStart === 1 ? 'আগামীকাল' : 
+                             daysUntilStart <= 7 ? `${daysUntilStart} দিন বাকি` : 
+                             `শুরু: ${formatDate(batch.startDate)}`}
+                          </span>
                         ) : (
-                          <span className="text-2xl font-bold text-orange-600">
-                            ৳{formatPrice(batch.regularPrice)}
+                          <span className="bg-gradient-to-r from-gray-500 to-gray-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                            <Clock className="h-3 w-3 inline mr-1" />
+                            {daysUntilStart === 1 ? 'আগামীকাল' : 
+                             daysUntilStart <= 7 ? `${daysUntilStart} দিন বাকি` : 
+                             `শুরু: ${formatDate(batch.startDate)}`}
                           </span>
                         )}
                       </div>
+                      
+                      {/* Course Type Badge */}
+                      <div className="absolute bottom-4 right-4">
+                        <span className="bg-white/90 text-gray-800 px-3 py-1 rounded-full text-xs font-medium">
+                          {batch.courseType}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Tags */}
-                    {batch.marketing.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {batch.marketing.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {batch.marketing.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{batch.marketing.tags.length - 3} more
-                          </Badge>
+                    {/* Content Section */}
+                    <div className="p-6 flex-1 flex flex-col">
+                      
+                      {/* Title */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                        {batch.name}
+                      </h3>
+                      
+                      {/* Mentor Info */}
+                      <div className="flex items-center gap-3 mb-4">
+                        {batch.mentorId.avatar ? (
+                          <img
+                            src={batch.mentorId.avatar}
+                            alt={batch.mentorId.name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center border-2 border-orange-200">
+                            <span className="text-white font-bold text-sm">{batch.mentorId.name.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900 text-sm">{batch.mentorId.name}</p>
+                          <p className="text-xs text-gray-500">{batch.mentorId.designation}</p>
+                        </div>
+                        {batch.mentorId.rating && (
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                            <span className="text-sm font-semibold text-gray-900">{batch.mentorId.rating}</span>
+                          </div>
                         )}
                       </div>
-                    )}
-
-                    {/* Action Button */}
-                    <Button className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 border-0 shadow-md hover:shadow-lg transition-all duration-200">
-                      বিস্তারিত দেখুন
-                    </Button>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                      
+                      {/* Course Details */}
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-orange-500" />
+                          <span className="font-medium">{batch.duration} {batch.durationUnit}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4 text-orange-500" />
+                          <span className="font-medium">{batch.currentStudents}/{batch.maxStudents}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Price Section - Redesigned */}
+                      <div className="mb-6">
+                        {batch.discountPrice ? (
+                          <div className="relative">
+                            {/* Discount Banner */}
+                            <div className="absolute -top-2 -right-2 z-10">
+                              <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
+                                {batch.discountPercentage}% ছাড়
+                              </div>
+                            </div>
+                            
+                            {/* Main Price Card */}
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 relative overflow-hidden">
+                              {/* Decorative elements */}
+                              <div className="absolute top-0 right-0 w-16 h-16 bg-green-100 rounded-full -translate-y-8 translate-x-8 opacity-50"></div>
+                              <div className="absolute bottom-0 left-0 w-12 h-12 bg-emerald-100 rounded-full translate-y-6 -translate-x-6 opacity-50"></div>
+                              
+                              <div className="relative text-center">
+                                <div className="flex items-center justify-center gap-3 mb-2">
+                                  <span className="text-4xl font-bold text-green-600">
+                                    ৳{formatPrice(batch.discountPrice)}
+                                  </span>
+                                  <div className="flex flex-col items-center">
+                                    <div className="text-xs text-gray-500 line-through">
+                                      ৳{formatPrice(batch.regularPrice)}
+                                    </div>
+                                    <div className="text-xs text-green-600 font-semibold">
+                                      আপনি সাশ্রয় করবেন
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                {/* Savings amount */}
+                                <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold inline-block">
+                                  ৳{formatPrice(batch.regularPrice - batch.discountPrice)} সাশ্রয়
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4 relative overflow-hidden">
+                            {/* Decorative elements */}
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-full -translate-y-8 translate-x-8 opacity-50"></div>
+                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-indigo-100 rounded-full translate-y-6 -translate-x-6 opacity-50"></div>
+                            
+                            <div className="relative text-center">
+                              <div className="text-4xl font-bold text-blue-600 mb-1">
+                                ৳{formatPrice(batch.regularPrice)}
+                              </div>
+                              <div className="text-sm text-blue-500 font-medium">
+                                স্পেশাল প্রাইস
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Action Button */}
+                      <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                        বিস্তারিত দেখুন
+                      </Button>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
 
