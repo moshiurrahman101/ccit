@@ -144,8 +144,18 @@ export async function POST(request: NextRequest) {
       blog
     }, { status: 201 });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating blog:', error);
+    
+    // Handle validation errors specifically
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
+      return NextResponse.json(
+        { error: 'Validation failed', details: validationErrors },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create blog' },
       { status: 500 }

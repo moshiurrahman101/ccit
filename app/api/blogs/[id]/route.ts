@@ -9,8 +9,8 @@ export async function GET(
 ) {
   try {
     await connectDB();
-    const { id } = await params;
 
+    const { id } = await params;
     const blog = await Blog.findById(id);
 
     if (!blog) {
@@ -18,12 +18,6 @@ export async function GET(
         { error: 'Blog not found' },
         { status: 404 }
       );
-    }
-
-    // Increment views for published blogs
-    if (blog.status === 'published') {
-      await Blog.findByIdAndUpdate(id, { $inc: { views: 1 } });
-      blog.views += 1;
     }
 
     return NextResponse.json({ blog });
@@ -44,8 +38,8 @@ export async function PUT(
 ) {
   try {
     await connectDB();
-    const { id } = await params;
 
+    const { id } = await params;
     const body = await request.json();
     const {
       title,
@@ -56,8 +50,17 @@ export async function PUT(
       category,
       tags,
       seo,
-      status
+      status,
+      slug
     } = body;
+
+    // Validation
+    if (!title || !excerpt || !content || !author?.name || !author?.email || !category) {
+      return NextResponse.json(
+        { error: 'Required fields missing' },
+        { status: 400 }
+      );
+    }
 
     // Check if blog exists
     const existingBlog = await Blog.findById(id);
@@ -68,47 +71,39 @@ export async function PUT(
       );
     }
 
-    // Generate new slug if title changed
-    let slug = existingBlog.slug;
-    if (title && title !== existingBlog.title) {
-      slug = title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-
-      // Ensure unique slug
+    // Handle slug uniqueness if changed
+    let finalSlug = slug || existingBlog.slug;
+    if (slug && slug !== existingBlog.slug) {
       let originalSlug = slug;
       let counter = 1;
-      while (await Blog.findOne({ slug, _id: { $ne: id } })) {
-        slug = `${originalSlug}-${counter}`;
+      while (await Blog.findOne({ slug: finalSlug, _id: { $ne: id } })) {
+        finalSlug = `${originalSlug}-${counter}`;
         counter++;
       }
     }
 
     // Update blog
-    const updateData: any = {};
-    if (title) updateData.title = title;
-    if (slug) updateData.slug = slug;
-    if (excerpt) updateData.excerpt = excerpt;
-    if (content) updateData.content = content;
-    if (featuredImage !== undefined) updateData.featuredImage = featuredImage;
-    if (author) updateData.author = author;
-    if (category) updateData.category = category;
-    if (tags) updateData.tags = tags;
-    if (seo) updateData.seo = { ...existingBlog.seo, ...seo };
-    if (status) updateData.status = status;
-
-    const blog = await Blog.findByIdAndUpdate(
+    const updatedBlog = await Blog.findByIdAndUpdate(
       id,
-      updateData,
+      {
+        title,
+        slug: finalSlug,
+        excerpt,
+        content,
+        featuredImage,
+        author,
+        category,
+        tags: tags || [],
+        seo: seo || {},
+        status,
+        ...(status === 'published' && !existingBlog.publishedAt && { publishedAt: new Date() })
+      },
       { new: true, runValidators: true }
     );
 
     return NextResponse.json({
       message: 'Blog updated successfully',
-      blog
+      blog: updatedBlog
     });
 
   } catch (error) {
@@ -127,8 +122,8 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-    const { id } = await params;
 
+    const { id } = await params;
     const blog = await Blog.findByIdAndDelete(id);
 
     if (!blog) {

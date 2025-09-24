@@ -343,164 +343,185 @@ export default function BatchDetailPage() {
               </div>
             )}
 
-            {/* Enhanced Heading and Description */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 mb-6">
-                <Badge className={`${getStatusColor(batch.status)} text-sm px-3 py-1`}>
+            {/* Modern Compact Header */}
+            <div className="space-y-4">
+              {/* Status Badges */}
+              <div className="flex items-center gap-3 mb-4">
+                <Badge className={`${getStatusColor(batch.status)} text-xs px-3 py-1.5 font-medium`}>
                   {getStatusText(batch.status)}
                 </Badge>
-                <Badge variant="outline" className="text-sm px-3 py-1">
+                <Badge variant="outline" className="text-xs px-3 py-1.5 font-medium">
                   {batch.courseType}
                 </Badge>
                 {batch.discountPrice && (
-                  <Badge variant="destructive" className="text-sm px-3 py-1 animate-pulse">
+                  <Badge variant="destructive" className="text-xs px-3 py-1.5 font-medium animate-pulse">
                     {batch.discountPercentage}% OFF
                   </Badge>
                 )}
               </div>
               
-              <div className="space-y-4">
-                <h1 className="text-5xl md:text-6xl font-bold text-gray-900 leading-tight">
+              {/* Compact Title and Description */}
+              <div className="space-y-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
                   {batch.name}
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-4xl">
+                <p className="text-lg text-gray-600 leading-relaxed">
                   {batch.description}
                 </p>
                 
-                {/* Key Benefits */}
-                <div className="flex flex-wrap gap-4 mt-6">
-                  <div className="flex items-center gap-2 text-green-600 font-semibold">
-                    <CheckCircle className="h-5 w-5" />
+                {/* Key Benefits - Compact Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                  <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-3 py-2 rounded-lg">
+                    <CheckCircle className="h-4 w-4" />
                     <span>Live Sessions</span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600 font-semibold">
-                    <CheckCircle className="h-5 w-5" />
+                  <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-3 py-2 rounded-lg">
+                    <CheckCircle className="h-4 w-4" />
                     <span>Job Placement</span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600 font-semibold">
-                    <CheckCircle className="h-5 w-5" />
+                  <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-3 py-2 rounded-lg">
+                    <CheckCircle className="h-4 w-4" />
                     <span>Certificate</span>
                   </div>
-                  <div className="flex items-center gap-2 text-green-600 font-semibold">
-                    <CheckCircle className="h-5 w-5" />
+                  <div className="flex items-center gap-2 text-green-600 text-sm font-medium bg-green-50 px-3 py-2 rounded-lg">
+                    <CheckCircle className="h-4 w-4" />
                     <span>Lifetime Access</span>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Course Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Course Details
+            {/* Course Details - Compact Grid */}
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                  Course Overview
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Duration & Schedule */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Duration</h4>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Clock className="h-4 w-4" />
-                      <span>{getDurationText(batch.duration, batch.durationUnit)}</span>
+              <CardContent className="space-y-4">
+                {/* Compact Info Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Duration</span>
                     </div>
+                    <p className="text-sm text-gray-600">{getDurationText(batch.duration, batch.durationUnit)}</p>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Schedule</h4>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      <span>{formatDate(batch.startDate)} - {formatDate(batch.endDate)}</span>
+                  
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Start Date</span>
                     </div>
+                    <p className="text-sm text-gray-600">{formatDate(batch.startDate)}</p>
                   </div>
-                </div>
-
-                {/* Students Count */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Capacity</h4>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Users className="h-4 w-4" />
-                    <span>{batch.currentStudents} / {batch.maxStudents} students enrolled</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                    <div 
-                      className="bg-orange-600 h-2 rounded-full" 
-                      style={{ width: `${(batch.currentStudents / batch.maxStudents) * 100}%` }}
-                    ></div>
+                  
+                  <div className="bg-white rounded-lg p-3 border border-blue-100">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-gray-700">Students</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{batch.currentStudents}/{batch.maxStudents}</p>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                      <div 
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${(batch.currentStudents / batch.maxStudents) * 100}%` }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Syllabus */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Syllabus</CardTitle>
+            {/* Syllabus - Modern Accordion Style */}
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BookOpen className="h-5 w-5 text-green-600" />
+                  Course Syllabus
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {batch.modules.map((module, index) => (
-                    <div key={index} className="border-l-4 border-orange-500 pl-4 py-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-900">{module.title}</h4>
-                        <span className="text-sm text-gray-500">{module.duration}h</span>
+                    <div key={index} className="bg-white rounded-lg p-4 border border-green-100 hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-bold text-green-600">{index + 1}</span>
+                          </div>
+                          <h4 className="font-semibold text-gray-900">{module.title}</h4>
+                        </div>
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                          {module.duration}h
+                        </span>
                       </div>
-                      <p className="text-gray-600 mt-1">{module.description}</p>
+                      <p className="text-sm text-gray-600 ml-11">{module.description}</p>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* What You'll Learn */}
-            <Card>
-              <CardHeader>
-                <CardTitle>What You'll Learn</CardTitle>
+            {/* What You'll Learn - Modern Grid */}
+            <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CheckCircle className="h-5 w-5 text-purple-600" />
+                  What You'll Learn
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {batch.whatYouWillLearn.map((item, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{item}</span>
-                    </li>
+                    <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-3 border border-purple-100">
+                      <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{item}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Requirements */}
+            {/* Requirements - Modern Design */}
             {batch.requirements.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Requirements</CardTitle>
+              <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <BookOpen className="h-5 w-5 text-orange-600" />
+                    Prerequisites
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {batch.requirements.map((requirement, index) => (
-                      <li key={index} className="flex items-start gap-2">
+                      <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-3 border border-orange-100">
                         <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <span className="text-gray-700">{requirement}</span>
-                      </li>
+                        <span className="text-sm text-gray-700">{requirement}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Features */}
+            {/* Features - Modern Design */}
             {batch.features.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Course Features</CardTitle>
+              <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Star className="h-5 w-5 text-indigo-600" />
+                    Course Features
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {batch.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        <span className="text-gray-700">{feature}</span>
+                      <div key={index} className="flex items-center gap-3 bg-white rounded-lg p-3 border border-indigo-100">
+                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">{feature}</span>
                       </div>
                     ))}
                   </div>
@@ -593,40 +614,40 @@ export default function BatchDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Mentor Card */}
+            {/* Mentor Card - Compact Design */}
             <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
-              <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <Star className="h-6 w-6" />
+              <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Star className="h-5 w-5" />
                   মেন্টর সম্পর্কে
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-start gap-4">
                   {batch.mentorId.avatar ? (
                     <Image
                       src={batch.mentorId.avatar}
                       alt={batch.mentorId.name}
-                      width={80}
-                      height={80}
-                      className="w-20 h-20 rounded-full border-4 border-white shadow-lg"
+                      width={60}
+                      height={60}
+                      className="w-15 h-15 rounded-full border-2 border-white shadow-md"
                     />
                   ) : (
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-                      <span className="text-2xl font-bold text-white">{batch.mentorId.name.charAt(0)}</span>
+                    <div className="w-15 h-15 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                      <span className="text-lg font-bold text-white">{batch.mentorId.name.charAt(0)}</span>
                     </div>
                   )}
                   <div className="flex-1">
-                    <h4 className="text-2xl font-bold text-gray-900 mb-2">{batch.mentorId.name}</h4>
-                    <p className="text-lg text-blue-600 font-semibold mb-1">{batch.mentorId.designation}</p>
-                    <p className="text-gray-600 mb-3">{batch.mentorId.experience} বছর অভিজ্ঞতা</p>
+                    <h4 className="text-xl font-bold text-gray-900 mb-1">{batch.mentorId.name}</h4>
+                    <p className="text-base text-blue-600 font-semibold mb-1">{batch.mentorId.designation}</p>
+                    <p className="text-sm text-gray-600 mb-2">{batch.mentorId.experience} বছর অভিজ্ঞতা</p>
                     {batch.mentorId.rating && (
-                      <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-2 mb-2">
                         <div className="flex items-center gap-1">
-                          <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                          <span className="text-lg font-bold text-gray-900">{batch.mentorId.rating}</span>
+                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                          <span className="text-base font-bold text-gray-900">{batch.mentorId.rating}</span>
                         </div>
-                        <span className="text-gray-600">
+                        <span className="text-sm text-gray-600">
                           ({batch.mentorId.studentsCount || 0} জন ছাত্র)
                         </span>
                       </div>
@@ -635,17 +656,17 @@ export default function BatchDetailPage() {
                 </div>
 
                 {batch.mentorId.bio && (
-                  <div className="bg-white rounded-lg p-4 border border-blue-200">
-                    <p className="text-gray-700 leading-relaxed">{batch.mentorId.bio}</p>
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <p className="text-sm text-gray-700 leading-relaxed">{batch.mentorId.bio}</p>
                   </div>
                 )}
 
                 {/* Expertise */}
                 <div>
-                  <h5 className="text-lg font-bold text-gray-900 mb-3">দক্ষতা</h5>
+                  <h5 className="text-base font-bold text-gray-900 mb-2">দক্ষতা</h5>
                   <div className="flex flex-wrap gap-2">
                     {batch.mentorId.expertise.map((skill, index) => (
-                      <Badge key={index} variant="secondary" className="text-sm px-3 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
+                      <Badge key={index} variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
                         {skill}
                       </Badge>
                     ))}
@@ -653,27 +674,27 @@ export default function BatchDetailPage() {
                 </div>
 
                 {/* Social Links */}
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                   {batch.mentorId.socialLinks.linkedin && (
-                    <Button variant="outline" size="lg" asChild className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
                       <a href={batch.mentorId.socialLinks.linkedin} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-5 w-5" />
+                        <Linkedin className="h-4 w-4" />
                         LinkedIn
                       </a>
                     </Button>
                   )}
                   {batch.mentorId.socialLinks.github && (
-                    <Button variant="outline" size="lg" asChild className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
                       <a href={batch.mentorId.socialLinks.github} target="_blank" rel="noopener noreferrer">
-                        <Github className="h-5 w-5" />
+                        <Github className="h-4 w-4" />
                         GitHub
                       </a>
                     </Button>
                   )}
                   {batch.mentorId.socialLinks.website && (
-                    <Button variant="outline" size="lg" asChild className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
                       <a href={batch.mentorId.socialLinks.website} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-5 w-5" />
+                        <ExternalLink className="h-4 w-4" />
                         Website
                       </a>
                     </Button>
@@ -682,19 +703,19 @@ export default function BatchDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Tags */}
+            {/* Tags - Compact Design */}
             {batch.marketing.tags.length > 0 && (
               <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200">
-                <CardHeader className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-xl">
-                    <BookOpen className="h-6 w-6" />
+                <CardHeader className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-t-lg pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <BookOpen className="h-5 w-5" />
                     ট্যাগসমূহ
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex flex-wrap gap-3">
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2">
                     {batch.marketing.tags.map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="text-sm px-4 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300">
+                      <Badge key={index} variant="secondary" className="text-xs px-3 py-1 bg-gray-200 text-gray-800 hover:bg-gray-300">
                         {tag}
                       </Badge>
                     ))}

@@ -1,127 +1,111 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  FileText, 
+  Plus, 
   Search, 
   Filter, 
-  Plus, 
   Eye, 
   Edit, 
   Trash2, 
   Calendar,
   User,
-  Eye as EyeIcon,
-  ThumbsUp,
-  MessageCircle,
-  Globe,
-  Lock,
-  Clock
+  Tag,
+  BarChart3,
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle
 } from 'lucide-react';
-import { formatBanglaNumber, formatBanglaDate } from '@/lib/utils/banglaNumbers';
 
-interface BlogPost {
+interface Blog {
   _id: string;
   title: string;
   slug: string;
   excerpt: string;
-  content: string;
-  author: string;
+  status: 'draft' | 'published' | 'archived';
   category: string;
   tags: string[];
-  status: 'published' | 'draft' | 'archived';
-  featuredImage?: string;
+  author: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
   views: number;
   likes: number;
-  comments: number;
+  readingTime: number;
   publishedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
 
-export default function BlogPage() {
-  const [posts, setPosts] = useState<BlogPost[]>([]);
+export default function BlogsPage() {
+  const router = useRouter();
+  const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [sortBy, setSortBy] = useState('publishedAt');
+  const [sortOrder, setSortOrder] = useState('desc');
 
-  // Mock data - replace with real API calls
   useEffect(() => {
-    const fetchPosts = async () => {
-      setTimeout(() => {
-        setPosts([
-          {
-            _id: '1',
-            title: 'React.js এ Advanced Hooks ব্যবহারের গাইড',
-            slug: 'react-advanced-hooks-guide',
-            excerpt: 'React.js এ useCallback, useMemo, useRef এবং অন্যান্য advanced hooks এর ব্যবহার শিখুন',
-            content: 'Full content here...',
-            author: 'সুমাইয়া খান',
-            category: 'Web Development',
-            tags: ['React', 'JavaScript', 'Hooks', 'Frontend'],
-            status: 'published',
-            views: 1250,
-            likes: 45,
-            comments: 12,
-            publishedAt: '2024-01-15',
-            createdAt: '2024-01-10',
-            updatedAt: '2024-01-15'
-          },
-          {
-            _id: '2',
-            title: 'Python Data Science: Pandas এর সাথে শুরু করুন',
-            slug: 'python-data-science-pandas',
-            excerpt: 'Python Data Science এর জন্য Pandas লাইব্রেরি ব্যবহার করে ডেটা ম্যানিপুলেশন শিখুন',
-            content: 'Full content here...',
-            author: 'রাহুল আহমেদ',
-            category: 'Data Science',
-            tags: ['Python', 'Pandas', 'Data Science', 'Analytics'],
-            status: 'published',
-            views: 890,
-            likes: 32,
-            comments: 8,
-            publishedAt: '2024-01-12',
-            createdAt: '2024-01-08',
-            updatedAt: '2024-01-12'
-          },
-          {
-            _id: '3',
-            title: 'UI/UX Design Principles: Modern Design Trends',
-            slug: 'ui-ux-design-principles',
-            excerpt: 'আধুনিক UI/UX ডিজাইনের মূলনীতি এবং ২০২৪ সালের ডিজাইন ট্রেন্ডস',
-            content: 'Full content here...',
-            author: 'আরিফ হোসেন',
-            category: 'Design',
-            tags: ['UI/UX', 'Design', 'Figma', 'Adobe XD'],
-            status: 'draft',
-            views: 0,
-            likes: 0,
-            comments: 0,
-            createdAt: '2024-01-18',
-            updatedAt: '2024-01-20'
-          }
-        ]);
-        setLoading(false);
-      }, 1000);
-    };
+    fetchBlogs();
+  }, [searchTerm, statusFilter, categoryFilter, sortBy, sortOrder]);
 
-    fetchPosts();
-  }, []);
+  const fetchBlogs = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        admin: 'true',
+        page: '1',
+        limit: '50'
+      });
+      
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      if (categoryFilter) params.append('category', categoryFilter);
+      if (sortBy) params.append('sortBy', sortBy);
+      if (sortOrder) params.append('sortOrder', sortOrder);
 
-  const stats = {
-    total: posts.length,
-    published: posts.filter(p => p.status === 'published').length,
-    draft: posts.filter(p => p.status === 'draft').length,
-    archived: posts.filter(p => p.status === 'archived').length,
-    totalViews: posts.reduce((sum, p) => sum + p.views, 0),
-    totalLikes: posts.reduce((sum, p) => sum + p.likes, 0),
-    totalComments: posts.reduce((sum, p) => sum + p.comments, 0)
+      const response = await fetch(`/api/blogs?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setBlogs(data.blogs);
+      } else {
+        console.error('Error fetching blogs:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching blogs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteBlog = async (blogId: string) => {
+    if (!confirm('আপনি কি এই ব্লগ পোস্টটি মুছে ফেলতে চান?')) return;
+
+    try {
+      const response = await fetch(`/api/blogs/${blogId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await fetchBlogs();
+      } else {
+        console.error('Error deleting blog');
+      }
+    } catch (error) {
+      console.error('Error deleting blog:', error);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -133,7 +117,7 @@ export default function BlogPage() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusText = (status: string) => {
     switch (status) {
       case 'published': return 'প্রকাশিত';
       case 'draft': return 'খসড়া';
@@ -142,14 +126,21 @@ export default function BlogPage() {
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'Web Development': return 'bg-blue-100 text-blue-800';
-      case 'Data Science': return 'bg-purple-100 text-purple-800';
-      case 'Design': return 'bg-pink-100 text-pink-800';
-      case 'Mobile Development': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('bn-BD', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const stats = {
+    total: blogs.length,
+    published: blogs.filter(b => b.status === 'published').length,
+    draft: blogs.filter(b => b.status === 'draft').length,
+    archived: blogs.filter(b => b.status === 'archived').length,
+    totalViews: blogs.reduce((sum, b) => sum + b.views, 0),
+    totalLikes: blogs.reduce((sum, b) => sum + b.likes, 0)
   };
 
   if (loading) {
@@ -174,188 +165,208 @@ export default function BlogPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          ব্লগ ব্যবস্থাপনা
-        </h1>
-        <p className="text-gray-600">
-          ব্লগ পোস্ট তৈরি করুন এবং পরিচালনা করুন
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+            ব্লগ ব্যবস্থাপনা
+          </h1>
+          <p className="text-gray-600">
+            ব্লগ পোস্ট তৈরি করুন এবং পরিচালনা করুন
+          </p>
+        </div>
+        <Button 
+          onClick={() => router.push('/dashboard/blog/new')}
+          className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          নতুন ব্লগ পোস্ট
+        </Button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">মোট পোস্ট</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">মোট ব্লগ</CardTitle>
             <FileText className="h-5 w-5 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">
-              {formatBanglaNumber(stats.total)}
-            </div>
+            <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-700">প্রকাশিত</CardTitle>
-            <Globe className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-5 w-5 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">
-              {formatBanglaNumber(stats.published)}
-            </div>
+            <div className="text-2xl font-bold text-gray-800">{stats.published}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">খসড়া</CardTitle>
+            <AlertCircle className="h-5 w-5 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-800">{stats.draft}</div>
           </CardContent>
         </Card>
 
         <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-gray-700">মোট ভিউ</CardTitle>
-            <EyeIcon className="h-5 w-5 text-purple-500" />
+            <BarChart3 className="h-5 w-5 text-purple-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-800">
-              {formatBanglaNumber(stats.totalViews)}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">মোট লাইক</CardTitle>
-            <ThumbsUp className="h-5 w-5 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-800">
-              {formatBanglaNumber(stats.totalLikes)}
-            </div>
+            <div className="text-2xl font-bold text-gray-800">{stats.totalViews}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="পোস্ট খুঁজুন..."
-            className="pl-10 bg-white/20 border-white/30 text-gray-800 placeholder:text-gray-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40 bg-white/20 border-white/30">
-            <SelectValue placeholder="অবস্থা" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">সব অবস্থা</SelectItem>
-            <SelectItem value="published">প্রকাশিত</SelectItem>
-            <SelectItem value="draft">খসড়া</SelectItem>
-            <SelectItem value="archived">আর্কাইভ</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Filters */}
+      <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="ব্লগ খুঁজুন..."
+                className="pl-10 bg-white/20 border-white/30 text-gray-800 placeholder:text-gray-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-white/20 border-white/30">
+                <SelectValue placeholder="স্ট্যাটাস" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
+                <SelectItem value="published">প্রকাশিত</SelectItem>
+                <SelectItem value="draft">খসড়া</SelectItem>
+                <SelectItem value="archived">আর্কাইভ</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-40 bg-white/20 border-white/30">
-            <SelectValue placeholder="ক্যাটাগরি" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">সব ক্যাটাগরি</SelectItem>
-            <SelectItem value="Web Development">Web Development</SelectItem>
-            <SelectItem value="Data Science">Data Science</SelectItem>
-            <SelectItem value="Design">Design</SelectItem>
-            <SelectItem value="Mobile Development">Mobile Development</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="bg-white/20 border-white/30">
+                <SelectValue placeholder="সর্ট বাই" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="publishedAt">প্রকাশের তারিখ</SelectItem>
+                <SelectItem value="createdAt">তৈরির তারিখ</SelectItem>
+                <SelectItem value="updatedAt">আপডেটের তারিখ</SelectItem>
+                <SelectItem value="views">ভিউ</SelectItem>
+                <SelectItem value="likes">লাইক</SelectItem>
+                <SelectItem value="title">শিরোনাম</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
-          <Plus className="w-4 h-4 mr-2" />
-          নতুন পোস্ট
-        </Button>
-      </div>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger className="bg-white/20 border-white/30">
+                <SelectValue placeholder="ক্রম" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="desc">অবরোহী</SelectItem>
+                <SelectItem value="asc">আরোহী</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Posts List */}
+      {/* Blogs List */}
       <div className="space-y-4">
-        {posts.map((post) => (
-          <Card key={post._id} className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300 hover:shadow-xl">
+        {blogs.map((blog) => (
+          <Card key={blog._id} className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30 transition-all duration-300 hover:shadow-xl">
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
-                    <Badge className={getStatusColor(post.status)}>
-                      {getStatusLabel(post.status)}
+                    <Badge className={getStatusColor(blog.status)}>
+                      {getStatusText(blog.status)}
                     </Badge>
-                    <Badge className={getCategoryColor(post.category)}>
-                      {post.category}
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                      {blog.category}
                     </Badge>
-                    {post.status === 'published' && (
-                      <Badge className="bg-green-100 text-green-800">
-                        <Globe className="h-3 w-3 mr-1" />
-                        লাইভ
-                      </Badge>
-                    )}
-                    {post.status === 'draft' && (
-                      <Badge className="bg-yellow-100 text-yellow-800">
-                        <Lock className="h-3 w-3 mr-1" />
-                        খসড়া
+                    {blog.publishedAt && (
+                      <Badge variant="outline" className="bg-green-100 text-green-800">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {formatDate(blog.publishedAt)}
                       </Badge>
                     )}
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                    {post.title}
+                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                    {blog.title}
                   </h3>
                   
-                  <p className="text-gray-600 mb-3">
-                    {post.excerpt}
+                  <p className="text-gray-600 mb-3 line-clamp-2">
+                    {blog.excerpt}
                   </p>
                   
-                  <div className="flex flex-wrap gap-1 mb-3">
-                    {post.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        #{tag}
-                      </Badge>
-                    ))}
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
                     <div className="flex items-center">
                       <User className="h-4 w-4 mr-1" />
-                      {post.author}
+                      <span>{blog.author.name}</span>
                     </div>
                     <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {post.status === 'published' && post.publishedAt
-                        ? formatBanglaDate(new Date(post.publishedAt))
-                        : formatBanglaDate(new Date(post.createdAt))
-                      }
+                      <Eye className="h-4 w-4 mr-1" />
+                      <span>{blog.views} ভিউ</span>
                     </div>
                     <div className="flex items-center">
-                      <EyeIcon className="h-4 w-4 mr-1" />
-                      {formatBanglaNumber(post.views)}
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span>{blog.readingTime} মিনিট পড়ার সময়</span>
                     </div>
                     <div className="flex items-center">
-                      <ThumbsUp className="h-4 w-4 mr-1" />
-                      {formatBanglaNumber(post.likes)}
-                    </div>
-                    <div className="flex items-center">
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      {formatBanglaNumber(post.comments)}
+                      <Tag className="h-4 w-4 mr-1" />
+                      <span>{blog.tags.length} ট্যাগ</span>
                     </div>
                   </div>
+
+                  {blog.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {blog.tags.slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {blog.tags.length > 3 && (
+                        <Badge variant="secondary" className="text-xs">
+                          +{blog.tags.length - 3} আরও
+                        </Badge>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-2 ml-4">
-                  <Button size="sm" variant="outline" className="bg-white/20 border-white/30">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="bg-white/20 border-white/30"
+                    onClick={() => window.open(`/blog/${blog.slug}`, '_blank')}
+                  >
                     <Eye className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" className="bg-white/20 border-white/30">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="bg-white/20 border-white/30"
+                    onClick={() => router.push(`/dashboard/blog/${blog._id}/edit`)}
+                  >
                     <Edit className="w-4 h-4" />
                   </Button>
-                  <Button size="sm" variant="outline" className="bg-white/20 border-white/30 text-red-600 hover:text-red-700">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="bg-white/20 border-white/30 text-red-600 hover:text-red-700"
+                    onClick={() => deleteBlog(blog._id)}
+                  >
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
@@ -363,6 +374,23 @@ export default function BlogPage() {
             </CardContent>
           </Card>
         ))}
+
+        {blogs.length === 0 && (
+          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <CardContent className="p-12 text-center">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-600 mb-2">কোন ব্লগ পোস্ট নেই</h3>
+              <p className="text-gray-500 mb-4">এখনই আপনার প্রথম ব্লগ পোস্ট তৈরি করুন</p>
+              <Button 
+                onClick={() => router.push('/dashboard/blog/new')}
+                className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                নতুন ব্লগ পোস্ট
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

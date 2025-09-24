@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Eye, ArrowLeft } from 'lucide-react';
+import { Loader2, Save, Eye, ArrowLeft, Hash, Globe } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import ImageUpload from '@/components/blog/ImageUpload';
+import SEOPreview from '@/components/blog/SEOPreview';
+import { toast } from 'sonner';
 
 interface BlogFormData {
   title: string;
@@ -18,7 +21,7 @@ interface BlogFormData {
   featuredImage: string;
   category: string;
   tags: string[];
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   seo: {
     metaTitle: string;
     metaDescription: string;
@@ -26,10 +29,39 @@ interface BlogFormData {
   };
 }
 
-export default function NewBlogPage() {
+interface Blog {
+  _id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage?: string;
+  category: string;
+  tags: string[];
+  status: 'draft' | 'published' | 'archived';
+  seo: {
+    metaTitle?: string;
+    metaDescription?: string;
+    keywords?: string[];
+  };
+  author: {
+    name: string;
+    email: string;
+  };
+}
+
+export default function EditBlogPage() {
   const router = useRouter();
+  const params = useParams();
+  const blogId = params.id as string;
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingBlog, setIsLoadingBlog] = useState(true);
   const [tagInput, setTagInput] = useState('');
+  const [keywordInput, setKeywordInput] = useState('');
+  const [autoSlug, setAutoSlug] = useState(true);
+  const [customSlug, setCustomSlug] = useState('');
+  const [originalSlug, setOriginalSlug] = useState('');
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     excerpt: '',
@@ -55,6 +87,62 @@ export default function NewBlogPage() {
     'নেটওয়ার্কিং',
     'অন্যান্য'
   ];
+
+  // Load blog data
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const response = await fetch(`/api/blogs/${blogId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          const blog: Blog = data.blog;
+          setFormData({
+            title: blog.title,
+            excerpt: blog.excerpt,
+            content: blog.content,
+            featuredImage: blog.featuredImage || '',
+            category: blog.category,
+            tags: blog.tags || [],
+            status: blog.status,
+            seo: {
+              metaTitle: blog.seo?.metaTitle || '',
+              metaDescription: blog.seo?.metaDescription || '',
+              keywords: blog.seo?.keywords || []
+            }
+          });
+          setCustomSlug(blog.slug);
+          setOriginalSlug(blog.slug);
+        } else {
+          toast.error('Failed to load blog');
+          router.push('/dashboard/blog');
+        }
+      } catch (error) {
+        console.error('Error fetching blog:', error);
+        toast.error('Failed to load blog');
+        router.push('/dashboard/blog');
+      } finally {
+        setIsLoadingBlog(false);
+      }
+    };
+
+    if (blogId) {
+      fetchBlog();
+    }
+  }, [blogId, router]);
+
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (autoSlug && formData.title) {
+      const slug = formData.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+      setCustomSlug(slug);
+    }
+  }, [formData.title, autoSlug]);
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -92,15 +180,15 @@ export default function NewBlogPage() {
   };
 
   const addKeyword = () => {
-    const keyword = prompt('Enter keyword:');
-    if (keyword && !formData.seo.keywords.includes(keyword)) {
+    if (keywordInput.trim() && !formData.seo.keywords.includes(keywordInput.trim())) {
       setFormData(prev => ({
         ...prev,
         seo: {
           ...prev.seo,
-          keywords: [...prev.seo.keywords, keyword]
+          keywords: [...prev.seo.keywords, keywordInput.trim()]
         }
       }));
+      setKeywordInput('');
     }
   };
 
@@ -114,12 +202,42 @@ export default function NewBlogPage() {
     }));
   };
 
-  const handleSubmit = async (status: 'draft' | 'published') => {
+  const handleImageUpload = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'blog-images');
+
+    const response = await fetch('/api/upload/cloudinary', {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await response.json();
+    
+    if (response.ok) {
+      return data.url;
+    } else {
+      throw new Error(data.error || 'Failed to upload image');
+    }
+  };
+
+  const handleSubmit = async (status: 'draft' | 'published' | 'archived') => {
+    // Validate field lengths before submission
+    if (formData.seo.metaTitle.length > 60) {
+      toast.error('Meta title cannot exceed 60 characters');
+      return;
+    }
+    if (formData.seo.metaDescription.length > 160) {
+      toast.error('Meta description cannot exceed 160 characters');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const submitData = {
         ...formData,
+        slug: customSlug,
         status,
         author: {
           name: 'Admin User', // You can get this from auth context
@@ -127,8 +245,8 @@ export default function NewBlogPage() {
         }
       };
 
-      const response = await fetch('/api/blogs', {
-        method: 'POST',
+      const response = await fetch(`/api/blogs/${blogId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -138,18 +256,31 @@ export default function NewBlogPage() {
       const data = await response.json();
 
       if (response.ok) {
-        router.push('/dashboard/blogs');
+        toast.success(status === 'published' ? 'Blog updated and published!' : 'Blog updated as draft!');
+        router.push('/dashboard/blog');
       } else {
-        console.error('Error creating blog:', data.error);
-        alert('ব্লগ তৈরি করতে সমস্যা হয়েছে');
+        console.error('Error updating blog:', data.error);
+        if (data.details && Array.isArray(data.details)) {
+          toast.error(data.details.join(', '));
+        } else {
+          toast.error(data.error || 'Failed to update blog');
+        }
       }
     } catch (error) {
-      console.error('Error creating blog:', error);
-      alert('নেটওয়ার্ক সমস্যা');
+      console.error('Error updating blog:', error);
+      toast.error('Network error occurred');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (isLoadingBlog) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -165,8 +296,8 @@ export default function NewBlogPage() {
             ফিরে যান
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">নতুন ব্লগ পোস্ট</h1>
-            <p className="text-gray-600">একটি নতুন ব্লগ পোস্ট তৈরি করুন</p>
+            <h1 className="text-3xl font-bold text-gray-800">ব্লগ সম্পাদনা</h1>
+            <p className="text-gray-600">ব্লগ পোস্ট সম্পাদনা করুন</p>
           </div>
         </div>
         
@@ -194,7 +325,7 @@ export default function NewBlogPage() {
             ) : (
               <Eye className="w-4 h-4 mr-2" />
             )}
-            প্রকাশ করুন
+            আপডেট করুন
           </Button>
         </div>
       </div>
@@ -253,14 +384,41 @@ export default function NewBlogPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ফিচার্ড ইমেজ URL
+                  ফিচার্ড ইমেজ
                 </label>
-                <Input
+                <ImageUpload
                   value={formData.featuredImage}
-                  onChange={(e) => handleInputChange('featuredImage', e.target.value)}
-                  placeholder="ইমেজ URL দিন"
-                  className="bg-white/20 border-white/30"
+                  onChange={(url) => handleInputChange('featuredImage', url)}
+                  placeholder="Click to upload featured image"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  URL Slug
+                </label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    value={customSlug}
+                    onChange={(e) => setCustomSlug(e.target.value)}
+                    placeholder="blog-url-slug"
+                    className="bg-white/20 border-white/30"
+                    disabled={autoSlug}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAutoSlug(!autoSlug)}
+                    className="bg-white/20 border-white/30"
+                  >
+                    <Hash className="w-4 h-4 mr-1" />
+                    {autoSlug ? 'Auto' : 'Manual'}
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  URL: {typeof window !== 'undefined' ? window.location.origin : ''}/blog/{customSlug}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -276,6 +434,7 @@ export default function NewBlogPage() {
                 onChange={(content) => handleInputChange('content', content)}
                 placeholder="আপনার ব্লগ পোস্ট লিখুন..."
                 className="min-h-[500px]"
+                onImageUpload={handleImageUpload}
               />
             </CardContent>
           </Card>
@@ -323,10 +482,23 @@ export default function NewBlogPage() {
                 </label>
                 <Input
                   value={formData.seo.metaTitle}
-                  onChange={(e) => handleInputChange('seo.metaTitle', e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 60) {
+                      handleInputChange('seo.metaTitle', value);
+                    }
+                  }}
                   placeholder="SEO টাইটেল"
                   className="bg-white/20 border-white/30"
                 />
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-gray-500">
+                    {formData.seo.metaTitle.length}/60 characters
+                  </p>
+                  {formData.seo.metaTitle.length > 60 && (
+                    <p className="text-xs text-red-500">Too long!</p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -335,11 +507,24 @@ export default function NewBlogPage() {
                 </label>
                 <Textarea
                   value={formData.seo.metaDescription}
-                  onChange={(e) => handleInputChange('seo.metaDescription', e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 160) {
+                      handleInputChange('seo.metaDescription', value);
+                    }
+                  }}
                   placeholder="SEO বিবরণ"
                   rows={3}
                   className="bg-white/20 border-white/30"
                 />
+                <div className="flex justify-between items-center mt-1">
+                  <p className="text-xs text-gray-500">
+                    {formData.seo.metaDescription.length}/160 characters
+                  </p>
+                  {formData.seo.metaDescription.length > 160 && (
+                    <p className="text-xs text-red-500">Too long!</p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -348,6 +533,8 @@ export default function NewBlogPage() {
                 </label>
                 <div className="flex space-x-2 mb-2">
                   <Input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
                     placeholder="কীওয়ার্ড যোগ করুন"
                     className="bg-white/20 border-white/30"
                     onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
@@ -367,6 +554,17 @@ export default function NewBlogPage() {
             </CardContent>
           </Card>
 
+          {/* SEO Preview */}
+          <SEOPreview
+            title={formData.title}
+            metaTitle={formData.seo.metaTitle}
+            metaDescription={formData.seo.metaDescription}
+            slug={customSlug}
+            featuredImage={formData.featuredImage}
+            category={formData.category}
+            tags={formData.tags}
+          />
+
           {/* Preview */}
           <Card className="bg-white/20 backdrop-blur-sm border-white/30">
             <CardHeader>
@@ -385,6 +583,9 @@ export default function NewBlogPage() {
                 </p>
                 <p className="text-sm text-gray-600">
                   শব্দ সংখ্যা: {formData.content.split(' ').length}
+                </p>
+                <p className="text-sm text-gray-600">
+                  URL: {typeof window !== 'undefined' ? window.location.origin : ''}/blog/{customSlug}
                 </p>
               </div>
             </CardContent>
