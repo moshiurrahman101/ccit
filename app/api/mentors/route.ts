@@ -136,14 +136,11 @@ export async function POST(request: NextRequest) {
     // Check if user exists, create if not
     let user = await User.findOne({ email });
     if (!user) {
-      // Hash the provided password
-      const hashedPassword = await bcrypt.hash(password, 12);
-      
-      // Create new user with mentor role
+      // Create new user with mentor role (password will be hashed by User model's pre('save') hook)
       user = new User({
         name,
         email,
-        password: hashedPassword,
+        password, // Raw password - will be hashed automatically
         role: 'mentor',
         isActive: true
       });
@@ -164,10 +161,9 @@ export async function POST(request: NextRequest) {
         console.log('✅ User role updated to mentor:', email);
       }
       
-      // Update password if provided
+      // Update password if provided (will be hashed by User model's pre('save') hook)
       if (password) {
-        const hashedPassword = await bcrypt.hash(password, 12);
-        await User.findByIdAndUpdate(user._id, { password: hashedPassword });
+        await User.findByIdAndUpdate(user._id, { password }); // Raw password - will be hashed automatically
         console.log('✅ Password updated for user:', email);
       }
       

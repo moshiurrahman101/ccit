@@ -1,17 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Save, Eye, ArrowLeft, Hash, Globe } from 'lucide-react';
+import { Loader2, Save, Eye, ArrowLeft, Link, Hash, Globe } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import ImageUpload from '@/components/blog/ImageUpload';
 import SEOPreview from '@/components/blog/SEOPreview';
+import SlugValidator from '@/components/blog/SlugValidator';
 import { toast } from 'sonner';
 
 interface BlogFormData {
@@ -21,7 +22,7 @@ interface BlogFormData {
   featuredImage: string;
   category: string;
   tags: string[];
-  status: 'draft' | 'published' | 'archived';
+  status: 'draft' | 'published';
   seo: {
     metaTitle: string;
     metaDescription: string;
@@ -36,32 +37,43 @@ interface Blog {
   excerpt: string;
   content: string;
   featuredImage?: string;
+  status: 'draft' | 'published';
   category: string;
   tags: string[];
-  status: 'draft' | 'published' | 'archived';
+  author: {
+    name: string;
+    email: string;
+    avatar?: string;
+  };
   seo: {
     metaTitle?: string;
     metaDescription?: string;
     keywords?: string[];
+    canonicalUrl?: string;
+    ogImage?: string;
   };
-  author: {
-    name: string;
-    email: string;
-  };
+  views: number;
+  likes: number;
+  readingTime: number;
+  publishedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export default function EditBlogPage() {
+interface EditBlogPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditBlogPage({ params }: EditBlogPageProps) {
   const router = useRouter();
-  const params = useParams();
-  const blogId = params.id as string;
-  
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingBlog, setIsLoadingBlog] = useState(true);
   const [tagInput, setTagInput] = useState('');
   const [keywordInput, setKeywordInput] = useState('');
-  const [autoSlug, setAutoSlug] = useState(true);
+  const [autoSlug, setAutoSlug] = useState(false);
   const [customSlug, setCustomSlug] = useState('');
-  const [originalSlug, setOriginalSlug] = useState('');
+  const [slugAvailable, setSlugAvailable] = useState(false);
+  const [blogId, setBlogId] = useState<string>('');
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     excerpt: '',
@@ -77,6 +89,50 @@ export default function EditBlogPage() {
     }
   });
 
+  useEffect(() => {
+    const loadParams = async () => {
+      const { id } = await params;
+      setBlogId(id);
+      fetchBlog(id);
+    };
+    loadParams();
+  }, [params]);
+
+  const fetchBlog = async (id: string) => {
+    try {
+      const response = await fetch(`/api/blogs/${id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const blog: Blog = data.blog;
+        setFormData({
+          title: blog.title,
+          excerpt: blog.excerpt,
+          content: blog.content,
+          featuredImage: blog.featuredImage || '',
+          category: blog.category,
+          tags: blog.tags || [],
+          status: blog.status,
+          seo: {
+            metaTitle: blog.seo?.metaTitle || '',
+            metaDescription: blog.seo?.metaDescription || '',
+            keywords: blog.seo?.keywords || []
+          }
+        });
+        setCustomSlug(blog.slug);
+      } else {
+        toast.error('Failed to load blog');
+        router.push('/dashboard/blog');
+      }
+    } catch (error) {
+      console.error('Error fetching blog:', error);
+      toast.error('Failed to load blog');
+      router.push('/dashboard/blog');
+    } finally {
+      setIsLoadingBlog(false);
+    }
+  };
+
   const categories = [
     'প্রোগ্রামিং',
     'ওয়েব ডেভেলপমেন্ট',
@@ -87,62 +143,6 @@ export default function EditBlogPage() {
     'নেটওয়ার্কিং',
     'অন্যান্য'
   ];
-
-  // Load blog data
-  useEffect(() => {
-    const fetchBlog = async () => {
-      try {
-        const response = await fetch(`/api/blogs/${blogId}`);
-        const data = await response.json();
-
-        if (response.ok) {
-          const blog: Blog = data.blog;
-          setFormData({
-            title: blog.title,
-            excerpt: blog.excerpt,
-            content: blog.content,
-            featuredImage: blog.featuredImage || '',
-            category: blog.category,
-            tags: blog.tags || [],
-            status: blog.status,
-            seo: {
-              metaTitle: blog.seo?.metaTitle || '',
-              metaDescription: blog.seo?.metaDescription || '',
-              keywords: blog.seo?.keywords || []
-            }
-          });
-          setCustomSlug(blog.slug);
-          setOriginalSlug(blog.slug);
-        } else {
-          toast.error('Failed to load blog');
-          router.push('/dashboard/blog');
-        }
-      } catch (error) {
-        console.error('Error fetching blog:', error);
-        toast.error('Failed to load blog');
-        router.push('/dashboard/blog');
-      } finally {
-        setIsLoadingBlog(false);
-      }
-    };
-
-    if (blogId) {
-      fetchBlog();
-    }
-  }, [blogId, router]);
-
-  // Auto-generate slug from title
-  useEffect(() => {
-    if (autoSlug && formData.title) {
-      const slug = formData.title
-        .toLowerCase()
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .trim();
-      setCustomSlug(slug);
-    }
-  }, [formData.title, autoSlug]);
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -221,7 +221,7 @@ export default function EditBlogPage() {
     }
   };
 
-  const handleSubmit = async (status: 'draft' | 'published' | 'archived') => {
+  const handleSubmit = async (status: 'draft' | 'published') => {
     // Validate field lengths before submission
     if (formData.seo.metaTitle.length > 60) {
       toast.error('Meta title cannot exceed 60 characters');
@@ -229,6 +229,12 @@ export default function EditBlogPage() {
     }
     if (formData.seo.metaDescription.length > 160) {
       toast.error('Meta description cannot exceed 160 characters');
+      return;
+    }
+
+    // Validate slug availability for published blogs
+    if (status === 'published' && customSlug && !slugAvailable) {
+      toast.error('Please choose an available slug before publishing');
       return;
     }
 
@@ -256,7 +262,7 @@ export default function EditBlogPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(status === 'published' ? 'Blog updated and published!' : 'Blog updated as draft!');
+        toast.success(status === 'published' ? 'Blog updated and published!' : 'Blog updated successfully!');
         router.push('/dashboard/blog');
       } else {
         console.error('Error updating blog:', data.error);
@@ -276,8 +282,11 @@ export default function EditBlogPage() {
 
   if (isLoadingBlog) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading blog...</p>
+        </div>
       </div>
     );
   }
@@ -325,7 +334,7 @@ export default function EditBlogPage() {
             ) : (
               <Eye className="w-4 h-4 mr-2" />
             )}
-            আপডেট করুন
+            প্রকাশ করুন
           </Button>
         </div>
       </div>
@@ -393,33 +402,14 @@ export default function EditBlogPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL Slug
-                </label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    value={customSlug}
-                    onChange={(e) => setCustomSlug(e.target.value)}
-                    placeholder="blog-url-slug"
-                    className="bg-white/20 border-white/30"
-                    disabled={autoSlug}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAutoSlug(!autoSlug)}
-                    className="bg-white/20 border-white/30"
-                  >
-                    <Hash className="w-4 h-4 mr-1" />
-                    {autoSlug ? 'Auto' : 'Manual'}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  URL: {typeof window !== 'undefined' ? window.location.origin : ''}/blog/{customSlug}
-                </p>
-              </div>
+              <SlugValidator
+                value={customSlug}
+                onChange={setCustomSlug}
+                autoGenerate={autoSlug}
+                onToggleAutoGenerate={() => setAutoSlug(!autoSlug)}
+                onValidationChange={setSlugAvailable}
+                excludeId={blogId}
+              />
             </CardContent>
           </Card>
 
@@ -585,7 +575,7 @@ export default function EditBlogPage() {
                   শব্দ সংখ্যা: {formData.content.split(' ').length}
                 </p>
                 <p className="text-sm text-gray-600">
-                  URL: {typeof window !== 'undefined' ? window.location.origin : ''}/blog/{customSlug}
+                  URL: {typeof window !== 'undefined' ? window.location.origin : 'https://yourdomain.com'}/blog/{customSlug}
                 </p>
               </div>
             </CardContent>

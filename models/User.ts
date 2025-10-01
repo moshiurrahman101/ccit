@@ -47,97 +47,43 @@ const userSchema = new Schema<UserDocument>({
     type: Boolean,
     default: true
   },
+  // Student approval status
+  approvalStatus: {
+    type: String,
+    enum: {
+      values: ['pending', 'approved', 'rejected'],
+      message: 'Invalid approval status'
+    },
+    default: 'pending'
+  },
+  approvalDate: {
+    type: Date
+  },
+  approvedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectionReason: {
+    type: String,
+    maxlength: 500
+  },
+  // Minimal student info - detailed data moved to Student collection
   studentInfo: {
     studentId: {
       type: String,
       unique: true,
       sparse: true
     },
-    dateOfBirth: Date,
-    gender: {
-      type: String,
-      enum: ['male', 'female', 'other']
-    },
-    nid: String,
-    bloodGroup: {
-      type: String,
-      enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
-    },
-    address: {
-      street: String,
-      city: String,
-      district: String,
-      postalCode: String
-    },
-    emergencyContact: {
-      name: String,
-      phone: String,
-      relation: String
-    },
-    guardianInfo: {
-      name: String,
-      phone: String,
-      relation: String,
-      occupation: String
-    },
-    academicInfo: {
-      previousEducation: String,
-      institution: String,
-      graduationYear: Number,
-      gpa: String
+    // Only essential fields for quick access
+    currentBatch: {
+      type: Schema.Types.ObjectId,
+      ref: 'Batch'
     },
     enrollmentDate: Date,
-    graduationDate: Date,
-    isGraduated: {
+    isActiveStudent: {
       type: Boolean,
-      default: false
-    },
-    socialInfo: {
-      facebook: String,
-      linkedin: String,
-      github: String,
-      twitter: String,
-      website: String
-    },
-    paymentInfo: {
-      paymentMethod: {
-        type: String,
-        enum: ['bkash', 'nagad', 'rocket', 'bank', 'cash']
-      },
-      paymentNumber: String,
-      transactionId: String,
-      paidAmount: Number,
-      dueAmount: Number,
-      lastPaymentDate: Date,
-      paymentStatus: {
-        type: String,
-        enum: ['paid', 'partial', 'due', 'overdue'],
-        default: 'due'
-      }
-    },
-    batchInfo: {
-      batchId: { type: Schema.Types.ObjectId, ref: 'BatchSimple' },
-      batchName: String,
-      enrollmentDate: Date,
-      completionDate: Date,
-      status: {
-        type: String,
-        enum: ['enrolled', 'active', 'completed', 'dropped', 'suspended'],
-        default: 'enrolled'
-      }
-    },
-    isOfflineStudent: {
-      type: Boolean,
-      default: false
-    },
-    profilePicture: String,
-    documents: [{
-      type: { type: String, enum: ['nid', 'certificate', 'photo', 'other'] },
-      url: String,
-      uploadedAt: { type: Date, default: Date.now }
-    }],
-    notes: String,
-    isVerified: { type: Boolean, default: false }
+      default: true
+    }
   },
   mentorInfo: {
     specialization: [String],

@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate-students": "node scripts/migrate-students.js",
+    "cleanup-db": "node scripts/cleanup-database.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

@@ -93,6 +93,10 @@ export interface User {
   studentInfo?: StudentInfo;
   mentorInfo?: MentorInfo;
   isActive: boolean;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvalDate?: Date;
+  approvedBy?: string;
+  rejectionReason?: string;
   createdAt: Date;
   updatedAt: Date;
 }

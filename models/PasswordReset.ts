@@ -22,8 +22,7 @@ const PasswordResetSchema = new Schema<IPasswordReset>({
   },
   token: {
     type: String,
-    required: [true, 'Token is required'],
-    unique: true
+    required: [true, 'Token is required']
   },
   expiresAt: {
     type: Date,

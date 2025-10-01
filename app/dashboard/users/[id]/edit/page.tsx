@@ -63,7 +63,7 @@ export default function EditUserPage() {
   const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('auth-token');
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       if (!token) {
         router.push('/login');
         return;
@@ -120,7 +120,7 @@ export default function EditUserPage() {
     setSuccess(false);
 
     try {
-      const token = localStorage.getItem('auth-token');
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       if (!token) {
         router.push('/login');
         return;

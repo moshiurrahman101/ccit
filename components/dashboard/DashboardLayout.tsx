@@ -51,8 +51,24 @@ const menuItems: MenuItem[] = [
     label: 'ওভারভিউ',
     icon: Home,
     path: '/dashboard',
-    roles: ['admin', 'mentor', 'student', 'marketing', 'support'],
+    roles: ['admin', 'marketing', 'support'],
     description: 'মূল ড্যাশবোর্ড'
+  },
+  {
+    id: 'mentor-overview',
+    label: 'মেন্টর ড্যাশবোর্ড',
+    icon: Home,
+    path: '/dashboard/mentor',
+    roles: ['mentor'],
+    description: 'মেন্টর ড্যাশবোর্ড'
+  },
+  {
+    id: 'student-overview',
+    label: 'স্টুডেন্ট ড্যাশবোর্ড',
+    icon: Home,
+    path: '/dashboard/student',
+    roles: ['student'],
+    description: 'স্টুডেন্ট ড্যাশবোর্ড'
   },
   {
     id: 'students',
@@ -83,8 +99,24 @@ const menuItems: MenuItem[] = [
     label: 'ব্যাচ/কোর্স',
     icon: BookOpen,
     path: '/dashboard/batches',
-    roles: ['admin', 'mentor', 'marketing'],
+    roles: ['admin', 'marketing'],
     description: 'অনলাইন/অফলাইন ব্যাচ ও কোর্স ব্যবস্থাপনা'
+  },
+  {
+    id: 'enrollment-management',
+    label: 'এনরোলমেন্ট ম্যানেজমেন্ট',
+    icon: GraduationCap,
+    path: '/dashboard/enrollment',
+    roles: ['admin'],
+    description: 'শিক্ষার্থী এনরোলমেন্ট ও পেমেন্ট ব্যবস্থাপনা'
+  },
+  {
+    id: 'mentor-batches',
+    label: 'আমার ব্যাচ',
+    icon: BookOpen,
+    path: '/dashboard/mentor/batches',
+    roles: ['mentor'],
+    description: 'আপনার ব্যাচ ও কোর্স ব্যবস্থাপনা'
   },
   {
     id: 'blog',
@@ -130,15 +162,23 @@ const menuItems: MenuItem[] = [
     id: 'enrollment',
     label: 'এনরোলমেন্ট',
     icon: BookOpen,
-    path: '/dashboard/enrollment',
+    path: '/dashboard/student/enrollment',
     roles: ['student'],
     description: 'আপনার কোর্স এবং নতুন কোর্সে এনরোল করুন'
+  },
+  {
+    id: 'student-batches',
+    label: 'আমার ব্যাচ',
+    icon: BookOpen,
+    path: '/dashboard/student/batches',
+    roles: ['student'],
+    description: 'আপনার এনরোল করা ব্যাচসমূহ'
   },
   {
     id: 'accounts',
     label: 'অ্যাকাউন্টস',
     icon: DollarSign,
-    path: '/dashboard/accounts',
+    path: '/dashboard/student/accounts',
     roles: ['student'],
     description: 'পেমেন্ট ও বিলিং ব্যবস্থাপনা'
   },

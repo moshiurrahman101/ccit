@@ -122,9 +122,9 @@ export async function PUT(
     if (role) updateData.role = role;
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    // Hash password if provided
+    // Add password if provided (will be hashed by User model's pre('save') hook)
     if (password) {
-      updateData.password = await bcrypt.hash(password, 12);
+      updateData.password = password; // Raw password - will be hashed automatically
     }
 
     const updatedUser = await User.findByIdAndUpdate(

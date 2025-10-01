@@ -46,6 +46,30 @@ export async function GET(
     await connectDB();
     const { id } = await params;
 
+    // Handle special cases for status filtering
+    if (id === 'active' || id === 'published' || id === 'ongoing') {
+      // Return all batches with the specified status
+      const batches = await Batch.find({ 
+        status: id === 'active' ? 'published' : id 
+      })
+        .populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks')
+        .sort({ createdAt: -1 });
+
+      return NextResponse.json({ 
+        batches,
+        status: id,
+        message: `Fetched ${batches.length} ${id} batches`
+      });
+    }
+
+    // Validate ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      return NextResponse.json(
+        { error: 'Invalid batch ID format' },
+        { status: 400 }
+      );
+    }
+
     const batch = await Batch.findById(id)
       .populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks');
 

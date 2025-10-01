@@ -29,7 +29,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new user
-    const user = new User(validatedData);
+    const user = new User({
+      ...validatedData,
+      // Set approval status to pending for students
+      approvalStatus: validatedData.role === 'student' ? 'pending' : 'approved'
+    });
     await user.save();
 
     // Generate token

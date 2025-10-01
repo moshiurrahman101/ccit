@@ -47,13 +47,8 @@ export async function GET(request: NextRequest) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { 'studentInfo.studentId': { $regex: search, $options: 'i' } }
+        { phone: { $regex: search, $options: 'i' } }
       ];
-    }
-    
-    if (batch) {
-      filter['studentInfo.batchInfo.batchId'] = batch;
     }
     
     if (status) {
@@ -61,23 +56,12 @@ export async function GET(request: NextRequest) {
         filter.isActive = true;
       } else if (status === 'inactive') {
         filter.isActive = false;
-      } else {
-        filter['studentInfo.batchInfo.status'] = status;
       }
     }
 
-    if (gender) {
-      filter['studentInfo.gender'] = gender;
-    }
-
-    if (paymentStatus) {
-      filter['studentInfo.paymentInfo.paymentStatus'] = paymentStatus;
-    }
-
     const students = await User.find(filter)
-      .populate('studentInfo.batchInfo.batchId', 'name description startDate endDate')
       .select('-password')
-      .sort({ 'studentInfo.studentId': 1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
@@ -206,15 +190,12 @@ export async function POST(request: NextRequest) {
       serial: batch.currentStudents + 1
     });
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create comprehensive student profile
+    // Create comprehensive student profile (password will be hashed by User model's pre('save') hook)
     const student = new User({
       name,
       email,
       phone,
-      password: hashedPassword,
+      password, // Raw password - will be hashed automatically
       role: 'student',
       isActive: true,
       avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,

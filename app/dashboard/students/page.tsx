@@ -20,48 +20,19 @@ interface Student {
   phone: string;
   isActive: boolean;
   avatar?: string;
+  role: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvalDate?: string;
+  approvedBy?: string;
+  rejectionReason?: string;
   studentInfo?: {
     studentId?: string;
-    dateOfBirth?: string;
-    gender?: 'male' | 'female' | 'other';
-    nid?: string;
-    bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
-    address?: {
-      city?: string;
-      district?: string;
-    };
-    emergencyContact?: {
-      name?: string;
-      phone?: string;
-      relation?: string;
-    };
-    education?: {
-      level?: string;
-      institution?: string;
-      graduationYear?: number;
-    };
-    socialInfo?: {
-      facebook?: string;
-      linkedin?: string;
-      github?: string;
-    };
-    paymentInfo?: {
-      paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash';
-      paymentNumber?: string;
-      transactionId?: string;
-      paidAmount?: number;
-      dueAmount?: number;
-      paymentStatus?: 'paid' | 'partial' | 'due' | 'overdue';
-    };
-    batchInfo?: {
-      batchId?: string;
-      batchName?: string;
-      status?: 'enrolled' | 'active' | 'completed' | 'dropped' | 'suspended';
-    };
-    isOfflineStudent?: boolean;
-    isVerified?: boolean;
+    currentBatch?: string;
+    enrollmentDate?: string;
+    isActiveStudent?: boolean;
   };
   createdAt: string;
+  updatedAt: string;
 }
 
 interface Pagination {
@@ -86,10 +57,7 @@ export default function StudentsPage() {
   });
   const [filters, setFilters] = useState({
     search: '',
-    batch: '',
-    status: '',
-    gender: '',
-    paymentStatus: ''
+    status: ''
   });
   const [formOpen, setFormOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -99,18 +67,15 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
-  const fetchStudents = async (page = 1, search = '', batch = '', status = '', gender = '', paymentStatus = '') => {
+  const fetchStudents = async (page = 1, search = '', status = '') => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('auth-token');
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
         ...(search && { search }),
-        ...(batch && { batch }),
-        ...(status && { status }),
-        ...(gender && { gender }),
-        ...(paymentStatus && { paymentStatus })
+        ...(status && { status })
       });
 
       const response = await fetch(`/api/students?${params}`, {
@@ -137,17 +102,17 @@ export default function StudentsPage() {
 
   const handleSearch = (search: string) => {
     setFilters(prev => ({ ...prev, search }));
-    fetchStudents(1, search, filters.batch, filters.status, filters.gender, filters.paymentStatus);
+    fetchStudents(1, search, filters.status);
   };
 
   const handleFilter = (field: string, value: string) => {
     const newFilters = { ...filters, [field]: value };
     setFilters(newFilters);
-    fetchStudents(1, newFilters.search, newFilters.batch, newFilters.status, newFilters.gender, newFilters.paymentStatus);
+    fetchStudents(1, newFilters.search, newFilters.status);
   };
 
   const handlePageChange = (page: number) => {
-    fetchStudents(page, filters.search, filters.batch, filters.status, filters.gender, filters.paymentStatus);
+    fetchStudents(page, filters.search, filters.status);
   };
 
   const handleAdd = () => {
@@ -165,7 +130,7 @@ export default function StudentsPage() {
   };
 
   const handleFormSuccess = () => {
-    fetchStudents(pagination.currentPage, filters.search, filters.batch, filters.status, filters.gender, filters.paymentStatus);
+    fetchStudents(pagination.currentPage, filters.search, filters.status);
   };
 
   const handleFormClose = () => {
@@ -177,12 +142,15 @@ export default function StudentsPage() {
     const total = students.length;
     const active = students.filter(s => s.isActive).length;
     const inactive = students.filter(s => !s.isActive).length;
-    const verified = students.filter(s => s.studentInfo?.isVerified).length;
-    const paid = students.filter(s => s.studentInfo?.paymentInfo?.paymentStatus === 'paid').length;
-    const due = students.filter(s => s.studentInfo?.paymentInfo?.paymentStatus === 'due').length;
-    const overdue = students.filter(s => s.studentInfo?.paymentInfo?.paymentStatus === 'overdue').length;
+    const verified = students.filter(s => s.studentInfo?.isActiveStudent).length;
+    const pending = students.filter(s => s.approvalStatus === 'pending').length;
+    const approved = students.filter(s => s.approvalStatus === 'approved').length;
+    const rejected = students.filter(s => s.approvalStatus === 'rejected').length;
+    const paid = 0; // Will be updated when payment system is implemented
+    const due = 0; // Will be updated when payment system is implemented
+    const overdue = 0; // Will be updated when payment system is implemented
     
-    return { total, active, inactive, verified, paid, due, overdue };
+    return { total, active, inactive, verified, pending, approved, rejected, paid, due, overdue };
   };
 
   const stats = getStudentStats();
@@ -240,38 +208,38 @@ export default function StudentsPage() {
           </CardContent>
         </Card>
 
+        <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-100 text-sm">অনুমোদনের অপেক্ষায়</p>
+                <p className="text-2xl font-bold">{stats.pending}</p>
+              </div>
+              <AlertCircle className="w-8 h-8 text-yellow-200" />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">{getStatusText('active')}</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
+                <p className="text-green-100 text-sm">অনুমোদিত</p>
+                <p className="text-2xl font-bold">{stats.approved}</p>
               </div>
               <CheckCircle className="w-8 h-8 text-green-200" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm">{getStatusText('verified')}</p>
-                <p className="text-2xl font-bold">{stats.verified}</p>
+                <p className="text-red-100 text-sm">প্রত্যাখ্যান</p>
+                <p className="text-2xl font-bold">{stats.rejected}</p>
               </div>
-              <Users className="w-8 h-8 text-orange-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">পেইড</p>
-                <p className="text-2xl font-bold">{stats.paid}</p>
-              </div>
-              <CreditCard className="w-8 h-8 text-purple-200" />
+              <XCircle className="w-8 h-8 text-red-200" />
             </div>
           </CardContent>
         </Card>
@@ -319,9 +287,9 @@ export default function StudentsPage() {
       {/* Student Table */}
       <StudentTable
         students={students}
-        onRefresh={() => fetchStudents(pagination.currentPage, filters.search, filters.batch, filters.status, filters.gender, filters.paymentStatus)}
-        onEdit={handleEdit}
-        onView={handleView}
+        onRefresh={() => fetchStudents(pagination.currentPage, filters.search, filters.status)}
+        onEdit={handleEdit as any}
+        onView={handleView as any}
         onAdd={handleAdd}
         pagination={pagination}
         onPageChange={handlePageChange}

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
-import PasswordReset, { IPasswordResetModel } from '@/models/PasswordReset';
+import PasswordReset from '@/models/PasswordReset';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 
 const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'টোকেন প্রয়োজন'),
-  password: z.string().min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষর হতে হবে')
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(6, 'Password must be at least 6 characters')
 });
 
 export async function POST(request: NextRequest) {
@@ -14,24 +15,48 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const validatedData = resetPasswordSchema.parse(body);
-
-    // Verify and use the reset token
-    const resetToken = await (PasswordReset as IPasswordResetModel).verifyAndUseToken(validatedData.token);
+    console.log('Reset password request body:', body);
     
+    const validatedData = resetPasswordSchema.parse(body);
+    console.log('Validated data:', validatedData);
+
+    const { token, password } = validatedData;
+
+    // Check if token exists and is valid
+    const resetToken = await PasswordReset.findOne({ token });
+    console.log('Found reset token:', resetToken ? 'Yes' : 'No');
+
     if (!resetToken) {
       return NextResponse.json(
-        { message: 'অবৈধ বা মেয়াদোত্তীর্ণ টোকেন' },
+        { message: 'Invalid or expired reset token' },
         { status: 400 }
       );
     }
 
-    // Find user by email
+    // Check if token is expired (1 hour = 3600000 milliseconds)
+    const now = new Date();
+    const tokenAge = now.getTime() - resetToken.createdAt.getTime();
+    const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+
+    console.log('Token age:', tokenAge, 'ms');
+    console.log('Token expired:', tokenAge > oneHour);
+
+    if (tokenAge > oneHour) {
+      // Delete expired token
+      await PasswordReset.deleteOne({ token });
+      return NextResponse.json(
+        { message: 'Reset token has expired. Please request a new one.' },
+        { status: 400 }
+      );
+    }
+
+    // Find the user by email
     const user = await User.findOne({ email: resetToken.email });
-    
+    console.log('Found user:', user ? 'Yes' : 'No');
+
     if (!user) {
       return NextResponse.json(
-        { message: 'ব্যবহারকারী পাওয়া যায়নি' },
+        { message: 'User not found' },
         { status: 404 }
       );
     }
@@ -39,76 +64,39 @@ export async function POST(request: NextRequest) {
     // Check if user is active
     if (!user.isActive) {
       return NextResponse.json(
-        { message: 'আপনার অ্যাকাউন্ট নিষ্ক্রিয়' },
+        { message: 'Account is deactivated' },
         { status: 403 }
       );
     }
 
-    // Update password
-    user.password = validatedData.password; // Let the model hash it
-    await user.save();
+    // Update user password (will be hashed by User model's pre('save') hook)
+    console.log('Updating user password...');
+    await User.findByIdAndUpdate(user._id, {
+      password, // Raw password - will be hashed automatically
+      updatedAt: new Date()
+    });
 
-    // Delete all reset tokens for this user
-    await PasswordReset.deleteMany({ email: resetToken.email });
+    // Delete the used reset token
+    console.log('Deleting used reset token...');
+    await PasswordReset.deleteOne({ token });
 
+    console.log('Password reset completed successfully');
     return NextResponse.json({
-      message: 'পাসওয়ার্ড সফলভাবে পরিবর্তন হয়েছে'
+      message: 'Password reset successfully'
     });
 
   } catch (error: unknown) {
+    console.error('Error in reset password API:', error);
+    
     if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError' && 'errors' in error) {
       return NextResponse.json(
-        { message: 'ভুল তথ্য', errors: (error as { errors: unknown }).errors },
+        { message: 'Validation failed', errors: (error as { errors: unknown }).errors },
         { status: 400 }
       );
     }
 
-    console.error('Error in reset password:', error);
     return NextResponse.json(
-      { message: 'সার্ভার ত্রুটি' },
-      { status: 500 }
-    );
-  }
-}
-
-// GET endpoint to verify token validity
-export async function GET(request: NextRequest) {
-  try {
-    await connectDB();
-
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
-
-    if (!token) {
-      return NextResponse.json(
-        { message: 'টোকেন প্রয়োজন' },
-        { status: 400 }
-      );
-    }
-
-    // Check if token is valid (not used and not expired)
-    const resetToken = await PasswordReset.findOne({
-      token,
-      used: false,
-      expiresAt: { $gt: new Date() }
-    });
-
-    if (!resetToken) {
-      return NextResponse.json(
-        { message: 'অবৈধ বা মেয়াদোত্তীর্ণ টোকেন' },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({
-      message: 'টোকেন বৈধ',
-      email: resetToken.email
-    });
-
-  } catch (error) {
-    console.error('Error verifying reset token:', error);
-    return NextResponse.json(
-      { message: 'সার্ভার ত্রুটি' },
+      { message: 'Server error', error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

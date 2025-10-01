@@ -36,10 +36,8 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build filter - exclude students
-    const filter: Record<string, unknown> = { 
-      role: { $ne: 'student' } // Exclude students
-    };
+    // Build filter - include all user types
+    const filter: Record<string, unknown> = {};
 
     if (search) {
       filter.$or = [
@@ -120,11 +118,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate role (exclude student)
-    const allowedRoles = ['admin', 'mentor', 'marketing', 'support'];
+    // Validate role (include all roles)
+    const allowedRoles = ['admin', 'mentor', 'student', 'marketing', 'support'];
     if (!allowedRoles.includes(role)) {
       return NextResponse.json(
-        { error: 'অবৈধ ভূমিকা। অনুমোদিত ভূমিকা: admin, mentor, marketing, support' },
+        { error: 'অবৈধ ভূমিকা। অনুমোদিত ভূমিকা: admin, mentor, student, marketing, support' },
         { status: 400 }
       );
     }
@@ -138,14 +136,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user
+    // Create user (password will be hashed by User model's pre('save') hook)
     const user = new User({
       name,
       email,
-      password: hashedPassword,
+      password, // Raw password - will be hashed automatically
       phone,
       role,
       isActive

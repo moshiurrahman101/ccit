@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Invoice from '@/models/Invoice';
 import Batch from '@/models/Batch';
 import User from '@/models/User';
+import { Enrollment } from '@/models/Enrollment';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 
@@ -119,6 +120,20 @@ export async function POST(request: NextRequest) {
     console.log('Creating invoice:', invoice.toObject());
     await invoice.save();
     console.log('Invoice saved successfully');
+
+    // Create enrollment record
+    const enrollment = new Enrollment({
+      student: payload.userId,
+      course: batch.course || batch._id, // Use batch as course if no course field
+      batch: validatedData.batchId,
+      amount: finalAmount,
+      status: 'pending', // Will be approved when payment is confirmed
+      paymentStatus: 'pending',
+      progress: 0
+    });
+
+    await enrollment.save();
+    console.log('Enrollment record created successfully');
 
     // Update batch current students count
     await Batch.findByIdAndUpdate(validatedData.batchId, {

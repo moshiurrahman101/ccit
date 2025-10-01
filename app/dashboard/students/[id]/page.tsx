@@ -140,6 +140,7 @@ export default function StudentProfilePage() {
 
   const fetchStudentDetails = async () => {
     try {
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const response = await fetch(`/api/students/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -165,6 +166,7 @@ export default function StudentProfilePage() {
 
   const fetchStudentInvoices = async () => {
     try {
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const response = await fetch(`/api/students/${params.id}/invoices`, {
         headers: {
           'Authorization': `Bearer ${token}`

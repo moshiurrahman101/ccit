@@ -30,7 +30,7 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'mentor' | 'marketing' | 'support';
+  role: 'admin' | 'mentor' | 'student' | 'marketing' | 'support';
   isActive: boolean;
   createdAt: string;
 }
@@ -56,6 +56,7 @@ interface UserTableProps {
 const roleLabels = {
   admin: 'অ্যাডমিন',
   mentor: 'মেন্টর',
+  student: 'শিক্ষার্থী',
   marketing: 'মার্কেটিং',
   support: 'সাপোর্ট'
 };
@@ -63,6 +64,7 @@ const roleLabels = {
 const roleColors = {
   admin: 'bg-red-100 text-red-800',
   mentor: 'bg-blue-100 text-blue-800',
+  student: 'bg-orange-100 text-orange-800',
   marketing: 'bg-green-100 text-green-800',
   support: 'bg-purple-100 text-purple-800'
 };
@@ -188,6 +190,7 @@ export default function UserTable({
               <SelectItem value="all">সব ভূমিকা</SelectItem>
               <SelectItem value="admin">অ্যাডমিন</SelectItem>
               <SelectItem value="mentor">মেন্টর</SelectItem>
+              <SelectItem value="student">শিক্ষার্থী</SelectItem>
               <SelectItem value="marketing">মার্কেটিং</SelectItem>
               <SelectItem value="support">সাপোর্ট</SelectItem>
             </SelectContent>

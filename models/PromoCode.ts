@@ -96,7 +96,7 @@ const PromoCodeSchema = new Schema<IPromoCode>({
   // Applicable Items
   applicableBatches: [{
     type: String,
-    ref: 'BatchSimple'
+    ref: 'Batch'
   }],
   applicableCourseTypes: [{
     type: String,

@@ -26,6 +26,8 @@ import {
 } from 'lucide-react';
 import { formatBanglaNumber, formatBanglaDate, formatBanglaCurrency } from '@/lib/utils/banglaNumbers';
 import { CurrencyDisplay } from '@/components/ui/CurrencyDisplay';
+import ResponsivePaymentForm from '@/components/dashboard/ResponsivePaymentForm';
+import { toast } from 'sonner';
 
 interface Invoice {
   _id: string;
@@ -63,12 +65,6 @@ export default function AccountsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentData, setPaymentData] = useState({
-    amount: '',
-    method: '',
-    senderNumber: '',
-    transactionId: ''
-  });
 
   useEffect(() => {
     fetchInvoices();
@@ -137,27 +133,10 @@ export default function AccountsPage() {
 
   const handlePaymentSubmit = async () => {
     if (!selectedInvoice) return;
-
-    try {
-      const response = await fetch(`/api/invoices/${selectedInvoice._id}/payments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...paymentData,
-          amount: parseFloat(paymentData.amount)
-        }),
-      });
-
-      if (response.ok) {
-        setShowPaymentDialog(false);
-        setPaymentData({ amount: '', method: '', senderNumber: '', transactionId: '' });
-        fetchInvoices();
-      }
-    } catch (error) {
-      console.error('Error submitting payment:', error);
-    }
+    setShowPaymentDialog(false);
+    setSelectedInvoice(null);
+    await fetchInvoices();
+    toast.success('পেমেন্ট সফলভাবে জমা হয়েছে!');
   };
 
   const downloadInvoice = async (invoiceId: string) => {
@@ -387,72 +366,14 @@ export default function AccountsPage() {
 
                     <div className="flex gap-2">
                       {invoice.remainingAmount > 0 && (
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button 
-                              size="sm" 
-                              onClick={() => setSelectedInvoice(invoice)}
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              পেমেন্ট করুন
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>পেমেন্ট করুন</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div>
-                                <Label htmlFor="amount">পরিমাণ</Label>
-                                <Input
-                                  id="amount"
-                                  type="number"
-                                  value={paymentData.amount}
-                                  onChange={(e) => setPaymentData({...paymentData, amount: e.target.value})}
-                                  placeholder="0"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="method">পেমেন্ট পদ্ধতি</Label>
-                                <Select value={paymentData.method} onValueChange={(value) => setPaymentData({...paymentData, method: value})}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="পেমেন্ট পদ্ধতি নির্বাচন করুন" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="bkash">bKash</SelectItem>
-                                    <SelectItem value="nagad">Nagad</SelectItem>
-                                    <SelectItem value="bank_transfer">ব্যাংক ট্রান্সফার</SelectItem>
-                                    <SelectItem value="cash">নগদ</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label htmlFor="senderNumber">প্রেরক নম্বর</Label>
-                                <Input
-                                  id="senderNumber"
-                                  value={paymentData.senderNumber}
-                                  onChange={(e) => setPaymentData({...paymentData, senderNumber: e.target.value})}
-                                  placeholder="01XXXXXXXXX"
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor="transactionId">ট্রানজেকশন আইডি (ঐচ্ছিক)</Label>
-                                <Input
-                                  id="transactionId"
-                                  value={paymentData.transactionId}
-                                  onChange={(e) => setPaymentData({...paymentData, transactionId: e.target.value})}
-                                  placeholder="ট্রানজেকশন আইডি"
-                                />
-                              </div>
-                              <Button 
-                                onClick={handlePaymentSubmit} 
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
-                              >
-                                পেমেন্ট সাবমিট করুন
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
+                        <Link href="/dashboard/student/payment">
+                          <Button 
+                            size="sm"
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            পেমেন্ট করুন
+                          </Button>
+                        </Link>
                       )}
                       <Link href={`/dashboard/invoices/${invoice._id}`}>
                         <Button variant="outline" size="sm">
@@ -511,6 +432,17 @@ export default function AccountsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Removed inline payment modal and form in favor of dedicated page */}
+      
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed bottom-4 right-4 bg-black text-white p-4 rounded text-xs">
+          <div>Selected Invoice: {selectedInvoice ? 'Yes' : 'No'}</div>
+          <div>Show Dialog: {showPaymentDialog ? 'Yes' : 'No'}</div>
+          <div>Invoices Count: {invoices.length}</div>
+        </div>
+      )}
     </div>
   );
 }

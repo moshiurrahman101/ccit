@@ -56,7 +56,7 @@ const InvoiceSchema = new Schema<IInvoice>({
   batchId: {
     type: String,
     required: true,
-    ref: 'BatchSimple'
+    ref: 'Batch'
   },
   batchName: {
     type: String,

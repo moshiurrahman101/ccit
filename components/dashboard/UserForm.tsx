@@ -16,7 +16,7 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'mentor' | 'marketing' | 'support';
+  role: 'admin' | 'mentor' | 'student' | 'marketing' | 'support';
   isActive: boolean;
   createdAt: string;
 }
@@ -31,6 +31,7 @@ interface UserFormProps {
 const roleOptions = [
   { value: 'admin', label: 'অ্যাডমিন', description: 'সম্পূর্ণ অ্যাক্সেস' },
   { value: 'mentor', label: 'মেন্টর', description: 'কোর্স ও শিক্ষার্থী ব্যবস্থাপনা' },
+  { value: 'student', label: 'শিক্ষার্থী', description: 'কোর্সে অংশগ্রহণ ও শেখা' },
   { value: 'marketing', label: 'মার্কেটিং', description: 'বাজারজাতকরণ ও প্রচারণা' },
   { value: 'support', label: 'সাপোর্ট', description: 'গ্রাহক সেবা ও সহায়তা' }
 ];
@@ -40,7 +41,7 @@ export default function UserForm({ user, isOpen, onClose, onSuccess }: UserFormP
     name: '',
     email: '',
     phone: '',
-    role: 'mentor' as 'admin' | 'mentor' | 'marketing' | 'support',
+    role: 'mentor' as 'admin' | 'mentor' | 'student' | 'marketing' | 'support',
     password: '',
     isActive: true
   });

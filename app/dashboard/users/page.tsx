@@ -16,7 +16,7 @@ interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'admin' | 'mentor' | 'marketing' | 'support';
+  role: 'admin' | 'mentor' | 'student' | 'marketing' | 'support';
   isActive: boolean;
   createdAt: string;
 }
@@ -56,7 +56,7 @@ export default function UsersPage() {
   const fetchUsers = async (page = 1, search = '', role = '', status = '') => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem('auth-token');
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const params = new URLSearchParams({
         page: page.toString(),
         limit: '10',
@@ -123,11 +123,12 @@ export default function UsersPage() {
   const getRoleCounts = () => {
     const admin = users.filter(u => u.role === 'admin').length;
     const mentor = users.filter(u => u.role === 'mentor').length;
+    const student = users.filter(u => u.role === 'student').length;
     const marketing = users.filter(u => u.role === 'marketing').length;
     const support = users.filter(u => u.role === 'support').length;
     const active = users.filter(u => u.isActive).length;
     const inactive = users.filter(u => !u.isActive).length;
-    return { admin, mentor, marketing, support, active, inactive, total: users.length };
+    return { admin, mentor, student, marketing, support, active, inactive, total: users.length };
   };
 
   const roleCounts = getRoleCounts();
@@ -219,7 +220,11 @@ export default function UsersPage() {
           <CardTitle className="text-lg font-semibold text-gray-900">ভূমিকা অনুযায়ী বিতরণ</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="text-center p-4 bg-orange-50 rounded-lg">
+              <p className="text-2xl font-bold text-orange-600">{roleCounts.student}</p>
+              <p className="text-sm text-orange-800">শিক্ষার্থী</p>
+            </div>
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <p className="text-2xl font-bold text-blue-600">{roleCounts.mentor}</p>
               <p className="text-sm text-blue-800">মেন্টর</p>

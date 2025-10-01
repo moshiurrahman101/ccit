@@ -32,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" dir="ltr">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <I18nProvider>
           <AuthProvider>
             <ConditionalLayout>

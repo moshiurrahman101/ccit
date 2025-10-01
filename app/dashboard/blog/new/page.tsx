@@ -12,6 +12,7 @@ import { Loader2, Save, Eye, ArrowLeft, Link, Hash, Globe } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import ImageUpload from '@/components/blog/ImageUpload';
 import SEOPreview from '@/components/blog/SEOPreview';
+import SlugValidator from '@/components/blog/SlugValidator';
 import { toast } from 'sonner';
 
 interface BlogFormData {
@@ -36,6 +37,7 @@ export default function NewBlogPage() {
   const [keywordInput, setKeywordInput] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
   const [customSlug, setCustomSlug] = useState('');
+  const [slugAvailable, setSlugAvailable] = useState(false);
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     excerpt: '',
@@ -59,6 +61,7 @@ export default function NewBlogPage() {
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
         .trim();
       setCustomSlug(slug);
     }
@@ -174,6 +177,12 @@ export default function NewBlogPage() {
     }
     if (formData.seo.metaDescription.length > 160) {
       toast.error('Meta description cannot exceed 160 characters');
+      return;
+    }
+
+    // Validate slug availability for published blogs
+    if (status === 'published' && customSlug && !slugAvailable) {
+      toast.error('Please choose an available slug before publishing');
       return;
     }
 
@@ -330,33 +339,13 @@ export default function NewBlogPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  URL Slug
-                </label>
-                <div className="flex items-center space-x-2">
-                  <Input
-                    value={customSlug}
-                    onChange={(e) => setCustomSlug(e.target.value)}
-                    placeholder="blog-url-slug"
-                    className="bg-white/20 border-white/30"
-                    disabled={autoSlug}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setAutoSlug(!autoSlug)}
-                    className="bg-white/20 border-white/30"
-                  >
-                    <Hash className="w-4 h-4 mr-1" />
-                    {autoSlug ? 'Auto' : 'Manual'}
-                  </Button>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  URL: {window.location.origin}/blog/{customSlug}
-                </p>
-              </div>
+              <SlugValidator
+                value={customSlug}
+                onChange={setCustomSlug}
+                autoGenerate={autoSlug}
+                onToggleAutoGenerate={() => setAutoSlug(!autoSlug)}
+                onValidationChange={setSlugAvailable}
+              />
             </CardContent>
           </Card>
 

@@ -197,6 +197,7 @@ export default function AddStudentPage() {
 
   const fetchBatches = async () => {
     try {
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const response = await fetch('/api/batches/active', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -276,6 +277,7 @@ export default function AddStudentPage() {
 
     setIsSubmitting(true);
     try {
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
       const response = await fetch('/api/students', {
         method: 'POST',
         headers: {

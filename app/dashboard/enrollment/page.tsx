@@ -1,287 +1,396 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  BookOpen, 
-  Users, 
-  Calendar, 
-  Clock, 
-  Star, 
   Search, 
   Filter, 
-  Loader2,
-  Plus,
   Eye,
   CheckCircle,
+  XCircle, 
+  Clock, 
+  User, 
+  Mail, 
+  Phone, 
+  Calendar,
+  DollarSign,
+  FileText,
+  Download,
+  RefreshCw,
   AlertCircle,
   GraduationCap,
-  ArrowRight,
-  User
+  BookOpen,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { formatBanglaNumber, formatBanglaDate, formatBanglaCurrency } from '@/lib/utils/banglaNumbers';
+import { formatBanglaNumber } from '@/lib/utils/banglaNumbers';
+import { toast } from 'sonner';
+import DeleteConfirmationDialog from '@/components/dashboard/DeleteConfirmationDialog';
 
-interface EnrolledBatch {
+interface Enrollment {
   _id: string;
-  invoiceNumber: string;
-  batchId: string;
-  batchName: string;
-  amount: number;
-  discountAmount: number;
-  finalAmount: number;
-  status: 'pending' | 'partial' | 'paid' | 'overdue';
-  dueDate: string;
-  createdAt: string;
-  batchDetails?: {
+  student: {
     _id: string;
     name: string;
-    description: string;
-    coverPhoto?: string;
-    courseType: 'online' | 'offline';
-    mentorId: {
+    email: string;
+    phone: string;
+    avatar?: string;
+  };
+  batch: {
       _id: string;
       name: string;
-      avatar?: string;
-      designation: string;
-    };
-    duration: number;
-    durationUnit: 'days' | 'weeks' | 'months' | 'years';
-    startDate: string;
-    endDate: string;
-    status: string;
+    courseType: string;
+    regularPrice: number;
+    discountPrice?: number;
   };
+  course: {
+    _id: string;
+    title: string;
+  };
+  enrollmentDate: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  paymentStatus: 'pending' | 'paid' | 'partial' | 'failed';
+  amount: number;
+  progress: number;
+  lastAccessed: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface AvailableBatch {
+interface Invoice {
   _id: string;
-  name: string;
-  description: string;
-  coverPhoto?: string;
-  courseType: 'online' | 'offline';
+  invoiceNumber: string;
+  studentId: string;
+  batchId: string;
+  studentName: string;
+  batchName: string;
   regularPrice: number;
   discountPrice?: number;
-  discountPercentage?: number;
-  mentorId: {
-    _id: string;
-    name: string;
-    avatar?: string;
-    designation: string;
-    experience: number;
-    expertise: string[];
-    rating?: number;
-  };
-  duration: number;
-  durationUnit: 'days' | 'weeks' | 'months' | 'years';
-  startDate: string;
-  endDate: string;
-  maxStudents: number;
-  currentStudents: number;
-  marketing: {
-    slug: string;
-    tags: string[];
-  };
-  status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-  isActive: boolean;
+  finalAmount: number;
+  status: 'pending' | 'paid' | 'partial' | 'overdue';
+  dueDate: string;
+  createdAt: string;
+  payments: Array<{
+    amount: number;
+    method: string;
+    transactionId: string;
+    senderNumber: string;
+    date: string;
+  }>;
 }
 
-export default function EnrollmentPage() {
-  const [enrolledBatches, setEnrolledBatches] = useState<EnrolledBatch[]>([]);
-  const [availableBatches, setAvailableBatches] = useState<AvailableBatch[]>([]);
+export default function AdminEnrollmentPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'enrolled' | 'available'>('enrolled');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [courseTypeFilter, setCourseTypeFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState<'enrollments' | 'invoices'>('enrollments');
+  
+  // Delete confirmation states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'enrollment' | 'invoice', id: string, name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchEnrolledBatches();
-    fetchAvailableBatches();
-  }, []);
+    if (!loading && user) {
+      if (user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      }
+      fetchEnrollments();
+      fetchInvoices();
+    } else if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
 
-  const fetchEnrolledBatches = async () => {
+  const fetchEnrollments = async () => {
     try {
-      // Get token from cookies
-      const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-        return '';
-      };
-      
-      const token = getCookie('auth-token');
-      console.log('Fetching enrolled batches with token:', token ? 'present' : 'missing');
-
-      const response = await fetch('/api/students/invoices', {
+      const response = await fetch('/api/admin/enrollments', {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
         }
       });
       
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched enrolled batches:', data.invoices);
-        setEnrolledBatches(data.invoices || []);
-      } else {
-        const errorData = await response.json();
-        console.error('Error response:', errorData);
+        setEnrollments(data.enrollments || []);
       }
     } catch (error) {
-      console.error('Error fetching enrolled batches:', error);
+      console.error('Error fetching enrollments:', error);
     }
   };
 
-  const fetchAvailableBatches = async () => {
+  const fetchInvoices = async () => {
     try {
-      const response = await fetch('/api/public/batches?limit=20');
+      const response = await fetch('/api/admin/invoices', {
+        headers: {
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
+        }
+      });
+      
       if (response.ok) {
         const data = await response.json();
-        setAvailableBatches(data.batches || []);
+        setInvoices(data.invoices || []);
       }
     } catch (error) {
-      console.error('Error fetching available batches:', error);
+      console.error('Error fetching invoices:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const isAlreadyEnrolled = (batchId: string) => {
-    const isEnrolled = enrolledBatches.some(enrollment => {
-      const enrollmentBatchId = typeof enrollment.batchId === 'string' ? enrollment.batchId : (enrollment.batchId as any)?._id;
-      return enrollmentBatchId === batchId;
-    });
-    console.log('Checking enrollment for batch:', batchId);
-    console.log('Available enrollments:', enrolledBatches.map(e => typeof e.batchId === 'string' ? e.batchId : (e.batchId as any)?._id));
-    console.log('Is enrolled:', isEnrolled);
-    return isEnrolled;
+  const handleApproveEnrollment = async (enrollmentId: string) => {
+    try {
+      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
+        }
+      });
+
+      if (response.ok) {
+        await fetchEnrollments();
+        toast.success('এনরোলমেন্ট সফলভাবে অনুমোদিত হয়েছে!');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'এনরোলমেন্ট অনুমোদন করতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error approving enrollment:', error);
+      toast.error('এনরোলমেন্ট অনুমোদন করতে সমস্যা হয়েছে');
+    }
   };
 
-  const handleEnroll = async (batchId: string, batchName: string) => {
+  const handleRejectEnrollment = async (enrollmentId: string, reason: string) => {
     try {
-      const response = await fetch('/api/enrollment', {
+      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
         },
-        body: JSON.stringify({ batchId })
+        body: JSON.stringify({ reason })
       });
 
       if (response.ok) {
-        alert(`Successfully enrolled in ${batchName}!`);
-        await fetchEnrolledBatches(); // Refresh enrolled batches
-        await fetchAvailableBatches(); // Refresh available batches
+        await fetchEnrollments();
+        toast.success('এনরোলমেন্ট সফলভাবে প্রত্যাখ্যান করা হয়েছে!');
       } else {
         const errorData = await response.json();
-        console.log('Enrollment failed:', errorData);
-        alert(errorData.error || 'Enrollment failed. Please try again.');
+        toast.error(errorData.error || 'এনরোলমেন্ট প্রত্যাখ্যান করতে সমস্যা হয়েছে');
       }
     } catch (error) {
-      console.error('Enrollment error:', error);
-      alert('Enrollment failed. Please try again.');
+      console.error('Error rejecting enrollment:', error);
+      toast.error('এনরোলমেন্ট প্রত্যাখ্যান করতে সমস্যা হয়েছে');
     }
   };
 
+  const handleDeleteEnrollment = (enrollmentId: string, studentName: string) => {
+    setItemToDelete({ type: 'enrollment', id: enrollmentId, name: studentName });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteInvoice = (invoiceId: string, invoiceNumber: string) => {
+    setItemToDelete({ type: 'invoice', id: invoiceId, name: invoiceNumber });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const endpoint = itemToDelete.type === 'enrollment' 
+        ? `/api/admin/enrollments?id=${itemToDelete.id}`
+        : `/api/admin/invoices?id=${itemToDelete.id}`;
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
+        }
+      });
+
+      if (response.ok) {
+        if (itemToDelete.type === 'enrollment') {
+          await fetchEnrollments();
+        } else {
+          await fetchInvoices();
+        }
+        toast.success(`${itemToDelete.type === 'enrollment' ? 'এনরোলমেন্ট' : 'ইনভয়েস'} সফলভাবে মুছে ফেলা হয়েছে!`);
+        setDeleteDialogOpen(false);
+        setItemToDelete(null);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || `${itemToDelete.type === 'enrollment' ? 'এনরোলমেন্ট' : 'ইনভয়েস'} মুছতে সমস্যা হয়েছে`);
+      }
+    } catch (error) {
+      console.error(`Error deleting ${itemToDelete.type}:`, error);
+      toast.error(`${itemToDelete.type === 'enrollment' ? 'এনরোলমেন্ট' : 'ইনভয়েস'} মুছতে সমস্যা হয়েছে`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'approved': return 'bg-green-100 text-green-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
       case 'paid': return 'bg-green-100 text-green-800';
-      case 'partial': return 'bg-yellow-100 text-yellow-800';
-      case 'pending': return 'bg-blue-100 text-blue-800';
+      case 'partial': return 'bg-orange-100 text-orange-800';
+      case 'failed': return 'bg-red-100 text-red-800';
       case 'overdue': return 'bg-red-100 text-red-800';
-      case 'published': return 'bg-green-100 text-green-800';
-      case 'upcoming': return 'bg-blue-100 text-blue-800';
-      case 'ongoing': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusText = (status: string) => {
+    if (!status) return 'Unknown';
     switch (status) {
-      case 'paid': return 'পরিশোধিত';
-      case 'partial': return 'আংশিক পরিশোধিত';
+      case 'approved': return 'অনুমোদিত';
       case 'pending': return 'অপেক্ষমান';
-      case 'overdue': return 'মেয়াদ উত্তীর্ণ';
-      case 'published': return 'প্রকাশিত';
-      case 'upcoming': return 'আসন্ন';
-      case 'ongoing': return 'চলমান';
+      case 'rejected': return 'প্রত্যাখ্যাত';
+      case 'completed': return 'সম্পন্ন';
+      case 'paid': return 'পরিশোধিত';
+      case 'partial': return 'আংশিক';
+      case 'failed': return 'ব্যর্থ';
+      case 'overdue': return 'মেয়াদোত্তীর্ণ';
       default: return status;
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('bn-BD').format(price);
-  };
-
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Invalid Date';
+    }
   };
 
-  const filteredAvailableBatches = availableBatches.filter(batch => {
-    const matchesSearch = batch.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         batch.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || !statusFilter || batch.status === statusFilter;
-    const matchesType = courseTypeFilter === 'all' || !courseTypeFilter || batch.courseType === courseTypeFilter;
+  const formatPrice = (price: number) => {
+    if (!price || isNaN(price)) return '0';
+    return new Intl.NumberFormat('en-BD').format(price);
+  };
+
+  const filteredEnrollments = enrollments.filter(enrollment => {
+    const matchesSearch = 
+      (enrollment.student?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (enrollment.student?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (enrollment.batch?.name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     
-    return matchesSearch && matchesStatus && matchesType;
+    const matchesStatus = statusFilter === 'all' || enrollment.status === statusFilter;
+    const matchesPaymentStatus = paymentStatusFilter === 'all' || enrollment.paymentStatus === paymentStatusFilter;
+    
+    return matchesSearch && matchesStatus && matchesPaymentStatus;
   });
+
+  const filteredInvoices = invoices.filter(invoice => {
+    const matchesSearch = 
+      (invoice.studentName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (invoice.batchName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (invoice.invoiceNumber?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <RefreshCw className="h-6 w-6 animate-spin text-orange-600" />
+          <span>এনরোলমেন্ট ব্যবস্থাপনা লোড হচ্ছে...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'admin') {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">এনরোলমেন্ট ম্যানেজমেন্ট</h1>
-        <p className="text-gray-600 mt-2">আপনার নিবন্ধিত কোর্স দেখুন এবং নতুন কোর্সে এনরোল করুন</p>
+        <h1 className="text-3xl font-bold text-gray-900">এনরোলমেন্ট ব্যবস্থাপনা</h1>
+        <p className="text-gray-600 mt-2">শিক্ষার্থী এনরোলমেন্ট ও পেমেন্ট অনুমোদন ব্যবস্থাপনা</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">নিবন্ধিত কোর্স</CardTitle>
+            <CardTitle className="text-sm font-medium">মোট এনরোলমেন্ট</CardTitle>
             <GraduationCap className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatBanglaNumber(enrolledBatches.length)}</div>
-            <p className="text-xs text-gray-600">
-              মোট কোর্স
-            </p>
+            <div className="text-2xl font-bold">{formatBanglaNumber(enrollments.length)}</div>
+            <p className="text-xs text-gray-600">সকল এনরোলমেন্ট</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">পরিশোধিত কোর্স</CardTitle>
+            <CardTitle className="text-sm font-medium">অনুমোদনের অপেক্ষায়</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatBanglaNumber(enrollments.filter(e => e.status === 'pending').length)}
+            </div>
+            <p className="text-xs text-gray-600">পর্যালোচনার অপেক্ষায়</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">অনুমোদিত</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatBanglaNumber(enrolledBatches.filter(batch => batch.status === 'paid').length)}
+              {formatBanglaNumber(enrollments.filter(e => e.status === 'approved').length)}
             </div>
-            <p className="text-xs text-gray-600">
-              সম্পূর্ণ পরিশোধিত
-            </p>
+            <p className="text-xs text-gray-600">সক্রিয় শিক্ষার্থী</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">উপলব্ধ কোর্স</CardTitle>
-            <BookOpen className="h-4 w-4 text-orange-500" />
+            <CardTitle className="text-sm font-medium">মোট আয়</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatBanglaNumber(availableBatches.length)}</div>
-            <p className="text-xs text-gray-600">
-              নতুন এনরোলমেন্টের জন্য
-            </p>
+            <div className="text-2xl font-bold">
+              ৳{formatPrice(invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.finalAmount, 0))}
+            </div>
+            <p className="text-xs text-gray-600">পরিশোধিত ইনভয়েস</p>
           </CardContent>
         </Card>
       </div>
@@ -290,110 +399,38 @@ export default function EnrollmentPage() {
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('enrolled')}
+            onClick={() => setActiveTab('enrollments')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'enrolled'
+              activeTab === 'enrollments'
                 ? 'border-orange-500 text-orange-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
             <GraduationCap className="h-4 w-4 inline mr-2" />
-            আমার কোর্সসমূহ ({enrolledBatches.length})
+            এনরোলমেন্ট ({enrollments.length})
           </button>
           <button
-            onClick={() => setActiveTab('available')}
+            onClick={() => setActiveTab('invoices')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'available'
+              activeTab === 'invoices'
                 ? 'border-orange-500 text-orange-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <BookOpen className="h-4 w-4 inline mr-2" />
-            নতুন কোর্সে এনরোল করুন ({availableBatches.length})
+            <FileText className="h-4 w-4 inline mr-2" />
+            ইনভয়েস ({invoices.length})
           </button>
         </nav>
       </div>
 
-      {/* Content based on active tab */}
-      {activeTab === 'enrolled' ? (
-        <div>
-          {enrolledBatches.length === 0 ? (
-            <Card className="text-center py-12">
-              <CardContent>
-                <GraduationCap className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">কোন কোর্সে নিবন্ধিত নন</h3>
-                <p className="text-gray-600 mb-6">আপনি এখনো কোন কোর্সে নিবন্ধিত হননি। নতুন কোর্সে এনরোল করুন!</p>
-                <Button 
-                  onClick={() => setActiveTab('available')}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  নতুন কোর্সে এনরোল করুন
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {enrolledBatches.map((enrollment) => (
-                <Card key={enrollment._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2">{enrollment.batchName}</CardTitle>
-                      <Badge className={getStatusColor(enrollment.status)}>
-                        {getStatusText(enrollment.status)}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600">ইনভয়েস #: {enrollment.invoiceNumber}</p>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">পরিমাণ:</span>
-                      <span className="font-semibold">৳{formatPrice(enrollment.finalAmount)}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">মেয়াদ:</span>
-                      <span className="text-sm">{formatDate(enrollment.dueDate)}</span>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">নিবন্ধনের তারিখ:</span>
-                      <span className="text-sm">{formatDate(enrollment.createdAt)}</span>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Link href={`/dashboard/invoices/${enrollment._id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
-                          <Eye className="h-4 w-4 mr-2" />
-                          ইনভয়েস দেখুন
-                        </Button>
-                      </Link>
-                      <Button 
-                        size="sm" 
-                        className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                        onClick={() => window.location.href = '/dashboard'}
-                      >
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        ড্যাশবোর্ডে যান
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          {/* Filters for available batches */}
-          <Card className="mb-6">
+      {/* Filters */}
+      <Card>
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="কোর্স খুঁজুন..."
+                placeholder="নাম, ইমেইল বা কোর্স দিয়ে খুঁজুন..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -406,160 +443,258 @@ export default function EnrollmentPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">সব স্ট্যাটাস</SelectItem>
-                    <SelectItem value="published">প্রকাশিত</SelectItem>
-                    <SelectItem value="upcoming">আসন্ন</SelectItem>
-                    <SelectItem value="ongoing">চলমান</SelectItem>
+                <SelectItem value="pending">অপেক্ষমান</SelectItem>
+                <SelectItem value="approved">অনুমোদিত</SelectItem>
+                <SelectItem value="rejected">প্রত্যাখ্যাত</SelectItem>
+                <SelectItem value="completed">সম্পন্ন</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select value={courseTypeFilter} onValueChange={setCourseTypeFilter}>
+            {activeTab === 'enrollments' && (
+              <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
                   <SelectTrigger>
-                    <SelectValue placeholder="টাইপ দিয়ে ফিল্টার করুন" />
+                  <SelectValue placeholder="পেমেন্ট দিয়ে ফিল্টার করুন" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">সব টাইপ</SelectItem>
-                    <SelectItem value="online">অনলাইন</SelectItem>
-                    <SelectItem value="offline">অফলাইন</SelectItem>
+                  <SelectItem value="all">সব পেমেন্ট স্ট্যাটাস</SelectItem>
+                  <SelectItem value="pending">অপেক্ষমান</SelectItem>
+                  <SelectItem value="paid">পরিশোধিত</SelectItem>
+                  <SelectItem value="partial">আংশিক</SelectItem>
+                  <SelectItem value="failed">ব্যর্থ</SelectItem>
                   </SelectContent>
                 </Select>
+            )}
+
+            <Button onClick={() => { fetchEnrollments(); fetchInvoices(); }} variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              রিফ্রেশ
+            </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Available batches */}
-          {isLoading ? (
-            <div className="text-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-500 mx-auto mb-4" />
-              <p className="text-gray-600">কোর্স লোড হচ্ছে...</p>
-            </div>
-          ) : filteredAvailableBatches.length === 0 ? (
+      {/* Content based on active tab */}
+      {activeTab === 'enrollments' ? (
+        <div>
+          {filteredEnrollments.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-medium text-gray-900 mb-2">কোন কোর্স পাওয়া যায়নি</h3>
-                <p className="text-gray-600">আপনার অনুসন্ধান মানদণ্ড সামঞ্জস্য করার চেষ্টা করুন।</p>
+                <GraduationCap className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">কোন এনরোলমেন্ট পাওয়া যায়নি</h3>
+                <p className="text-gray-600">আপনার বর্তমান ফিল্টারের সাথে মিলে যায় এমন কোন এনরোলমেন্ট নেই।</p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAvailableBatches.map((batch) => (
-                <Card key={batch._id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    {batch.coverPhoto && batch.coverPhoto.trim() !== '' ? (
-                      <Image
-                        src={batch.coverPhoto}
-                        alt={batch.name}
-                        width={400}
-                        height={200}
-                        className="w-full h-48 object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-                        <BookOpen className="h-12 w-12 text-white" />
-                      </div>
-                    )}
-                    <Badge className={`absolute top-3 right-3 ${getStatusColor(batch.status)}`}>
-                      {getStatusText(batch.status)}
-                    </Badge>
-                  </div>
-
-                  <CardHeader>
+            <div className="space-y-4">
+              {filteredEnrollments.map((enrollment) => (
+                <Card key={enrollment._id} className="overflow-hidden">
+                  <CardContent className="p-6">
                     <div className="flex items-start justify-between">
-                      <CardTitle className="text-lg line-clamp-2">{batch.name}</CardTitle>
-                      <Badge variant="outline" className="ml-2">
-                        {batch.courseType}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2">{batch.description}</p>
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-                    {/* Mentor Info */}
-                    <div className="flex items-center gap-3">
-                      {batch.mentorId.avatar ? (
-                        <Image
-                          src={batch.mentorId.avatar}
-                          alt={batch.mentorId.name}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium">{batch.mentorId.name.charAt(0)}</span>
-                        </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-sm">{batch.mentorId.name}</p>
-                        <p className="text-xs text-gray-500">{batch.mentorId.designation}</p>
-                      </div>
-                    </div>
-
-                    {/* Duration & Dates */}
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{batch.duration} {batch.durationUnit}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        <span>{formatDate(batch.startDate)}</span>
-                      </div>
-                    </div>
-
-                    {/* Students Count */}
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Users className="h-4 w-4" />
-                      <span>{batch.currentStudents}/{batch.maxStudents} students</span>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {batch.discountPrice ? (
-                          <div>
-                            <span className="text-2xl font-bold text-orange-600">
-                              ৳{formatPrice(batch.discountPrice)}
-                            </span>
-                            <span className="text-lg text-gray-500 line-through ml-2">
-                              ৳{formatPrice(batch.regularPrice)}
-                            </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex-shrink-0">
+                            {enrollment.student?.avatar ? (
+                              <img
+                                src={enrollment.student.avatar}
+                                alt={enrollment.student?.name || 'Student'}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                                <User className="h-6 w-6 text-gray-500" />
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <span className="text-2xl font-bold text-orange-600">
-                            ৳{formatPrice(batch.regularPrice)}
-                          </span>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-semibold text-gray-900">{enrollment.student?.name || 'Unknown Student'}</h3>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-4 w-4" />
+                                {enrollment.student?.email || 'N/A'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Phone className="h-4 w-4" />
+                                {enrollment.student?.phone || 'N/A'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge className={getStatusColor(enrollment.status)}>
+                              {getStatusText(enrollment.status)}
+                            </Badge>
+                            <Badge className={getStatusColor(enrollment.paymentStatus)}>
+                              {getStatusText(enrollment.paymentStatus)}
+                            </Badge>
+                      </div>
+                    </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">কোর্স</p>
+                            <p className="text-sm text-gray-900">{enrollment.batch?.name || 'Unknown Course'}</p>
+                            <p className="text-xs text-gray-500">{enrollment.batch?.courseType || 'N/A'}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">পরিমাণ</p>
+                            <p className="text-sm text-gray-900">৳{formatPrice(enrollment.amount || 0)}</p>
+                            {enrollment.batch?.discountPrice && (
+                              <p className="text-xs text-gray-500">
+                                Regular: ৳{formatPrice(enrollment.batch.regularPrice || 0)}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">এনরোলমেন্ট তারিখ</p>
+                            <p className="text-sm text-gray-900">{formatDate(enrollment.enrollmentDate)}</p>
+                            <p className="text-xs text-gray-500">
+                              Last accessed: {formatDate(enrollment.lastAccessed)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2">
+                          {enrollment.status === 'pending' && (
+                            <>
+                              <Button 
+                                onClick={() => handleApproveEnrollment(enrollment._id)}
+                                className="bg-green-500 hover:bg-green-600 text-white"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                অনুমোদন
+                              </Button>
+                              <Button 
+                                onClick={() => {
+                                  const reason = prompt('প্রত্যাখ্যানের কারণ লিখুন:');
+                                  if (reason) handleRejectEnrollment(enrollment._id, reason);
+                                }}
+                                variant="destructive"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                প্রত্যাখ্যান
+                              </Button>
+                            </>
+                          )}
+                          <Button 
+                            onClick={() => handleDeleteEnrollment(enrollment._id, enrollment.student?.name || 'Unknown Student')}
+                            variant="outline"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            মুছে ফেলুন
+                          </Button>
+                        </div>
+
+                        {enrollment.rejectionReason && (
+                          <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                            <p className="text-sm text-red-800">
+                              <strong>প্রত্যাখ্যানের কারণ:</strong> {enrollment.rejectionReason}
+                            </p>
+                          </div>
                         )}
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          {filteredInvoices.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-medium text-gray-900 mb-2">কোন ইনভয়েস পাওয়া যায়নি</h3>
+                <p className="text-gray-600">আপনার বর্তমান ফিল্টারের সাথে মিলে যায় এমন কোন ইনভয়েস নেই।</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredInvoices.map((invoice) => (
+                <Card key={invoice._id} className="overflow-hidden">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Invoice #{invoice.invoiceNumber || 'N/A'}
+                            </h3>
+                            <p className="text-sm text-gray-600">{invoice.studentName || 'Unknown Student'}</p>
+                            <p className="text-sm text-gray-600">{invoice.batchName || 'Unknown Batch'}</p>
+                          </div>
+                          <Badge className={getStatusColor(invoice.status)}>
+                            {getStatusText(invoice.status)}
+                          </Badge>
+                        </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <Link href={`/batches/${batch.marketing.slug}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full">
-                          <Eye className="h-4 w-4 mr-2" />
-                          বিস্তারিত
-                        </Button>
-                      </Link>
-                      {isAlreadyEnrolled(batch._id) ? (
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-green-500 hover:bg-green-600 text-white cursor-default"
-                          disabled
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          আপনি ইতিমধ্যে এনরোল করেছেন
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
-                          onClick={() => handleEnroll(batch._id, batch.name)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          এনরোল করুন
-                        </Button>
-                      )}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">পরিমাণ</p>
+                            <p className="text-lg font-semibold text-gray-900">
+                              ৳{formatPrice(invoice.finalAmount || 0)}
+                            </p>
+                            {invoice.discountPrice && (
+                              <p className="text-xs text-gray-500">
+                                Discount: ৳{formatPrice((invoice.regularPrice || 0) - (invoice.discountPrice || 0))}
+                              </p>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">মেয়াদ</p>
+                            <p className="text-sm text-gray-900">{formatDate(invoice.dueDate)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">তৈরি</p>
+                            <p className="text-sm text-gray-900">{formatDate(invoice.createdAt)}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">পেমেন্ট</p>
+                            <p className="text-sm text-gray-900">{invoice.payments?.length || 0} payment(s)</p>
+                          </div>
+                        </div>
+
+                        {invoice.payments && invoice.payments.length > 0 && (
+                          <div className="mt-4">
+                            <p className="text-sm font-medium text-gray-700 mb-2">পেমেন্ট ইতিহাস</p>
+                            <div className="space-y-2">
+                              {invoice.payments.map((payment, index) => (
+                                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                  <div>
+                                    <p className="text-sm font-medium">৳{formatPrice(payment.amount || 0)}</p>
+                                    <p className="text-xs text-gray-500">{payment.method || 'N/A'}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">{payment.transactionId || 'N/A'}</p>
+                                    <p className="text-xs text-gray-500">{formatDate(payment.date)}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex gap-2 mt-4">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            বিস্তারিত দেখুন
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <Download className="h-4 w-4 mr-2" />
+                            PDF ডাউনলোড
+                          </Button>
+                          <Button 
+                            onClick={() => handleDeleteInvoice(invoice._id, invoice.invoiceNumber || 'Unknown Invoice')}
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            মুছে ফেলুন
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -568,6 +703,20 @@ export default function EnrollmentPage() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title={itemToDelete?.type === 'enrollment' ? 'এনরোলমেন্ট মুছে ফেলুন' : 'ইনভয়েস মুছে ফেলুন'}
+        description={`আপনি কি নিশ্চিত যে আপনি ${itemToDelete?.type === 'enrollment' ? 'এই এনরোলমেন্ট' : 'এই ইনভয়েস'} মুছে ফেলতে চান?`}
+        itemName={itemToDelete?.name || 'Unknown'}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

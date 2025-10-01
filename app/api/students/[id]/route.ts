@@ -141,9 +141,9 @@ export async function PUT(
     if (notes !== undefined) updateData['studentInfo.notes'] = notes;
     if (isVerified !== undefined) updateData['studentInfo.isVerified'] = isVerified;
 
-    // Update password if provided
+    // Update password if provided (will be hashed by User model's pre('save') hook)
     if (password) {
-      updateData.password = await bcrypt.hash(password, 12);
+      updateData.password = password; // Raw password - will be hashed automatically
     }
 
     // Update student info

@@ -23,7 +23,11 @@ import {
   CreditCard,
   Eye,
   MoreHorizontal,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  User,
+  MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
@@ -38,6 +42,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface Student {
   _id: string;
@@ -46,6 +57,10 @@ interface Student {
   phone: string;
   isActive: boolean;
   avatar?: string;
+  approvalStatus?: 'pending' | 'approved' | 'rejected';
+  approvalDate?: string;
+  approvedBy?: string;
+  rejectionReason?: string;
   studentInfo?: {
     studentId?: string;
     dateOfBirth?: string;
@@ -139,6 +154,18 @@ const paymentStatusColors = {
   overdue: 'bg-red-100 text-red-800'
 };
 
+const approvalStatusLabels = {
+  pending: 'অনুমোদনের অপেক্ষায়',
+  approved: 'অনুমোদিত',
+  rejected: 'প্রত্যাখ্যান'
+};
+
+const approvalStatusColors = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  approved: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800'
+};
+
 export default function StudentTable({
   students,
   onRefresh,
@@ -156,9 +183,11 @@ export default function StudentTable({
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [genderFilter, setGenderFilter] = useState('all');
+  const [approvalFilter, setApprovalFilter] = useState('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isApproving, setIsApproving] = useState<string | null>(null);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -183,6 +212,11 @@ export default function StudentTable({
   const handleGenderFilter = (value: string) => {
     setGenderFilter(value);
     onFilter('gender', value === 'all' ? '' : value);
+  };
+
+  const handleApprovalFilter = (value: string) => {
+    setApprovalFilter(value);
+    onFilter('approvalStatus', value === 'all' ? '' : value);
   };
 
   const handleDeleteClick = (student: Student) => {
@@ -224,6 +258,45 @@ export default function StudentTable({
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setStudentToDelete(null);
+  };
+
+  const handleApproval = async (studentId: string, action: 'approve' | 'reject', rejectionReason?: string) => {
+    try {
+      setIsApproving(studentId);
+      
+      const response = await fetch('/api/admin/student-approvals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: studentId,
+          action,
+          rejectionReason
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(`শিক্ষার্থী ${action === 'approve' ? 'অনুমোদিত' : 'প্রত্যাখ্যান'} হয়েছে`);
+        onRefresh();
+      } else {
+        toast.error(data.message || `শিক্ষার্থী ${action === 'approve' ? 'অনুমোদন' : 'প্রত্যাখ্যান'} করতে সমস্যা হয়েছে`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing student:`, error);
+      toast.error(`শিক্ষার্থী ${action === 'approve' ? 'অনুমোদন' : 'প্রত্যাখ্যান'} করতে সমস্যা হয়েছে`);
+    } finally {
+      setIsApproving(null);
+    }
+  };
+
+  const handleReject = (student: Student) => {
+    const reason = prompt('প্রত্যাখ্যানের কারণ দিন (ঐচ্ছিক):');
+    if (reason !== null) {
+      handleApproval(student._id, 'reject', reason);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -308,6 +381,18 @@ export default function StudentTable({
                 <SelectItem value="other">অন্যান্য</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select value={approvalFilter} onValueChange={handleApprovalFilter}>
+              <SelectTrigger className="w-32 bg-white border-gray-300">
+                <SelectValue placeholder="অনুমোদন" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200">
+                <SelectItem value="all">সব অনুমোদন</SelectItem>
+                <SelectItem value="pending">অনুমোদনের অপেক্ষায়</SelectItem>
+                <SelectItem value="approved">অনুমোদিত</SelectItem>
+                <SelectItem value="rejected">প্রত্যাখ্যান</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -331,6 +416,7 @@ export default function StudentTable({
                 <TableHead className="text-gray-700 font-semibold">ব্যাচ</TableHead>
                 <TableHead className="text-gray-700 font-semibold">যোগাযোগ</TableHead>
                 <TableHead className="text-gray-700 font-semibold">পেমেন্ট</TableHead>
+                <TableHead className="text-gray-700 font-semibold">অনুমোদন</TableHead>
                 <TableHead className="text-gray-700 font-semibold">স্ট্যাটাস</TableHead>
                 <TableHead className="text-gray-700 font-semibold">তারিখ</TableHead>
                 <TableHead className="text-gray-700 font-semibold text-right">অ্যাকশন</TableHead>
@@ -339,14 +425,14 @@ export default function StudentTable({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                     <p className="text-gray-500">{getStatusText('dashboard_loading')}</p>
                   </TableCell>
                 </TableRow>
               ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
+                  <TableCell colSpan={9} className="text-center py-8">
                     <div className="text-gray-500">
                       <GraduationCap className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                       <p className="text-lg font-medium mb-2">কোন শিক্ষার্থী নেই</p>
@@ -448,6 +534,27 @@ export default function StudentTable({
                     <TableCell>
                       <div className="space-y-1">
                         <Badge 
+                          className={
+                            approvalStatusColors[student.approvalStatus || 'pending']
+                          }
+                        >
+                          {approvalStatusLabels[student.approvalStatus || 'pending']}
+                        </Badge>
+                        {student.approvalDate && (
+                          <div className="text-xs text-gray-600">
+                            {formatDate(student.approvalDate)}
+                          </div>
+                        )}
+                        {student.rejectionReason && (
+                          <div className="text-xs text-red-600">
+                            {student.rejectionReason}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge 
                           variant={student.isActive ? 'default' : 'secondary'}
                         >
                           {getStatusText(student.isActive ? 'active' : 'inactive')}
@@ -468,33 +575,72 @@ export default function StudentTable({
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onView(student)}
-                          className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                        >
-                          <Eye className="w-3 h-3" />
-                        </Button>
-                        <AdminOnly>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onEdit(student)}
-                            className="text-green-600 border-green-200 hover:bg-green-50"
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteClick(student)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </AdminOnly>
+                      <div className="flex justify-end">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                            >
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                              onClick={() => onView(student)}
+                              className="text-blue-600 hover:bg-blue-50"
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              দেখুন
+                            </DropdownMenuItem>
+                            
+                            <AdminOnly>
+                              {student.approvalStatus === 'pending' && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleApproval(student._id, 'approve')}
+                                    disabled={isApproving === student._id}
+                                    className="text-green-600 hover:bg-green-50"
+                                  >
+                                    {isApproving === student._id ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <CheckCircle className="w-4 h-4 mr-2" />
+                                    )}
+                                    অনুমোদন করুন
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleReject(student)}
+                                    disabled={isApproving === student._id}
+                                    className="text-red-600 hover:bg-red-50"
+                                  >
+                                    <XCircle className="w-4 h-4 mr-2" />
+                                    প্রত্যাখ্যান করুন
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => onEdit(student)}
+                                className="text-green-600 hover:bg-green-50"
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                সম্পাদনা করুন
+                              </DropdownMenuItem>
+                              
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClick(student)}
+                                className="text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                মুছে ফেলুন
+                              </DropdownMenuItem>
+                            </AdminOnly>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
