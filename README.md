@@ -166,6 +166,17 @@ https://res.cloudinary.com/your-cloud/image/upload/w_auto,f_auto,q_auto/your-ima
 2. Set environment variables in Vercel dashboard
 3. Deploy automatically on push
 
+**⚠️ Important:** After deploying to Vercel, you MUST set the `NEXT_PUBLIC_APP_URL` environment variable to your Vercel URL to ensure password reset emails and other features work correctly.
+
+**For detailed deployment instructions, see [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md)**
+
+### Quick Deployment Checklist
+
+- [ ] Set `NEXT_PUBLIC_APP_URL` to your Vercel/production URL
+- [ ] Set all required environment variables (see env-setup.md)
+- [ ] Test password reset flow after deployment
+- [ ] Update `NEXT_PUBLIC_APP_URL` when adding custom domain
+
 ### Other Platforms
 
 The app is compatible with any platform that supports Next.js:
@@ -173,6 +184,8 @@ The app is compatible with any platform that supports Next.js:
 - Railway
 - DigitalOcean App Platform
 - AWS Amplify
+
+**Note:** Regardless of platform, ensure `NEXT_PUBLIC_APP_URL` is set to your production URL.
 
 ## 📄 License
 

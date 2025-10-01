@@ -31,6 +31,18 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NODE_ENV=development
 ```
 
+**⚠️ Important for Production/Vercel Deployment:**
+When deploying to Vercel or any production environment, you MUST update `NEXT_PUBLIC_APP_URL` to your actual domain:
+- Vercel: `https://your-app.vercel.app`
+- Custom Domain: `https://yourdomain.com`
+
+This is critical for:
+- Password reset email links
+- Welcome email links
+- Blog canonical URLs
+
+See [VERCEL_DEPLOYMENT_GUIDE.md](./VERCEL_DEPLOYMENT_GUIDE.md) for detailed deployment instructions.
+
 ## Optional Variables (for future features)
 
 ### Email Configuration

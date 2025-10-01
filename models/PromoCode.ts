@@ -140,7 +140,7 @@ const PromoCodeSchema = new Schema<IPromoCode>({
 });
 
 // Index for efficient queries
-PromoCodeSchema.index({ code: 1 });
+// Note: code already has unique index, no need to add another
 PromoCodeSchema.index({ isActive: 1 });
 PromoCodeSchema.index({ validFrom: 1, validUntil: 1 });
 PromoCodeSchema.index({ applicableBatches: 1 });

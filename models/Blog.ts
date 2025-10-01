@@ -139,7 +139,7 @@ const BlogSchema = new Schema<IBlog>({
 });
 
 // Indexes for efficient queries
-BlogSchema.index({ slug: 1 });
+// Note: slug already has unique index, no need to add another
 BlogSchema.index({ status: 1 });
 BlogSchema.index({ category: 1 });
 BlogSchema.index({ tags: 1 });

@@ -165,7 +165,7 @@ const InvoiceSchema = new Schema<IInvoice>({
 });
 
 // Index for efficient queries
-InvoiceSchema.index({ invoiceNumber: 1 });
+// Note: invoiceNumber already has unique index, no need to add another
 InvoiceSchema.index({ studentId: 1 });
 InvoiceSchema.index({ batchId: 1 });
 InvoiceSchema.index({ status: 1 });

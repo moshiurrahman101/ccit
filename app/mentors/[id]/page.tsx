@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Star, Users, Award, MessageCircle, BookOpen, Linkedin, Github, Mail, Phone, MapPin, Calendar, Clock, GraduationCap, FileText, Code, Globe, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Award, MessageCircle, BookOpen, Linkedin, Github, Mail, Phone, MapPin, Calendar, Clock, GraduationCap, FileText, Code, Globe, Loader2, Facebook, Instagram, Youtube, Twitter, ExternalLink } from 'lucide-react';
 
 interface Mentor {
   _id: string;
@@ -21,6 +21,10 @@ interface Mentor {
     github?: string;
     website?: string;
     twitter?: string;
+    facebook?: string;
+    instagram?: string;
+    youtube?: string;
+    portfolio?: string;
   };
   teachingExperience: number;
   rating?: number;
@@ -172,14 +176,7 @@ export default function MentorDetailPage() {
               <p className="text-gray-700 mb-6 leading-relaxed">{mentor.bio}</p>
 
               {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-blue-50 rounded-lg p-4 text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <Star className="w-5 h-5 text-yellow-500 fill-current" />
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{mentor.rating ? mentor.rating.toFixed(1) : 'N/A'}</div>
-                  <div className="text-sm text-gray-600">রেটিং</div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-green-50 rounded-lg p-4 text-center">
                   <div className="flex items-center justify-center mb-2">
                     <Users className="w-5 h-5 text-green-500" />
@@ -209,25 +206,106 @@ export default function MentorDetailPage() {
                   <MessageCircle className="w-4 h-4 mr-2" />
                   মেন্টরের সাথে যোগাযোগ
                 </Button>
-                {mentor.socialLinks?.linkedin && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => window.open(mentor.socialLinks.linkedin, '_blank')}
-                  >
-                    <Linkedin className="w-4 h-4 mr-2" />
-                    LinkedIn
-                  </Button>
-                )}
-                {mentor.socialLinks?.github && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => window.open(mentor.socialLinks.github, '_blank')}
-                  >
-                    <Github className="w-4 h-4 mr-2" />
-                    GitHub
-                  </Button>
-                )}
               </div>
+
+              {/* Social Links */}
+              {(mentor.socialLinks?.linkedin || mentor.socialLinks?.github || mentor.socialLinks?.website || 
+                mentor.socialLinks?.twitter || mentor.socialLinks?.facebook || mentor.socialLinks?.instagram || 
+                mentor.socialLinks?.youtube || mentor.socialLinks?.portfolio) && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">সোশ্যাল লিংক:</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {mentor.socialLinks?.linkedin && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.linkedin, '_blank')}
+                        className="gap-2"
+                      >
+                        <Linkedin className="w-4 h-4" />
+                        LinkedIn
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.github && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.github, '_blank')}
+                        className="gap-2"
+                      >
+                        <Github className="w-4 h-4" />
+                        GitHub
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.facebook && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.facebook, '_blank')}
+                        className="gap-2"
+                      >
+                        <Facebook className="w-4 h-4" />
+                        Facebook
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.twitter && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.twitter, '_blank')}
+                        className="gap-2"
+                      >
+                        <Twitter className="w-4 h-4" />
+                        Twitter
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.instagram && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.instagram, '_blank')}
+                        className="gap-2"
+                      >
+                        <Instagram className="w-4 h-4" />
+                        Instagram
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.youtube && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.youtube, '_blank')}
+                        className="gap-2"
+                      >
+                        <Youtube className="w-4 h-4" />
+                        YouTube
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.website && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.website, '_blank')}
+                        className="gap-2"
+                      >
+                        <Globe className="w-4 h-4" />
+                        Website
+                      </Button>
+                    )}
+                    {mentor.socialLinks?.portfolio && (
+                      <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(mentor.socialLinks.portfolio, '_blank')}
+                        className="gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Portfolio
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

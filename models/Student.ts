@@ -61,8 +61,7 @@ const studentSchema = new Schema<StudentDocument>({
   studentId: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   batchId: {
     type: Schema.Types.ObjectId,
@@ -118,8 +117,7 @@ const studentSchema = new Schema<StudentDocument>({
   paymentStatus: {
     type: String,
     enum: ['paid', 'partial', 'due', 'overdue'],
-    default: 'due',
-    index: true
+    default: 'due'
   },
   totalAmount: {
     type: Number,
@@ -186,7 +184,7 @@ const studentSchema = new Schema<StudentDocument>({
 });
 
 // Indexes for performance
-studentSchema.index({ studentId: 1 });
+// Note: studentId already has unique index
 studentSchema.index({ batchId: 1, status: 1 });
 studentSchema.index({ paymentStatus: 1 });
 studentSchema.index({ enrollmentDate: -1 });

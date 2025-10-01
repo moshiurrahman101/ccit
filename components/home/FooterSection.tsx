@@ -40,7 +40,13 @@ const content = {
     ]
   },
   copyright: "© ২০২৪ Creative Canvas IT. সকল অধিকার সংরক্ষিত।",
-  sitemap: ["প্রাইভেসি পলিসি", "টার্মস অফ সার্ভিস", "কুকি পলিসি", "সাপোর্ট"]
+  sitemap: [
+    { title: "Privacy Policy", href: "/privacy-policy" },
+    { title: "Terms of Use", href: "/terms-of-use" },
+    { title: "Disclaimer", href: "/disclaimer" },
+    { title: "Accessibility", href: "/accessibility" },
+    { title: "Sitemap", href: "/sitemap-page" }
+  ]
 };
 
 export function FooterSection() {
@@ -205,10 +211,10 @@ export function FooterSection() {
                 {content.sitemap.map((item, index) => (
                   <Link 
                     key={index}
-                    href="#" 
+                    href={item.href} 
                     className="text-white/80 hover:text-white transition-colors duration-300"
                   >
-                    {item}
+                    {item.title}
                   </Link>
                 ))}
               </div>

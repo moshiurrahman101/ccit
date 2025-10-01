@@ -222,10 +222,16 @@ export function Footer() {
             </p>
             <div className="flex space-x-6 text-sm">
               <Link
-                href="/privacy"
+                href="/privacy-policy"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 Privacy Policy
+              </Link>
+              <Link
+                href="/terms-of-use"
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                Terms of Use
               </Link>
               <Link
                 href="/disclaimer"
@@ -240,13 +246,7 @@ export function Footer() {
                 Accessibility
               </Link>
               <Link
-                href="/terms"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                Terms of Use
-              </Link>
-              <Link
-                href="/sitemap"
+                href="/sitemap-page"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 Sitemap
