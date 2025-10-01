@@ -12,8 +12,18 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+// Helper to ensure URL has protocol
+const getBaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  // If URL doesn't start with http:// or https://, add https://
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+};
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  metadataBase: new URL(getBaseUrl()),
   title: "Creative Canvas IT — ফ্রিল্যান্সিং ও ক্যারিয়ার কোর্স",
   description: "Creative Canvas IT - সাশ্রয়ী লাইভ ও রেকর্ডেড কোর্স, ২৪/৭ মেন্টর সাপোর্ট, সার্টিফিকেট।",
   keywords: "আইটি কোর্স, ফ্রিল্যান্সিং, প্রোগ্রামিং, ওয়েব ডেভেলপমেন্ট, ডিজিটাল মার্কেটিং, গ্রাফিক ডিজাইন, বাংলাদেশ",

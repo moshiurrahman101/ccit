@@ -69,12 +69,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update user password (will be hashed by User model's pre('save') hook)
+    // Update user password (must use .save() to trigger pre-save hash middleware)
     console.log('Updating user password...');
-    await User.findByIdAndUpdate(user._id, {
-      password, // Raw password - will be hashed automatically
-      updatedAt: new Date()
-    });
+    user.password = password; // Set new password
+    await user.save(); // This triggers the pre-save hook that hashes the password
 
     // Delete the used reset token
     console.log('Deleting used reset token...');
