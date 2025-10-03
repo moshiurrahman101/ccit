@@ -18,9 +18,9 @@ export const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   const banglaAmount = formatBanglaCurrency(amount);
   
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <span className={`flex items-center gap-1 ${className}`}>
       {showIcon && <BDTIcon size={size} className="text-black" />}
       <span className="font-medium">{banglaAmount}</span>
-    </div>
+    </span>
   );
 };

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -19,10 +20,17 @@ import {
   Clock,
   Star,
   MessageCircle,
-  Mail
+  Mail,
+  Settings,
+  Globe,
+  Code,
+  Search
 } from 'lucide-react';
 import { formatBanglaNumber, formatBanglaCurrency, formatBanglaDate } from '@/lib/utils/banglaNumbers';
 import { CurrencyDisplay } from '@/components/ui/CurrencyDisplay';
+import { GTMManager } from '@/components/analytics/GTMManager';
+import { PageSEOManager } from '@/components/analytics/PageSEOManager';
+import { HeadTagManager } from '@/components/seo/HeadTagManager';
 
 interface AnalyticsData {
   overview: {
@@ -59,6 +67,7 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('6months');
+  const [activeTab, setActiveTab] = useState('overview');
 
   // Mock data - replace with real API calls
   useEffect(() => {
@@ -143,10 +152,10 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            এনালিটিক্স ও রিপোর্ট
+            Analytics & SEO Management
           </h1>
           <p className="text-gray-600">
-            আপনার প্ল্যাটফর্মের পারফরম্যান্স বিশ্লেষণ করুন
+            Manage analytics, SEO settings, and track performance
           </p>
         </div>
         <div className="flex items-center space-x-4">
@@ -155,18 +164,42 @@ export default function AnalyticsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1month">১ মাস</SelectItem>
-              <SelectItem value="3months">৩ মাস</SelectItem>
-              <SelectItem value="6months">৬ মাস</SelectItem>
-              <SelectItem value="1year">১ বছর</SelectItem>
+              <SelectItem value="1month">1 Month</SelectItem>
+              <SelectItem value="3months">3 Months</SelectItem>
+              <SelectItem value="6months">6 Months</SelectItem>
+              <SelectItem value="1year">1 Year</SelectItem>
             </SelectContent>
           </Select>
           <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
             <Download className="w-4 h-4 mr-2" />
-            রিপোর্ট ডাউনলোড
+            Download Report
           </Button>
         </div>
       </div>
+
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="gtm" className="flex items-center space-x-2">
+            <Settings className="h-4 w-4" />
+            <span>GTM & Analytics</span>
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="flex items-center space-x-2">
+            <Search className="h-4 w-4" />
+            <span>Page SEO</span>
+          </TabsTrigger>
+          <TabsTrigger value="head" className="flex items-center space-x-2">
+            <Code className="h-4 w-4" />
+            <span>Head Tags</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-8">
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -351,6 +384,23 @@ export default function AnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        {/* GTM & Analytics Tab */}
+        <TabsContent value="gtm">
+          <GTMManager />
+        </TabsContent>
+
+        {/* Page SEO Tab */}
+        <TabsContent value="seo">
+          <PageSEOManager />
+        </TabsContent>
+
+        {/* Head Tags Management Tab */}
+        <TabsContent value="head">
+          <HeadTagManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
