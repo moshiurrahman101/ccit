@@ -10,8 +10,8 @@ const contactInfo = [
   {
     icon: Phone,
     title: "ফোন",
-    details: ["০১৬০৩৭১৮৩৭৯", "০১৮৪৫২০২১০১"],
-    description: "সকাল ১০টা থেকে সন্ধ্যা ৬টা"
+    details: ["০১৬০৩৭১৮৩৭৯", "০১৩১৪৯৯৭৬২০", "০১৮৪৫২০২১০১"],
+    description: "সকাল ১০টা থেকে রাত ১১টা"
   },
   {
     icon: Mail,
@@ -22,13 +22,13 @@ const contactInfo = [
   {
     icon: MapPin,
     title: "ঠিকানা",
-    details: ["ধানমন্ডি, ঢাকা-১২০৫", "বাংলাদেশ"],
+    details: ["তেজগাঁও, ঢাকা-১২১৫", "বাংলাদেশ"],
     description: "আমাদের অফিসে সরাসরি আসুন"
   },
   {
     icon: Clock,
     title: "অফিস সময়",
-    details: ["শনিবার - বৃহস্পতিবার", "সন্ধ্যা ৬টা - রাত ১১টা"],
+    details: ["শনিবার - বৃহস্পতিবার", "সকাল ১০টা - রাত ৯টা"],
     description: "সাপ্তাহিক ছুটি: শুক্রবার"
   }
 ];
@@ -266,7 +266,7 @@ export default function ContactPage() {
                     <div className="text-center">
                       <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">মানচিত্র এখানে দেখানো হবে</p>
-                      <p className="text-sm text-gray-400 mt-2">ধানমন্ডি, ঢাকা-১২০৫</p>
+                      <p className="text-sm text-gray-400 mt-2">তেজগাঁও, ঢাকা-১২১৫</p>
                     </div>
                   </div>
                 </CardContent>

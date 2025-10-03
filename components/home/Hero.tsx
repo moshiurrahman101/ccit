@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play, Star, Users, TrendingUp } from 'lucide-react';
+import { ArrowRight, Play, Star, Users, TrendingUp, BookOpen } from 'lucide-react';
 
 export function Hero() {
   const handleVideoPlay = () => {
@@ -38,21 +38,19 @@ export function Hero() {
             {/* Badge */}
             <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/80 backdrop-blur-md border border-blue-200/50 shadow-lg">
               <Star className="w-5 h-5 text-yellow-500 mr-2" />
-              <span className="text-blue-700 font-semibold">বাংলাদেশের #১ আইটি প্রশিক্ষণ প্ল্যাটফর্ম</span>
+              <span className="text-blue-700 font-semibold bengali-text">বাংলাদেশের বিশ্বস্ত আইটি প্রশিক্ষণ প্ল্যাটফর্ম</span>
             </div>
 
             {/* Main Heading */}
             <div className="space-y-4">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight">
-                <span className="block text-gray-900">আগে দক্ষতা</span>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight bengali-heading">
+                <span className="block text-gray-900">Creative Canvas IT</span>
                 <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  অর্জন করুন,
+                  অনলাইন প্রশিক্ষণ প্ল্যাটফর্ম
                 </span>
-                <span className="block text-gray-900">তারপর আয় করুন!</span>
               </h1>
-              <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                Creative Canvas IT-এ বিশ্বমানের প্রশিক্ষণ নিয়ে গড়ে তুলুন আপনার স্বপ্নের ক্যারিয়ার। 
-                আমাদের বিশেষজ্ঞ মেন্টরদের সাথে শিখুন, প্র্যাকটিস করুন এবং সফল হন।
+              <p className="text-lg text-gray-600 leading-relaxed max-w-2xl bengali-text">
+                Creative Canvas IT-এ আমরা বিশ্বাস করি—প্র্যাকটিস করলে দক্ষতা আসে। ২০২৩ থেকে শুরু করে আজ পর্যন্ত ১৫০+ শিক্ষার্থীকে হাতে-কলমে শেখিয়েছি। আমাদের কোর্সে লাইভ ডেমো, রেকর্ডেড ক্লাস, বাস্তবপ্রজেক্ট এবং জব-কানেক্টর সাপোর্ট আছে।
               </p>
             </div>
 
@@ -61,6 +59,7 @@ export function Hero() {
               <Button 
                 size="lg" 
                 className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white px-8 py-4 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 animate-glow"
+                onClick={() => window.location.href = '/courses'}
               >
                 কোর্স দেখুন
                 <ArrowRight className="ml-2 w-5 h-5" />
@@ -69,25 +68,26 @@ export function Hero() {
                 variant="outline" 
                 size="lg"
                 className="border-2 border-orange-500 text-orange-600 hover:bg-orange-50 px-8 py-4 text-lg font-semibold backdrop-blur-md bg-white/80"
+                onClick={() => window.location.href = '/batches'}
               >
-                <Play className="mr-2 w-5 h-5" />
-                ফ্রি ট্রায়াল
+                <BookOpen className="mr-2 w-5 h-5" />
+                ব্যাচ দেখুন
               </Button>
             </div>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 pt-6">
               <div className="text-center p-4 rounded-xl bg-white/60 backdrop-blur-md border border-blue-200/30 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="text-2xl font-bold text-blue-600 mb-1">১০০০+</div>
-                <div className="text-xs text-gray-600 font-medium">সফল শিক্ষার্থী</div>
+                <div className="text-2xl font-bold text-blue-600 mb-1">১০০+</div>
+                <div className="text-xs text-gray-600 font-medium bengali-text">সফল শিক্ষার্থী</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-white/60 backdrop-blur-md border border-indigo-200/30 shadow-lg hover:shadow-xl transition-all duration-300">
-                <div className="text-2xl font-bold text-indigo-600 mb-1">৫০+</div>
-                <div className="text-xs text-gray-600 font-medium">প্রফেশনাল কোর্স</div>
+                <div className="text-2xl font-bold text-indigo-600 mb-1">৫+</div>
+                <div className="text-xs text-gray-600 font-medium bengali-text">প্রফেশনাল কোর্স</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-white/60 backdrop-blur-md border border-blue-200/30 shadow-lg hover:shadow-xl transition-all duration-300">
                 <div className="text-2xl font-bold text-blue-600 mb-1">৯৮%</div>
-                <div className="text-xs text-gray-600 font-medium">সন্তুষ্টি হার</div>
+                <div className="text-xs text-gray-600 font-medium bengali-text">সন্তুষ্টি হার</div>
               </div>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function Hero() {
                     <div className="flex items-center justify-center mb-1">
                       <Users className="w-3 h-3 text-blue-600" />
                     </div>
-                    <div className="text-xs font-semibold text-gray-900">১০০০+</div>
+                    <div className="text-xs font-semibold text-gray-900">১৫০+</div>
                     <div className="text-xs text-gray-600">দেখেছেন</div>
                   </div>
                   <div className="text-center p-2 rounded-lg bg-white/60 backdrop-blur-md">

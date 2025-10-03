@@ -4,9 +4,84 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Loader2, Calendar, Users, DollarSign, BookOpen, Save, Eye } from 'lucide-react';
+import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { Step1BasicInfo, Step2CourseDetails, Step3ScheduleCapacity, Step4SEOMarketing, Step5Finalize } from '@/components/dashboard/BatchFormSteps';
+
+interface Course {
+  _id: string;
+  title: string;
+  description: string;
+  shortDescription?: string;
+  coverPhoto?: string;
+  courseCode: string;
+  courseShortcut: string;
+  category: string;
+  level: string;
+  language: string;
+  duration: number;
+  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  regularPrice: number;
+  discountPrice?: number;
+  discountPercentage?: number;
+  mentors: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    designation: string;
+    experience: number;
+    expertise: string[];
+  }[];
+  whatYouWillLearn: string[];
+  requirements: string[];
+  features: string[];
+  marketing: {
+    slug: string;
+    metaDescription?: string;
+    tags: string[];
+  };
+}
+
+interface Batch {
+  _id: string;
+  courseId: Course;
+  batchCode: string;
+  name: string;
+  description?: string;
+  courseType: 'online' | 'offline';
+  mentorId: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    designation: string;
+    experience: number;
+    expertise: string[];
+  };
+  additionalMentors: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    designation: string;
+    experience: number;
+    expertise: string[];
+  }[];
+  startDate: string;
+  endDate: string;
+  maxStudents: number;
+  currentStudents: number;
+  regularPrice?: number;
+  discountPrice?: number;
+  discountPercentage?: number;
+  status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface Mentor {
   _id: string;
@@ -16,351 +91,130 @@ interface Mentor {
   designation: string;
   experience: number;
   expertise: string[];
-  skills: string[];
-  rating?: number;
-  studentsCount?: number;
-  coursesCount?: number;
 }
 
-interface Batch {
-  _id: string;
-  name: string;
-  description: string;
-  coverPhoto?: string;
-  courseType: 'online' | 'offline';
-  regularPrice: number;
-  discountPrice?: number;
-  discountPercentage?: number;
-  mentorId: {
-    _id: string;
-    name: string;
-    avatar?: string;
-    designation: string;
-    experience: number;
-    expertise: string[];
-  };
-  duration: number;
-  durationUnit: 'days' | 'weeks' | 'months' | 'years';
-  startDate: string;
-  endDate: string;
-  maxStudents: number;
-  currentStudents: number;
-  modules: Array<{
-    title: string;
-    description: string;
-    duration: number;
-    order: number;
-  }>;
-  whatYouWillLearn: string[];
-  requirements: string[];
-  features: string[];
-  marketing: {
-    slug: string;
-    metaDescription?: string;
-    tags: string[];
-  };
-  status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-  isActive: boolean;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const steps = [
-  { id: 1, title: 'মূল তথ্য', description: 'ব্যাচের নাম, কভার ফটো, ধরন এবং মূল্য' },
-  { id: 2, title: 'কোর্সের বিবরণ', description: 'সিলেবাস, শেখার ফলাফল এবং প্রয়োজনীয়তা' },
-  { id: 3, title: 'সময়সূচী ও ধারণক্ষমতা', description: 'সময়কাল, তারিখ এবং শিক্ষার্থী ধারণক্ষমতা' },
-  { id: 4, title: 'এসইও ও মার্কেটিং', description: 'স্লাগ, মেটা বর্ণনা এবং ট্যাগ' },
-  { id: 5, title: 'সমাপ্তি', description: 'পর্যালোচনা এবং প্রকাশ বা খসড়া হিসেবে সংরক্ষণ' }
+const statusOptions = [
+  { value: 'draft', label: 'খসড়া', color: 'bg-gray-500' },
+  { value: 'published', label: 'প্রকাশিত', color: 'bg-green-500' },
+  { value: 'upcoming', label: 'আসন্ন', color: 'bg-blue-500' },
+  { value: 'ongoing', label: 'চলমান', color: 'bg-orange-500' },
+  { value: 'completed', label: 'সম্পন্ন', color: 'bg-purple-500' },
+  { value: 'cancelled', label: 'বাতিল', color: 'bg-red-500' }
 ];
 
 export default function EditBatchPage() {
   const router = useRouter();
   const params = useParams();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [mentorSearch, setMentorSearch] = useState('');
-  const [selectedMentor, setSelectedMentor] = useState<Mentor | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    coverPhoto: '',
     courseType: 'online' as 'online' | 'offline',
-    regularPrice: 0,
-    discountPrice: undefined as number | undefined,
     mentorId: '',
-    modules: [] as Array<{
-      title: string;
-      description: string;
-      duration: number;
-      order: number;
-    }>,
-    whatYouWillLearn: [] as string[],
-    requirements: [] as string[],
-    features: [] as string[],
-    duration: 1,
-    durationUnit: 'months' as 'days' | 'weeks' | 'months' | 'years',
+    additionalMentors: [] as string[],
     startDate: '',
     endDate: '',
     maxStudents: 30,
     currentStudents: 0,
-    marketing: {
-      slug: '',
-      metaDescription: '',
-      tags: [] as string[]
-    },
-    status: 'draft' as 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled'
+    regularPrice: 0,
+    discountPrice: 0,
+    status: 'draft' as 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled',
+    isActive: true
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch batch data
   useEffect(() => {
     if (params.id) {
-      fetchBatch(params.id as string);
+      fetchBatch();
+      fetchMentors();
     }
   }, [params.id]);
 
-  // Initialize form data when batch is loaded
-  useEffect(() => {
-    if (batch) {
-      setFormData({
-        name: batch.name || '',
-        description: batch.description || '',
-        coverPhoto: batch.coverPhoto || '',
-        courseType: batch.courseType || 'online',
-        regularPrice: batch.regularPrice || 0,
-        discountPrice: batch.discountPrice,
-        mentorId: typeof batch.mentorId === 'string' ? batch.mentorId : batch.mentorId?._id || '',
-        modules: batch.modules || [],
-        whatYouWillLearn: batch.whatYouWillLearn || [],
-        requirements: batch.requirements || [],
-        features: batch.features || [],
-        duration: batch.duration || 1,
-        durationUnit: batch.durationUnit || 'months',
-        startDate: batch.startDate ? new Date(batch.startDate).toISOString().split('T')[0] : '',
-        endDate: batch.endDate ? new Date(batch.endDate).toISOString().split('T')[0] : '',
-        maxStudents: batch.maxStudents || 30,
-        currentStudents: batch.currentStudents || 0,
-        marketing: {
-          slug: batch.marketing?.slug || '',
-          metaDescription: batch.marketing?.metaDescription || '',
-          tags: batch.marketing?.tags || []
-        },
-        status: batch.status || 'draft'
-      });
-      
-      if (batch.mentorId && typeof batch.mentorId === 'object') {
-        setSelectedMentor(batch.mentorId as Mentor);
-      }
-    }
-  }, [batch]);
-
-  // Search mentors
-  useEffect(() => {
-    const searchMentors = async () => {
-      try {
-        const response = await fetch(`/api/mentors/search?q=${encodeURIComponent(mentorSearch)}&limit=10`);
-        const data = await response.json();
-        setMentors(data.mentors || []);
-      } catch (error) {
-        console.error('Error searching mentors:', error);
-      }
-    };
-
-    const timeoutId = setTimeout(searchMentors, mentorSearch.length > 0 ? 300 : 0);
-    return () => clearTimeout(timeoutId);
-  }, [mentorSearch]);
-
-  const fetchBatch = async (id: string) => {
+  const fetchBatch = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('auth-token');
-      const response = await fetch(`/api/batches/${id}`, {
+      
+      if (!token) {
+        toast.error('লগইন করুন');
+        router.push('/login');
+        return;
+      }
+
+      const response = await fetch(`/api/batches/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      const data = await response.json();
-
       if (response.ok) {
+        const data = await response.json();
         setBatch(data.batch);
+        
+        // Set form data
+        setFormData({
+          name: data.batch.name || '',
+          description: data.batch.description || '',
+          courseType: data.batch.courseType || 'online',
+          mentorId: data.batch.mentorId?._id || '',
+          additionalMentors: data.batch.additionalMentors?.map((m: any) => m._id) || [],
+          startDate: data.batch.startDate ? format(new Date(data.batch.startDate), 'yyyy-MM-dd') : '',
+          endDate: data.batch.endDate ? format(new Date(data.batch.endDate), 'yyyy-MM-dd') : '',
+          maxStudents: data.batch.maxStudents || 30,
+          currentStudents: data.batch.currentStudents || 0,
+          regularPrice: data.batch.regularPrice || data.batch.courseId?.regularPrice || 0,
+          discountPrice: data.batch.discountPrice || data.batch.courseId?.discountPrice || 0,
+          status: data.batch.status || 'draft',
+          isActive: data.batch.isActive !== false
+        });
+      } else if (response.status === 401) {
+        toast.error('সেশন শেষ হয়েছে। আবার লগইন করুন');
+        localStorage.removeItem('auth-token');
+        router.push('/login');
       } else {
-        toast.error(data.error || 'Failed to load batch');
-        router.push('/dashboard/batches');
+        toast.error('ব্যাচ লোড করতে সমস্যা হয়েছে');
       }
     } catch (error) {
       console.error('Error fetching batch:', error);
-      toast.error('Failed to load batch');
-      router.push('/dashboard/batches');
+      toast.error('ব্যাচ লোড করতে সমস্যা হয়েছে');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMentors = async () => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      const response = await fetch('/api/mentors?limit=100', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMentors(data.mentors || []);
+      }
+    } catch (error) {
+      console.error('Error fetching mentors:', error);
     }
   };
 
   const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => {
-      if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        const parentValue = prev[parent as keyof typeof prev] as Record<string, any>;
-        return {
-          ...prev,
-          [parent]: { ...parentValue, [child]: value }
-        };
-      }
-      return { ...prev, [field]: value };
-    });
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleArrayInputChange = (field: string, value: string) => {
-    if (value.trim()) {
-      setFormData(prev => {
-        if (field.includes('.')) {
-          const [parent, child] = field.split('.');
-          const parentField = prev[parent as keyof typeof prev] as Record<string, unknown>;
-          return {
-            ...prev,
-            [parent]: {
-              ...parentField,
-              [child]: [...(parentField[child] as string[] || []), value.trim()]
-            }
-          };
-        } else {
-          return {
-            ...prev,
-            [field]: [...(prev[field as keyof typeof prev] as string[] || []), value.trim()]
-          };
-        }
-      });
-    }
-  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
 
-  const removeArrayItem = (field: string, index: number) => {
-    setFormData(prev => {
-      if (field.includes('.')) {
-        const [parent, child] = field.split('.');
-        const parentField = prev[parent as keyof typeof prev] as Record<string, unknown>;
-        return {
-          ...prev,
-          [parent]: {
-            ...parentField,
-            [child]: (parentField[child] as string[] || []).filter((_, i) => i !== index)
-          }
-        };
-      } else {
-        return {
-          ...prev,
-          [field]: (prev[field as keyof typeof prev] as string[] || []).filter((_, i) => i !== index)
-        };
-      }
-    });
-  };
-
-  const addModule = () => {
-    setFormData(prev => ({
-      ...prev,
-      modules: [...prev.modules, { title: '', description: '', duration: 1, order: prev.modules.length + 1 }]
-    }));
-  };
-
-  const updateModule = (index: number, field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      modules: prev.modules.map((module, i) => 
-        i === index ? { ...module, [field]: value } : module
-      )
-    }));
-  };
-
-  const removeModule = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      modules: prev.modules.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleFileUpload = async (file: File) => {
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'batch-covers');
-
-      const response = await fetch('/api/upload/cloudinary', {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        handleInputChange('coverPhoto', data.url);
-        toast.success('Cover photo uploaded successfully');
-      } else {
-        toast.error(data.error || 'Failed to upload image');
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      toast.error('Failed to upload image');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const validateStep = (step: number): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    switch (step) {
-      case 1:
-        if (!formData.name) newErrors.name = 'Batch name is required';
-        if (!formData.description) newErrors.description = 'Description is required';
-        if (!formData.regularPrice || formData.regularPrice <= 0) newErrors.regularPrice = 'Valid price is required';
-        if (!selectedMentor) newErrors.mentorId = 'Mentor selection is required';
-        break;
-      case 2:
-        if (formData.modules.length === 0) newErrors.modules = 'At least one module is required';
-        if (formData.whatYouWillLearn.length === 0) newErrors.whatYouWillLearn = 'At least one learning outcome is required';
-        break;
-      case 3:
-        if (!formData.startDate) newErrors.startDate = 'Start date is required';
-        if (!formData.endDate) newErrors.endDate = 'End date is required';
-        if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
-          newErrors.endDate = 'End date must be after start date';
-        }
-        break;
-      case 4:
-        if (!formData.marketing.slug) newErrors['marketing.slug'] = 'Slug is required';
-        break;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, steps.length));
-    }
-  };
-
-  const prevStep = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-  };
-
-  const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
-
-    setIsLoading(true);
     try {
       const token = localStorage.getItem('auth-token');
       
       if (!token) {
-        toast.error('Please log in to update a batch');
+        toast.error('লগইন করুন');
         router.push('/login');
         return;
       }
@@ -374,153 +228,423 @@ export default function EditBatchPage() {
         body: JSON.stringify(formData)
       });
 
-      const data = await response.json();
-
       if (response.ok) {
-        toast.success('Batch updated successfully');
+        toast.success('ব্যাচ সফলভাবে আপডেট হয়েছে!');
         router.push('/dashboard/batches');
       } else if (response.status === 401) {
-        toast.error('Session expired. Please log in again');
+        toast.error('সেশন শেষ হয়েছে। আবার লগইন করুন');
         localStorage.removeItem('auth-token');
         router.push('/login');
-      } else if (response.status === 403) {
-        toast.error('You do not have permission to update batches');
       } else {
-        toast.error(data.error || 'Failed to update batch');
+        const data = await response.json();
+        toast.error(data.error || 'ব্যাচ আপডেট করতে সমস্যা হয়েছে');
       }
     } catch (error) {
       console.error('Error updating batch:', error);
-      toast.error('Failed to update batch');
+      toast.error('ব্যাচ আপডেট করতে সমস্যা হয়েছে');
     } finally {
-      setIsLoading(false);
+      setSaving(false);
     }
   };
 
-  const renderCurrentStep = () => {
-    const stepProps = {
-      formData,
-      errors,
-      selectedMentor,
-      mentors,
-      mentorSearch,
-      isUploading,
-      onInputChange: handleInputChange,
-      onArrayInputChange: handleArrayInputChange,
-      onRemoveArrayItem: removeArrayItem,
-      onAddModule: addModule,
-      onUpdateModule: updateModule,
-      onRemoveModule: removeModule,
-      onFileUpload: handleFileUpload,
-      onMentorSearchChange: setMentorSearch,
-      onMentorSelect: setSelectedMentor,
-      onSetMentors: setMentors
-    };
+  const handleQuickStatusChange = async (newStatus: string) => {
+    try {
+      const token = localStorage.getItem('auth-token');
+      
+      if (!token) {
+        toast.error('লগইন করুন');
+        return;
+      }
 
-    switch (currentStep) {
-      case 1: return <Step1BasicInfo {...stepProps} />;
-      case 2: return <Step2CourseDetails {...stepProps} />;
-      case 3: return <Step3ScheduleCapacity {...stepProps} />;
-      case 4: return <Step4SEOMarketing {...stepProps} />;
-      case 5: return <Step5Finalize {...stepProps} />;
-      default: return null;
+      const response = await fetch(`/api/batches/${params.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        toast.success('স্ট্যাটাস সফলভাবে আপডেট হয়েছে!');
+        setFormData(prev => ({ ...prev, status: newStatus as any }));
+        setBatch(prev => prev ? { ...prev, status: newStatus as any } : null);
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
     }
   };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-BD').format(price);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
+              <p className="text-gray-600">ব্যাচ লোড হচ্ছে...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!batch) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
-          <p className="text-gray-600">Loading batch details...</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">ব্যাচ পাওয়া যায়নি</h1>
+            <Button onClick={() => router.push('/dashboard/batches')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              ব্যাচ তালিকায় ফিরে যান
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">ব্যাচ সম্পাদনা করুন</h1>
-              <p className="text-gray-600">ব্যাচের বিবরণ এবং সেটিংস আপডেট করুন</p>
-            </div>
-          </div>
-
-          {/* Progress Steps */}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            ফিরে যান
+          </Button>
           <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  currentStep >= step.id
-                    ? 'bg-orange-600 text-white'
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {step.id}
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-2 ${
-                    currentStep > step.id ? 'bg-orange-600' : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-xl">{steps[currentStep - 1].title}</CardTitle>
-            <p className="text-gray-600">{steps[currentStep - 1].description}</p>
-          </CardHeader>
-          <CardContent>
-            {renderCurrentStep()}
-
-            {/* Navigation Buttons */}
-            <div className="flex justify-between pt-6 border-t mt-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">ব্যাচ সম্পাদনা</h1>
+              <p className="text-gray-600 mt-2">{batch.batchCode} - {batch.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge className={`${statusOptions.find(s => s.value === formData.status)?.color} text-white`}>
+                {statusOptions.find(s => s.value === formData.status)?.label}
+              </Badge>
               <Button
                 variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
+                onClick={() => router.push(`/batches/${batch.courseId?.marketing?.slug || batch._id}`)}
               >
-                পূর্ববর্তী
+                <Eye className="h-4 w-4 mr-2" />
+                দেখুন
               </Button>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => router.push('/dashboard/batches')}
-                >
-                  বাতিল
-                </Button>
-                
-                {currentStep < steps.length ? (
-                  <Button onClick={nextStep}>
-                    পরবর্তী
-                  </Button>
-                ) : (
-                  <Button onClick={handleSubmit} disabled={isLoading}>
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    ব্যাচ আপডেট করুন
-                  </Button>
-                )}
-              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Form */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  ব্যাচের তথ্য
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Course Information */}
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-blue-900 mb-2">কোর্সের তথ্য</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="font-medium">কোর্স:</span>
+                        <p className="text-blue-800">{batch.courseId?.title}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">কোর্স কোড:</span>
+                        <p className="text-blue-800">{batch.courseId?.courseCode}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">ব্যাচ কোড:</span>
+                        <p className="text-blue-800 font-mono">{batch.batchCode}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium">ক্যাটাগরি:</span>
+                        <p className="text-blue-800">{batch.courseId?.category}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Batch Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">ব্যাচের নাম</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="ব্যাচের নাম"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description">ব্যাচের বিবরণ</Label>
+                    <Textarea
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) => handleInputChange('description', e.target.value)}
+                      placeholder="ব্যাচের জন্য অতিরিক্ত বিবরণ"
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Course Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="courseType">ব্যাচের ধরন</Label>
+                    <Select
+                      value={formData.courseType}
+                      onValueChange={(value: 'online' | 'offline') => handleInputChange('courseType', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="ব্যাচের ধরন নির্বাচন করুন" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="online">অনলাইন</SelectItem>
+                        <SelectItem value="offline">অফলাইন</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Mentor Selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="mentorId">প্রাথমিক মেন্টর</Label>
+                    <Select
+                      value={formData.mentorId}
+                      onValueChange={(value) => handleInputChange('mentorId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="মেন্টর নির্বাচন করুন" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mentors.map((mentor) => (
+                          <SelectItem key={mentor._id} value={mentor._id}>
+                            <div className="flex items-center space-x-3">
+                              {mentor.avatar && (
+                                <img
+                                  src={mentor.avatar}
+                                  alt={mentor.name}
+                                  className="w-8 h-8 rounded-full object-cover"
+                                />
+                              )}
+                              <div>
+                                <div className="font-medium">{mentor.name}</div>
+                                <div className="text-sm text-gray-500">{mentor.designation}</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="startDate">শুরুর তারিখ</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={formData.startDate}
+                        onChange={(e) => handleInputChange('startDate', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="endDate">শেষের তারিখ</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => handleInputChange('endDate', e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Students */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="maxStudents">সর্বোচ্চ শিক্ষার্থী</Label>
+                      <Input
+                        id="maxStudents"
+                        type="number"
+                        value={formData.maxStudents}
+                        onChange={(e) => handleInputChange('maxStudents', parseInt(e.target.value))}
+                        min={1}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="currentStudents">বর্তমান শিক্ষার্থী</Label>
+                      <Input
+                        id="currentStudents"
+                        type="number"
+                        value={formData.currentStudents}
+                        onChange={(e) => handleInputChange('currentStudents', parseInt(e.target.value))}
+                        min={0}
+                        max={formData.maxStudents}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="regularPrice">নিয়মিত মূল্য</Label>
+                      <Input
+                        id="regularPrice"
+                        type="number"
+                        value={formData.regularPrice}
+                        onChange={(e) => handleInputChange('regularPrice', parseFloat(e.target.value))}
+                        min={0}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPrice">ছাড় মূল্য</Label>
+                      <Input
+                        id="discountPrice"
+                        type="number"
+                        value={formData.discountPrice}
+                        onChange={(e) => handleInputChange('discountPrice', parseFloat(e.target.value))}
+                        min={0}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
+                    disabled={saving}
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        সংরক্ষণ হচ্ছে...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        সংরক্ষণ করুন
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Status Change */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">দ্রুত স্ট্যাটাস পরিবর্তন</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {statusOptions.map((status) => (
+                    <Button
+                      key={status.value}
+                      variant={formData.status === status.value ? "default" : "outline"}
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => handleQuickStatusChange(status.value)}
+                    >
+                      <div className={`w-3 h-3 rounded-full ${status.color} mr-2`}></div>
+                      {status.label}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Batch Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">ব্যাচের তথ্য</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ব্যাচ কোড:</span>
+                    <span className="font-mono font-medium">{batch.batchCode}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">স্ট্যাটাস:</span>
+                    <Badge className={`${statusOptions.find(s => s.value === formData.status)?.color} text-white`}>
+                      {statusOptions.find(s => s.value === formData.status)?.label}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">সক্রিয়:</span>
+                    <span className={formData.isActive ? 'text-green-600' : 'text-red-600'}>
+                      {formData.isActive ? 'হ্যাঁ' : 'না'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">তৈরি হয়েছে:</span>
+                    <span>{format(new Date(batch.createdAt), 'dd/MM/yyyy')}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">সর্বশেষ আপডেট:</span>
+                    <span>{format(new Date(batch.updatedAt), 'dd/MM/yyyy')}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Course Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">কোর্সের তথ্য</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <span className="text-gray-600">কোর্স:</span>
+                    <p className="font-medium">{batch.courseId?.title}</p>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ক্যাটাগরি:</span>
+                    <span>{batch.courseId?.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">লেভেল:</span>
+                    <span>{batch.courseId?.level}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">ভাষা:</span>
+                    <span>{batch.courseId?.language}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">মেয়াদ:</span>
+                    <span>{batch.courseId?.duration} {batch.courseId?.durationUnit}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

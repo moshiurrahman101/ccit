@@ -12,12 +12,46 @@ import Image from 'next/image';
 
 interface Batch {
   _id: string;
+  courseId: {
+    _id: string;
+    title: string;
+    description: string;
+    shortDescription?: string;
+    coverPhoto?: string;
+    courseCode: string;
+    courseShortcut: string;
+    category: string;
+    level: string;
+    language: string;
+    duration: number;
+    durationUnit: 'days' | 'weeks' | 'months' | 'years';
+    regularPrice?: number;
+    discountPrice?: number;
+    discountPercentage?: number;
+    mentors: {
+      _id: string;
+      name: string;
+      avatar?: string;
+      designation: string;
+      experience: number;
+      expertise: string[];
+    }[];
+    whatYouWillLearn: string[];
+    requirements: string[];
+    features: string[];
+    marketing: {
+      slug: string;
+      tags: string[];
+    };
+  } | null;
   name: string;
-  description: string;
+  description?: string;
   coverPhoto?: string;
+  duration?: number;
+  durationUnit?: 'days' | 'weeks' | 'months' | 'years';
   courseType: 'online' | 'offline';
-  regularPrice: number;
-  discountPrice?: number;
+  regularPrice?: number; // Batch-specific pricing
+  discountPrice?: number; // Batch-specific pricing
   discountPercentage?: number;
   mentorId: {
     _id: string;
@@ -28,16 +62,18 @@ interface Batch {
     expertise: string[];
     rating?: number;
   } | null;
-  duration: number;
-  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  additionalMentors: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    designation: string;
+    experience: number;
+    expertise: string[];
+  }[];
   startDate: string;
   endDate: string;
   maxStudents: number;
   currentStudents: number;
-  marketing: {
-    slug: string;
-    tags: string[];
-  };
   status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
   createdAt: string;
@@ -86,10 +122,12 @@ export default function BatchesPage() {
       const data = await response.json();
 
       if (response.ok) {
+        console.log('✅ Batches fetched successfully:', data.batches.length, 'batches');
+        console.log('📊 Batches data:', data.batches);
         setBatches(data.batches);
         setPagination(data.pagination);
       } else {
-        console.error('Error fetching batches:', data.error);
+        console.error('❌ Error fetching batches:', data.error);
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
@@ -170,8 +208,8 @@ export default function BatchesPage() {
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">আমাদের ব্যাচসমূহ</h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <h1 className="text-4xl font-bold text-gray-900 mb-4 bengali-heading">আমাদের ব্যাচসমূহ</h1>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto bengali-text">
               নতুন দক্ষতা আয়ত্ত করতে এবং আপনার ক্যারিয়ার এগিয়ে নিতে ডিজাইন করা আমাদের বিস্তৃত শিক্ষামূলক প্রোগ্রামগুলি আবিষ্কার করুন।
             </p>
           </div>
@@ -243,23 +281,23 @@ export default function BatchesPage() {
               const isStarted = daysUntilStart <= 0;
               
               return (
-                <Link key={batch._id} href={`/batches/${batch.marketing.slug}`} className="group block">
+                <Link key={batch._id} href={`/batches/${batch.courseId?.marketing?.slug || batch._id}`} className="group block">
                   {/* New Card Design */}
                   <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100 h-full flex flex-col">
                     
                     {/* Cover Image Section */}
                     <div className="relative h-56 overflow-hidden">
-                      {batch.coverPhoto ? (
+                      {(batch.courseId?.coverPhoto || batch.coverPhoto) ? (
                         <img
-                          src={batch.coverPhoto}
-                          alt={batch.name}
+                          src={batch.courseId?.coverPhoto || batch.coverPhoto}
+                          alt={batch.courseId?.title || batch.name}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center">
                           <div className="text-center text-white">
                             <BookOpen className="h-16 w-16 mx-auto mb-3 opacity-80" />
-                            <p className="text-sm font-medium opacity-90">{batch.name}</p>
+                            <p className="text-sm font-medium opacity-90">{batch.courseId?.title || batch.name}</p>
                           </div>
                         </div>
                       )}
@@ -313,55 +351,92 @@ export default function BatchesPage() {
                     {/* Content Section */}
                     <div className="p-6 flex-1 flex flex-col">
                       
-                      {/* Title */}
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors">
-                        {batch.name}
+                      {/* Course Title */}
+                      <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                        {batch.courseId?.title || batch.name}
                       </h3>
                       
-                      {/* Mentor Info */}
-                      <div className="flex items-center gap-3 mb-4">
-                        {batch.mentorId ? (
-                          <>
-                            {batch.mentorId.avatar ? (
-                              <img
-                                src={batch.mentorId.avatar}
-                                alt={batch.mentorId.name}
-                                className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center border-2 border-orange-200">
-                                <span className="text-white font-bold text-sm">{batch.mentorId.name.charAt(0)}</span>
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <p className="font-semibold text-gray-900 text-sm">{batch.mentorId.name}</p>
-                              <p className="text-xs text-gray-500">{batch.mentorId.designation}</p>
-                            </div>
-                            {batch.mentorId.rating && (
-                              <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                <span className="text-sm font-semibold text-gray-900">{batch.mentorId.rating}</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-200">
-                              <span className="text-red-600 font-bold text-sm">?</span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="font-semibold text-red-600 text-sm">মেন্টর পাওয়া যায়নি</p>
-                              <p className="text-xs text-gray-500">মেন্টর ডেটা অনুপলব্ধ</p>
-                            </div>
-                          </>
-                        )}
+                      {/* Batch Name */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                          {batch.name}
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {batch.courseId?.courseCode}
+                        </span>
                       </div>
+                      
+                      {/* Course Mentors */}
+                      {batch.courseId?.mentors && batch.courseId.mentors.length > 0 ? (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-2 bengali-text">কোর্স মেন্টরগণ:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {batch.courseId.mentors.slice(0, 3).map((mentor, index) => (
+                              <div key={mentor._id} className="flex items-center space-x-1 bg-orange-50 rounded-full px-2 py-1">
+                                <div className="w-6 h-6 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center">
+                                  {mentor.avatar ? (
+                                    <img 
+                                      src={mentor.avatar} 
+                                      alt={mentor.name}
+                                      className="w-6 h-6 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-white text-xs font-semibold">
+                                      {mentor.name.charAt(0)}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-700 bengali-text">{mentor.name}</span>
+                              </div>
+                            ))}
+                            {batch.courseId.mentors.length > 3 && (
+                              <span className="text-xs text-gray-500 bengali-text bg-gray-100 rounded-full px-2 py-1">
+                                +{batch.courseId.mentors.length - 3} আরও
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : batch.mentorId ? (
+                        <div className="flex items-center gap-3 mb-4">
+                          {batch.mentorId.avatar ? (
+                            <img
+                              src={batch.mentorId.avatar}
+                              alt={batch.mentorId.name}
+                              className="w-10 h-10 rounded-full object-cover border-2 border-orange-200"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center border-2 border-orange-200">
+                              <span className="text-white font-bold text-sm">{batch.mentorId.name.charAt(0)}</span>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900 text-sm bengali-text">{batch.mentorId.name}</p>
+                            <p className="text-xs text-gray-500 bengali-text">{batch.mentorId.designation}</p>
+                          </div>
+                          {batch.mentorId.rating && (
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span className="text-sm font-semibold text-gray-900">{batch.mentorId.rating}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center border-2 border-red-200">
+                            <span className="text-red-600 font-bold text-sm">?</span>
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-red-600 text-sm bengali-text">মেন্টর পাওয়া যায়নি</p>
+                            <p className="text-xs text-gray-500 bengali-text">মেন্টর ডেটা অনুপলব্ধ</p>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Course Details */}
                       <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                         <div className="flex items-center gap-1">
                           <Clock className="h-4 w-4 text-orange-500" />
-                          <span className="font-medium">{batch.duration} {batch.durationUnit}</span>
+                          <span className="font-medium">{batch.courseId?.duration || batch.duration} {batch.courseId?.durationUnit || batch.durationUnit}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4 text-orange-500" />
@@ -371,12 +446,18 @@ export default function BatchesPage() {
                       
                       {/* Price Section - Redesigned */}
                       <div className="mb-6">
-                        {batch.discountPrice ? (
+                        {(() => {
+                          const regularPrice = batch.regularPrice || batch.courseId?.regularPrice || 0;
+                          const discountPrice = batch.discountPrice || batch.courseId?.discountPrice;
+                          const discountPercentage = batch.discountPercentage || 
+                            (discountPrice && regularPrice ? Math.round(((regularPrice - discountPrice) / regularPrice) * 100) : 0);
+                          
+                          return discountPrice ? (
                           <div className="relative">
                             {/* Discount Banner */}
                             <div className="absolute -top-2 -right-2 z-10">
                               <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
-                                {batch.discountPercentage}% ছাড়
+                                {discountPercentage}% ছাড়
                               </div>
                             </div>
                             
@@ -389,11 +470,11 @@ export default function BatchesPage() {
                               <div className="relative text-center">
                                 <div className="flex items-center justify-center gap-3 mb-2">
                                   <span className="text-4xl font-bold text-green-600">
-                                    ৳{formatPrice(batch.discountPrice)}
+                                    ৳{formatPrice(discountPrice)}
                                   </span>
                                   <div className="flex flex-col items-center">
                                     <div className="text-xs text-gray-500 line-through">
-                                      ৳{formatPrice(batch.regularPrice)}
+                                      ৳{formatPrice(regularPrice)}
                                     </div>
                                     <div className="text-xs text-green-600 font-semibold">
                                       আপনি সাশ্রয় করবেন
@@ -403,7 +484,7 @@ export default function BatchesPage() {
                                 
                                 {/* Savings amount */}
                                 <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold inline-block">
-                                  ৳{formatPrice(batch.regularPrice - batch.discountPrice)} সাশ্রয়
+                                  ৳{formatPrice(regularPrice - discountPrice)} সাশ্রয়
                                 </div>
                               </div>
                             </div>
@@ -416,18 +497,38 @@ export default function BatchesPage() {
                             
                             <div className="relative text-center">
                               <div className="text-4xl font-bold text-blue-600 mb-1">
-                                ৳{formatPrice(batch.regularPrice)}
+                                ৳{formatPrice(regularPrice)}
                               </div>
                               <div className="text-sm text-blue-500 font-medium">
-                                স্পেশাল প্রাইস
+                                {batch.regularPrice ? 'ব্যাচ মূল্য' : 'কোর্স মূল্য'}
                               </div>
                             </div>
                           </div>
-                        )}
+                        );
+                        })()}
                       </div>
                       
+                      {/* Course Features */}
+                      {batch.courseId?.features && batch.courseId.features.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-2 bengali-text">কোর্সের বিশেষত্ব:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {batch.courseId.features.slice(0, 3).map((feature, index) => (
+                              <span key={index} className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+                                {feature}
+                              </span>
+                            ))}
+                            {batch.courseId.features.length > 3 && (
+                              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                                +{batch.courseId.features.length - 3} আরও
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       {/* Action Button */}
-                      <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                      <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bengali-text">
                         বিস্তারিত দেখুন
                       </Button>
                     </div>

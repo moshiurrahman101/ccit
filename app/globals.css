@@ -53,3 +53,47 @@
     @apply bg-white text-gray-900;
   }
 }
+
+/* Bengali Font Utilities */
+.font-bengali {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+}
+
+.font-bengali-heading {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+}
+
+.font-bengali-body {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+}
+
+/* Bengali text specific styles */
+.bengali-text {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+}
+
+.bengali-heading {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+/* Ensure proper rendering of Bengali characters */
+[lang="bn"] {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+[lang="bn"] h1,
+[lang="bn"] h2,
+[lang="bn"] h3,
+[lang="bn"] h4,
+[lang="bn"] h5,
+[lang="bn"] h6 {
+  font-family: var(--font-noto-bengali), system-ui, sans-serif;
+  font-weight: 600;
+  line-height: 1.3;
+}

@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   
   const { login, isAuthenticated, loading } = useAuth();
   const router = useRouter();
@@ -23,17 +24,20 @@ export default function LoginPage() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!loading && isAuthenticated) {
+      setIsRedirecting(true);
       router.push('/dashboard');
     }
   }, [isAuthenticated, loading, router]);
 
-  // Show loading while checking authentication
-  if (loading) {
+  // Show loading while checking authentication or redirecting
+  if (loading || isRedirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">লোড হচ্ছে...</p>
+          <p className="mt-4 text-gray-600">
+            {loading ? 'লোড হচ্ছে...' : 'ড্যাশবোর্ডে যাচ্ছে...'}
+          </p>
         </div>
       </div>
     );
@@ -52,20 +56,31 @@ export default function LoginPage() {
       const user = await login(email, password);
       toast.success('সফলভাবে লগইন হয়েছে!');
       
-      // Redirect to unified dashboard
+      // Set redirecting state and redirect immediately
+      setIsRedirecting(true);
       router.push('/dashboard');
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'message' in error 
         ? (error as { message: string }).message 
         : 'লগইনে সমস্যা হয়েছে';
       toast.error(message);
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only reset loading on error
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 relative">
+      {/* Loading overlay for redirecting state */}
+      {isRedirecting && (
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent mx-auto"></div>
+            <p className="mt-4 text-lg font-medium text-gray-700">ড্যাশবোর্ডে যাচ্ছে...</p>
+            <p className="mt-2 text-sm text-gray-500">অনুগ্রহ করে অপেক্ষা করুন</p>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-md w-full space-y-8">
         <Card>
           <CardHeader className="space-y-1">
@@ -129,9 +144,9 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600"
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
               >
-                {isLoading ? 'লগইন হচ্ছে...' : 'লগইন করুন'}
+                {isLoading ? 'লগইন হচ্ছে...' : isRedirecting ? 'ড্যাশবোর্ডে যাচ্ছে...' : 'লগইন করুন'}
               </Button>
             </form>
 

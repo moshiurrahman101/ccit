@@ -18,6 +18,12 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'sans': ['var(--font-inter)', 'var(--font-noto-bengali)', 'system-ui', 'sans-serif'],
+        'bengali': ['var(--font-noto-bengali)', 'system-ui', 'sans-serif'],
+        'bengali-heading': ['var(--font-noto-bengali)', 'system-ui', 'sans-serif'],
+        'bengali-body': ['var(--font-noto-bengali)', 'system-ui', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

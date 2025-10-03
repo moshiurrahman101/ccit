@@ -1,59 +1,53 @@
-import { Users, Video, Award, Headphones, FileText, Briefcase, Clock, Zap, Shield, ArrowRight } from 'lucide-react';
+import { DollarSign, Briefcase, BookOpen, Award, FileText, Users, Clock, Zap, ArrowRight } from 'lucide-react';
 
 const features = [
   {
-    icon: Users,
-    title: "লাইভ ক্লাস",
-    description: "বিশেষজ্ঞ মেন্টরদের সাথে সরাসরি ক্লাসে অংশগ্রহণ করুন",
+    icon: DollarSign,
+    title: "সাশ্রয়ী এবং মানসম্মত কোর্স",
+    description: "Creative Canvas IT সাশ্রয়ী মূল্যে সকল শিক্ষার্থীকে মানসম্মত কোর্স প্রদান করে থাকে।",
     color: "from-blue-500 to-blue-600"
   },
   {
-    icon: Video,
-    title: "রেকর্ডেড ক্লাস",
-    description: "যেকোনো সময় দেখুন এবং শিখুন আমাদের রেকর্ডেড ক্লাসগুলো",
+    icon: Briefcase,
+    title: "চাকরি সংযোগকারী",
+    description: "ফ্রিল্যান্স এবং জব মার্কেটের জন্য দক্ষতা অর্জনের পাশাপাশি চাকরি সংযোগের জন্য সহায়তা প্রদান করা হয়।",
     color: "from-indigo-500 to-indigo-600"
   },
   {
-    icon: Award,
-    title: "সার্টিফিকেট",
-    description: "কোর্স সম্পূর্ণ করার পর প্রফেশনাল সার্টিফিকেট পান",
+    icon: BookOpen,
+    title: "একটি সম্পূর্ণ ও নমনীয় কোর্স",
+    description: "শিক্ষার্থীরা সহজে এবং দ্রুত দক্ষতা অর্জন করতে পারে এমনভাবে কোর্সগুলো সম্পূর্ণ এবং নমনীয়ভাবে সাজানো হয়েছে।",
     color: "from-purple-500 to-purple-600"
   },
   {
-    icon: Headphones,
-    title: "২৪/৭ সাপোর্ট",
-    description: "যেকোনো সময় আমাদের সাপোর্ট টিমের সাহায্য নিন",
+    icon: Award,
+    title: "নিয়োগদাতা সার্টিফিকেট",
+    description: "Creative Canvas IT থেকে প্রাপ্ত সার্টিফিকেট শিক্ষার্থীদের ভবিষ্যৎ কর্মজীবনে নিয়োগদাতাদের কাছে গ্রহণযোগ্য হয়।",
     color: "from-green-500 to-green-600"
   },
   {
     icon: FileText,
-    title: "সিভি বিল্ডার",
-    description: "পেশাদার সিভি তৈরি করুন এবং বিশেষজ্ঞ পর্যালোচনা পান",
+    title: "পোর্টফোলিও তৈরি",
+    description: "কোর্স চলাকালীন সময়ে শিক্ষার্থীরা বাস্তব প্রজেক্টের মাধ্যমে নিজেদের পোর্টফোলিও তৈরি করতে পারে, যা ভবিষ্যতে কাজ পেতে সহায়তা করবে।",
     color: "from-orange-500 to-orange-600"
   },
   {
-    icon: Briefcase,
-    title: "জব প্লেসমেন্ট",
-    description: "চাকরি খোঁজার ক্ষেত্রে আমাদের বিশেষজ্ঞ দলের সহায়তা পান",
+    icon: Users,
+    title: "গ্রুপ লার্নিং",
+    description: "শিক্ষার্থীরা একসাথে কাজ করে শিখতে পারে, যার ফলে প্রশ্নের সমাধান সহজ হয় এবং শেখার মান বৃদ্ধি পায়।",
     color: "from-red-500 to-red-600"
+  },
+  {
+    icon: Zap,
+    title: "লাইভ ক্লাস",
+    description: "লাইভ ক্লাসের মাধ্যমে প্রশ্নোত্তর ও ইন্টারেক্টিভ শেখার সুযোগ থাকে, যা শিক্ষার্থীদের জন্য অত্যন্ত উপকারী।",
+    color: "from-teal-500 to-teal-600"
   },
   {
     icon: Clock,
     title: "লাইফটাইম অ্যাক্সেস",
-    description: "কোর্স সম্পূর্ণ করার পরও আজীবন অ্যাক্সেস পান",
-    color: "from-teal-500 to-teal-600"
-  },
-  {
-    icon: Zap,
-    title: "ফাস্ট লার্নিং",
-    description: "আমাদের প্রমাণিত পদ্ধতিতে দ্রুত শিখুন",
+    description: "শিক্ষার্থীরা একবার ভর্তি হলে কোর্স কনটেন্টে লাইফটাইম অ্যাক্সেস পায়, ফলে ভবিষ্যতে পুনরায় শেখা সম্ভব হয়।",
     color: "from-yellow-500 to-yellow-600"
-  },
-  {
-    icon: Shield,
-    title: "গ্যারান্টি",
-    description: "সন্তুষ্ট না হলে ৩০ দিনের মধ্যে টাকা ফেরত",
-    color: "from-pink-500 to-pink-600"
   }
 ];
 
@@ -72,7 +66,7 @@ export function Features() {
             কেন Creative Canvas IT?
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            আপনার ক্যারিয়ার গড়ার জন্য আমরা যা যা দিচ্ছি
+            আমরা কেন আপনার সেরা পছন্দ হবো তার কিছু কারণ
           </p>
         </div>
 

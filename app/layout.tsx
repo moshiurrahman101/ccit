@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Noto_Sans_Bengali } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -10,6 +10,14 @@ import { ScrollToTop } from "@/components/ui/ScrollToTop";
 const inter = Inter({ 
   subsets: ["latin"],
   variable: "--font-inter",
+});
+
+// Bengali fonts for professional look
+const notoSansBengali = Noto_Sans_Bengali({
+  subsets: ["bengali"],
+  variable: "--font-noto-bengali",
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
 });
 
 // Helper to ensure URL has protocol
@@ -59,7 +67,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" dir="ltr">
-      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning={true}>
+      <body className={`${inter.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning={true}>
         <I18nProvider>
           <AuthProvider>
             <ConditionalLayout>

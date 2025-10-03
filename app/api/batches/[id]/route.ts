@@ -7,32 +7,16 @@ import { z } from 'zod';
 
 const updateBatchSchema = z.object({
   name: z.string().min(1, 'Batch name is required').max(100, 'Batch name too long').optional(),
-  description: z.string().min(1, 'Description is required').max(500, 'Description too long').optional(),
-  coverPhoto: z.string().optional(),
+  description: z.string().max(500, 'Description too long').optional(),
   courseType: z.enum(['online', 'offline']).optional(),
   regularPrice: z.number().min(0, 'Price cannot be negative').optional(),
   discountPrice: z.number().min(0, 'Discount price cannot be negative').optional(),
   mentorId: z.string().min(1, 'Mentor is required').optional(),
-  modules: z.array(z.object({
-    title: z.string().min(1, 'Module title is required'),
-    description: z.string().min(1, 'Module description is required'),
-    duration: z.number().min(0.5, 'Module duration must be at least 0.5 hours'),
-    order: z.number().min(1, 'Order must be at least 1')
-  })).optional(),
-  whatYouWillLearn: z.array(z.string()).optional(),
-  requirements: z.array(z.string()).optional(),
-  features: z.array(z.string()).optional(),
-  duration: z.number().min(1, 'Duration must be at least 1').optional(),
-  durationUnit: z.enum(['days', 'weeks', 'months', 'years']).optional(),
+  additionalMentors: z.array(z.string()).optional(),
   startDate: z.string().transform(str => new Date(str)).optional(),
   endDate: z.string().transform(str => new Date(str)).optional(),
   maxStudents: z.number().min(1, 'Max students must be at least 1').optional(),
   currentStudents: z.number().min(0, 'Current students cannot be negative').optional(),
-  marketing: z.object({
-    slug: z.string().min(1, 'Slug is required').optional(),
-    metaDescription: z.string().max(160, 'Meta description too long').optional(),
-    tags: z.array(z.string()).optional()
-  }).optional(),
   status: z.enum(['draft', 'published', 'upcoming', 'ongoing', 'completed', 'cancelled']).optional(),
   isActive: z.boolean().optional()
 });
@@ -71,7 +55,9 @@ export async function GET(
     }
 
     const batch = await Batch.findById(id)
-      .populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks');
+      .populate('courseId', 'title description shortDescription coverPhoto courseCode courseShortcut category level language duration durationUnit regularPrice discountPrice discountPercentage mentors whatYouWillLearn requirements features marketing')
+      .populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks')
+      .populate('additionalMentors', 'name email avatar designation experience expertise bio skills socialLinks');
 
     if (!batch) {
       return NextResponse.json(
@@ -154,26 +140,41 @@ export async function PUT(
       }
     }
 
-    // Check if slug already exists (if slug is being updated)
-    if (validatedData.marketing?.slug && validatedData.marketing.slug !== existingBatch.marketing.slug) {
-      const slugExists = await Batch.findOne({ 
-        'marketing.slug': validatedData.marketing.slug,
-        _id: { $ne: id }
+    // Check if additional mentors exist (if additionalMentors is being updated)
+    if (validatedData.additionalMentors && validatedData.additionalMentors.length > 0) {
+      const additionalMentors = await Mentor.find({ 
+        _id: { $in: validatedData.additionalMentors } 
       });
-      if (slugExists) {
+      if (additionalMentors.length !== validatedData.additionalMentors.length) {
         return NextResponse.json(
-          { error: 'Batch with this slug already exists' },
-          { status: 409 }
+          { error: 'One or more additional mentors not found' },
+          { status: 404 }
         );
       }
     }
 
+    // Calculate discount percentage if both prices are provided
+    let discountPercentage;
+    if (validatedData.regularPrice && validatedData.discountPrice) {
+      discountPercentage = Math.round(
+        ((validatedData.regularPrice - validatedData.discountPrice) / validatedData.regularPrice) * 100
+      );
+    }
+
     // Update batch
+    const updateData = {
+      ...validatedData,
+      ...(discountPercentage !== undefined && { discountPercentage })
+    };
+    
     const updatedBatch = await Batch.findByIdAndUpdate(
       id,
-      validatedData,
+      updateData,
       { new: true, runValidators: true }
-    ).populate('mentorId', 'name email avatar designation experience expertise');
+    )
+    .populate('courseId', 'title description shortDescription coverPhoto courseCode courseShortcut category level language duration durationUnit regularPrice discountPrice discountPercentage mentors whatYouWillLearn requirements features marketing')
+    .populate('mentorId', 'name email avatar designation experience expertise bio skills socialLinks')
+    .populate('additionalMentors', 'name email avatar designation experience expertise bio skills socialLinks');
 
     return NextResponse.json({
       message: 'Batch updated successfully',

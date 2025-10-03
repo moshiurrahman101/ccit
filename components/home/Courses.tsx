@@ -23,6 +23,24 @@ interface Batch {
     slug: string;
     tags: string[];
   };
+  courseId?: {
+    _id: string;
+    title: string;
+    coverPhoto?: string;
+    courseCode: string;
+    courseShortcut: string;
+    category: string;
+    level: string;
+    language: string;
+    mentors: {
+      _id: string;
+      name: string;
+      avatar?: string;
+      designation: string;
+      experience: number;
+      expertise: string[];
+    }[];
+  };
   mentorId?: {
     name: string;
     avatar?: string;
@@ -139,10 +157,10 @@ export function Courses() {
                 >
                   {/* Batch Image */}
                   <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                    {batch.coverPhoto ? (
+                    {(batch.courseId?.coverPhoto || batch.coverPhoto) ? (
                       <img 
-                        src={batch.coverPhoto} 
-                        alt={batch.name}
+                        src={batch.courseId?.coverPhoto || batch.coverPhoto} 
+                        alt={batch.courseId?.title || batch.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                     ) : (
@@ -180,13 +198,43 @@ export function Courses() {
 
                   {/* Batch Content */}
                   <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {batch.name}
+                    <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors bengali-heading">
+                      {batch.courseId?.title || batch.name}
                     </h3>
-                    <p className="text-gray-600 mb-4 text-sm line-clamp-2">{batch.description}</p>
+                    <p className="text-sm text-gray-500 mb-2 bengali-text">{batch.name}</p>
+                    <p className="text-gray-600 mb-4 text-sm line-clamp-2 bengali-text">{batch.description}</p>
 
-                    {/* Mentor */}
-                    {batch.mentorId && (
+                    {/* Course Mentors */}
+                    {batch.courseId?.mentors && batch.courseId.mentors.length > 0 ? (
+                      <div className="mb-4">
+                        <p className="text-xs text-gray-500 mb-2 bengali-text">মেন্টরগণ:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {batch.courseId.mentors.slice(0, 3).map((mentor, index) => (
+                            <div key={mentor._id} className="flex items-center space-x-1">
+                              <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
+                                {mentor.avatar ? (
+                                  <img 
+                                    src={mentor.avatar} 
+                                    alt={mentor.name}
+                                    className="w-6 h-6 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-white text-xs font-semibold">
+                                    {mentor.name.charAt(0)}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-700 bengali-text">{mentor.name}</span>
+                            </div>
+                          ))}
+                          {batch.courseId.mentors.length > 3 && (
+                            <span className="text-xs text-gray-500 bengali-text">
+                              +{batch.courseId.mentors.length - 3} আরও
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : batch.mentorId && (
                       <div className="flex items-center space-x-2 mb-4">
                         <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center">
                           {batch.mentorId.avatar ? (
@@ -201,7 +249,10 @@ export function Courses() {
                             </span>
                           )}
                         </div>
-                        <span className="text-sm text-gray-600">{batch.mentorId.name}</span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 bengali-text">{batch.mentorId.name}</p>
+                          <p className="text-xs text-gray-500 bengali-text">মেন্টর</p>
+                        </div>
                       </div>
                     )}
 

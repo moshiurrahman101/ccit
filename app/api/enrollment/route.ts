@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Invoice from '@/models/Invoice';
 import Batch from '@/models/Batch';
 import User from '@/models/User';
+import Coupon from '@/models/Coupon';
 import { Enrollment } from '@/models/Enrollment';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
@@ -50,8 +51,8 @@ export async function POST(request: NextRequest) {
     await connectDB();
     console.log('Connected to database');
 
-    // Find the batch
-    const batch = await Batch.findById(validatedData.batchId);
+    // Find the batch with course information
+    const batch = await Batch.findById(validatedData.batchId).populate('courseId');
     if (!batch) {
       console.log('Batch not found:', validatedData.batchId);
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
     console.log('Batch status:', batch.status);
     console.log('Current students:', batch.currentStudents);
     console.log('Max students:', batch.maxStudents);
+    console.log('Course:', batch.courseId);
 
     // Check if batch is available for enrollment
     if (batch.status !== 'published' && batch.status !== 'upcoming') {
@@ -93,9 +95,84 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Calculate amount (use discount price if available)
-    const amount = batch.discountPrice || batch.regularPrice;
-    const discountAmount = batch.discountPrice ? batch.regularPrice - batch.discountPrice : 0;
+    // Calculate amount from batch (use batch pricing if available, fallback to course pricing)
+    const course = batch.courseId;
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found for this batch' }, { status: 404 });
+    }
+    
+    // Use batch pricing if available, otherwise use course pricing
+    const regularPrice = batch.regularPrice || course.regularPrice;
+    const discountPrice = batch.discountPrice || course.discountPrice;
+    
+    let amount = discountPrice || regularPrice;
+    let discountAmount = discountPrice ? regularPrice - discountPrice : 0;
+    let couponDiscount = 0;
+    let couponCode = '';
+
+    // Apply coupon code if provided
+    if (validatedData.promoCode) {
+      console.log('Validating coupon code:', validatedData.promoCode);
+      
+      const coupon = await Coupon.findOne({
+        code: validatedData.promoCode.toUpperCase(),
+        isActive: true,
+        validFrom: { $lte: new Date() },
+        validUntil: { $gte: new Date() }
+      });
+
+      if (!coupon) {
+        return NextResponse.json({ 
+          error: 'Invalid or expired coupon code' 
+        }, { status: 400 });
+      }
+
+      // Check if coupon has usage limit
+      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+        return NextResponse.json({ 
+          error: 'Coupon code has reached its usage limit' 
+        }, { status: 400 });
+      }
+
+      // Check if coupon applies to this batch or course
+      const appliesToBatch = !coupon.applicableBatches || coupon.applicableBatches.includes(batch._id);
+      const appliesToCourse = !coupon.applicableCourses || coupon.applicableCourses.includes(course._id);
+      
+      if (!appliesToBatch && !appliesToCourse) {
+        return NextResponse.json({ 
+          error: 'Coupon code is not valid for this batch' 
+        }, { status: 400 });
+      }
+
+      // Check minimum amount requirement
+      if (coupon.minAmount && amount < coupon.minAmount) {
+        return NextResponse.json({ 
+          error: `Minimum order amount of ৳${coupon.minAmount} required for this coupon` 
+        }, { status: 400 });
+      }
+
+      // Calculate coupon discount
+      if (coupon.type === 'percentage') {
+        couponDiscount = (amount * coupon.value) / 100;
+        if (coupon.maxDiscount) {
+          couponDiscount = Math.min(couponDiscount, coupon.maxDiscount);
+        }
+      } else {
+        couponDiscount = Math.min(coupon.value, amount);
+      }
+
+      amount = Math.max(0, amount - couponDiscount);
+      couponCode = coupon.code;
+      
+      console.log('Coupon applied:', {
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+        discount: couponDiscount,
+        finalAmount: amount
+      });
+    }
+
     const finalAmount = amount;
 
     // Create invoice
@@ -105,8 +182,10 @@ export async function POST(request: NextRequest) {
       batchId: validatedData.batchId,
       batchName: batch.name,
       courseType: 'batch',
-      amount: batch.regularPrice,
+      amount: regularPrice,
       discountAmount: discountAmount,
+      promoCode: couponCode,
+      promoDiscount: couponDiscount,
       finalAmount: finalAmount,
       currency: 'BDT',
       status: 'pending',
@@ -124,7 +203,7 @@ export async function POST(request: NextRequest) {
     // Create enrollment record
     const enrollment = new Enrollment({
       student: payload.userId,
-      course: batch.course || batch._id, // Use batch as course if no course field
+      course: course._id,
       batch: validatedData.batchId,
       amount: finalAmount,
       status: 'pending', // Will be approved when payment is confirmed

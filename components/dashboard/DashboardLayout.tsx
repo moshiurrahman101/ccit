@@ -95,12 +95,20 @@ const menuItems: MenuItem[] = [
     description: 'মেন্টর ব্যবস্থাপনা'
   },
   {
-    id: 'batches',
-    label: 'ব্যাচ/কোর্স',
+    id: 'courses',
+    label: 'কোর্স ব্যবস্থাপনা',
     icon: BookOpen,
+    path: '/dashboard/courses',
+    roles: ['admin', 'marketing'],
+    description: 'কোর্স তৈরি ও ব্যবস্থাপনা'
+  },
+  {
+    id: 'batches',
+    label: 'ব্যাচ ব্যবস্থাপনা',
+    icon: GraduationCap,
     path: '/dashboard/batches',
     roles: ['admin', 'marketing'],
-    description: 'অনলাইন/অফলাইন ব্যাচ ও কোর্স ব্যবস্থাপনা'
+    description: 'ব্যাচ তৈরি ও ব্যবস্থাপনা'
   },
   {
     id: 'enrollment-management',

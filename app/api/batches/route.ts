@@ -2,38 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Batch from '@/models/Batch';
 import Mentor from '@/models/Mentor';
+import Course from '@/models/Course';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 
 // Validation schemas
 const createBatchSchema = z.object({
-  name: z.string().min(1, 'Batch name is required').max(100, 'Batch name too long'),
-  description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
-  coverPhoto: z.string().optional(),
+  courseId: z.string().min(1, 'Course is required'),
+  name: z.string().min(1, 'Batch name is required').max(100, 'Batch name too long').optional(),
+  description: z.string().max(500, 'Description too long').optional(),
   courseType: z.enum(['online', 'offline']),
-  regularPrice: z.number().min(0, 'Price cannot be negative'),
-  discountPrice: z.number().min(0, 'Discount price cannot be negative').optional(),
-  mentorId: z.string().min(1, 'Mentor is required'),
-  modules: z.array(z.object({
-    title: z.string().min(1, 'Module title is required'),
-    description: z.string().min(1, 'Module description is required'),
-    duration: z.number().min(0.5, 'Module duration must be at least 0.5 hours'),
-    order: z.number().min(1, 'Order must be at least 1')
-  })),
-  whatYouWillLearn: z.array(z.string()),
-  requirements: z.array(z.string()),
-  features: z.array(z.string()),
-  duration: z.number().min(1, 'Duration must be at least 1'),
-  durationUnit: z.enum(['days', 'weeks', 'months', 'years']),
+  mentorId: z.string().optional(),
+  additionalMentors: z.array(z.string()).optional(),
   startDate: z.string().transform(str => new Date(str)),
   endDate: z.string().transform(str => new Date(str)),
   maxStudents: z.number().min(1, 'Max students must be at least 1').default(30),
   currentStudents: z.number().min(0, 'Current students cannot be negative').default(0),
-  marketing: z.object({
-    slug: z.string().min(1, 'Slug is required'),
-    metaDescription: z.string().max(160, 'Meta description too long').optional(),
-    tags: z.array(z.string())
-  }),
+  regularPrice: z.number().min(0, 'Regular price cannot be negative').optional(),
+  discountPrice: z.number().min(0, 'Discount price cannot be negative').optional(),
   status: z.enum(['draft', 'published', 'upcoming', 'ongoing', 'completed', 'cancelled']).default('draft')
 });
 
@@ -92,10 +78,20 @@ export async function GET(request: NextRequest) {
       query.mentorId = mentorId;
     }
 
-    // Get batches with mentor population
+    // Get batches with course and mentor population
     const batches = await Batch.find(query)
       .populate({
+        path: 'courseId',
+        select: 'title courseCode courseShortcut regularPrice discountPrice coverPhoto',
+        options: { strictPopulate: false }
+      })
+      .populate({
         path: 'mentorId',
+        select: 'name email avatar designation experience expertise',
+        options: { strictPopulate: false }
+      })
+      .populate({
+        path: 'additionalMentors',
         select: 'name email avatar designation experience expertise',
         options: { strictPopulate: false }
       })
@@ -106,18 +102,28 @@ export async function GET(request: NextRequest) {
     console.log('Raw batches from DB:', batches.length);
     console.log('Sample batch mentor data:', batches[0]?.mentorId);
 
-    // Handle missing mentors by setting mentorId to null
+    // Process batches to handle missing data
     const processedBatches = batches.map(batch => {
-      // If mentorId is null, undefined, or not an object with _id, set to null
-      if (!batch.mentorId || !batch.mentorId._id) {
-        console.log(`Setting mentorId to null for batch: ${batch.name}`);
-        return {
-          ...batch.toObject(),
-          mentorId: null
-        };
+      const batchObj = batch.toObject();
+      
+      // Handle missing course
+      if (!batchObj.courseId || !batchObj.courseId._id) {
+        console.log(`Setting courseId to null for batch: ${batchObj.name}`);
+        batchObj.courseId = null;
       }
-      console.log(`Keeping mentor data for batch: ${batch.name}, mentor: ${batch.mentorId.name}`);
-      return batch;
+      
+      // Handle missing primary mentor
+      if (!batchObj.mentorId || !batchObj.mentorId._id) {
+        console.log(`Setting mentorId to null for batch: ${batchObj.name}`);
+        batchObj.mentorId = null;
+      }
+      
+      // Handle missing additional mentors
+      if (!batchObj.additionalMentors) {
+        batchObj.additionalMentors = [];
+      }
+      
+      return batchObj;
     });
 
     // Get total count
@@ -167,43 +173,99 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Received batch data:', body);
+    console.log('mentorId value:', body.mentorId, 'type:', typeof body.mentorId);
+    
     const validatedData = createBatchSchema.parse(body);
+    console.log('Validated data:', validatedData);
 
-    // Check if mentor exists
-    const mentor = await Mentor.findById(validatedData.mentorId);
-    if (!mentor) {
+    // Check if course exists
+    const course = await Course.findById(validatedData.courseId);
+    if (!course) {
       return NextResponse.json(
-        { error: 'Mentor not found' },
+        { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    // Check if batch name already exists
-    const existingBatch = await Batch.findOne({ name: validatedData.name });
-    if (existingBatch) {
+    // Set primary mentor - use provided mentorId or first course mentor
+    let primaryMentorId = validatedData.mentorId;
+    
+    if (!primaryMentorId && course.mentors && course.mentors.length > 0) {
+      // Use first course mentor as primary mentor
+      primaryMentorId = course.mentors[0].toString();
+    }
+    
+    if (!primaryMentorId) {
       return NextResponse.json(
-        { error: 'Batch with this name already exists' },
-        { status: 409 }
+        { error: 'No mentor available. Course must have at least one mentor or provide a primary mentor.' },
+        { status: 400 }
       );
     }
 
-    // Check if slug already exists
-    const existingSlug = await Batch.findOne({ 'marketing.slug': validatedData.marketing.slug });
-    if (existingSlug) {
+    // Check if primary mentor exists
+    const mentor = await Mentor.findById(primaryMentorId);
+    if (!mentor) {
       return NextResponse.json(
-        { error: 'Batch with this slug already exists' },
-        { status: 409 }
+        { error: 'Primary mentor not found' },
+        { status: 404 }
       );
     }
 
-    // Create batch
+    // Check if additional mentors exist
+    if (validatedData.additionalMentors && validatedData.additionalMentors.length > 0) {
+      const additionalMentors = await Mentor.find({ _id: { $in: validatedData.additionalMentors } });
+      if (additionalMentors.length !== validatedData.additionalMentors.length) {
+        return NextResponse.json(
+          { error: 'One or more additional mentors not found' },
+          { status: 404 }
+        );
+      }
+    }
+
+    // Generate batch code and name
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    
+    // Find the next batch number for this course in this year
+    const existingBatches = await Batch.find({
+      courseId: validatedData.courseId,
+      batchCode: { $regex: `^${course.courseCode}${currentYear}` }
+    }).sort({ batchCode: -1 });
+
+    let nextBatchNumber = 1;
+    if (existingBatches.length > 0) {
+      const lastBatchCode = existingBatches[0].batchCode;
+      const lastBatchNumber = parseInt(lastBatchCode.slice(-2));
+      nextBatchNumber = lastBatchNumber + 1;
+    }
+
+    // Generate batch code: CourseCode + Year + Serial (e.g., GDI2501)
+    const batchCode = `${course.courseCode}${currentYear}${nextBatchNumber.toString().padStart(2, '0')}`;
+    const batchNumber = batchCode.slice(-2);
+    const name = `${course.courseShortcut} Batch-${batchNumber}`;
+
+    console.log('Generated batch code:', batchCode);
+    console.log('Generated batch name:', name);
+
+    // Create batch with generated code and name
     const batch = new Batch({
       ...validatedData,
-      createdBy: payload.userId
+      mentorId: primaryMentorId, // Use the determined primary mentor
+      createdBy: payload.userId,
+      batchCode,
+      name
     });
 
+    console.log('Batch object created, about to save...');
     await batch.save();
-    await batch.populate('mentorId', 'name email avatar designation experience expertise');
+    console.log('Batch saved successfully');
+    
+    // Populate the batch with course and mentor data
+    await batch.populate([
+      { path: 'courseId', select: 'title courseCode courseShortcut regularPrice discountPrice coverPhoto' },
+      { path: 'mentorId', select: 'name email avatar designation experience expertise' },
+      { path: 'additionalMentors', select: 'name email avatar designation experience expertise' }
+    ]);
 
     return NextResponse.json({
       message: 'Batch created successfully',

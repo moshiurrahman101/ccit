@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import connectDB from '@/lib/mongodb';
 import Batch from '@/models/Batch';
 import Mentor from '@/models/Mentor';
+import Course from '@/models/Course';
 
 // GET /api/public/batches - Get all published batches (public endpoint)
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
+    
+    // Ensure models are registered
+    if (!mongoose.models.Batch) {
+      mongoose.model('Batch', Batch.schema);
+    }
+    if (!mongoose.models.Course) {
+      mongoose.model('Course', Course.schema);
+    }
+    if (!mongoose.models.Mentor) {
+      mongoose.model('Mentor', Mentor.schema);
+    }
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -42,29 +55,21 @@ export async function GET(request: NextRequest) {
       query.mentorId = mentorId;
     }
 
-    // Get batches
+    // Get batches with course and mentor information
     const batches = await Batch.find(query)
+      .populate('courseId', 'title description shortDescription coverPhoto courseCode courseShortcut category level language duration durationUnit whatYouWillLearn requirements features marketing')
+      .populate('mentorId', 'name email avatar designation experience expertise')
+      .populate('additionalMentors', 'name email avatar designation experience expertise')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-
-    // Manually populate mentor data
-    const batchesWithMentors = await Promise.all(
-      batches.map(async (batch) => {
-        const mentor = await Mentor.findById(batch.mentorId).select('name email avatar designation experience expertise');
-        return {
-          ...batch.toObject(),
-          mentorId: mentor
-        };
-      })
-    );
 
     // Get total count
     const totalBatches = await Batch.countDocuments(query);
     const totalPages = Math.ceil(totalBatches / limit);
 
     return NextResponse.json({
-      batches: batchesWithMentors,
+      batches,
       pagination: {
         currentPage: page,
         totalPages,

@@ -240,20 +240,20 @@ export default function MentorsPage() {
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <Button 
-                      className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                       onClick={() => window.open(`/mentors/${mentor._id}`, '_blank')}
                     >
                       <BookOpen className="w-4 h-4 mr-2" />
-                      বিস্তারিত দেখুন
+                      <span className="bengali-text">প্রোফাইল দেখুন</span>
                     </Button>
                     <Button 
                       variant="outline" 
-                      className="w-full"
+                      className="w-full border-2 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 font-semibold py-3 rounded-xl transition-all duration-300"
                     >
                       <MessageCircle className="w-4 h-4 mr-2" />
-                      মেন্টরের সাথে যোগাযোগ
+                      <span className="bengali-text">যোগাযোগ করুন</span>
                     </Button>
                   </div>
                 </CardContent>

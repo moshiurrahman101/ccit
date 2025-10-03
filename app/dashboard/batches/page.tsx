@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, Loader2, Users, Calendar, CheckCircle, Clock, Trash2 } from 'lucide-react';
+import { BookOpen, Loader2, Users, Calendar, CheckCircle, Clock, Trash2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { AdminOnly } from '@/components/dashboard/RoleGuard';
 import { toast } from 'sonner';
@@ -21,13 +21,19 @@ import {
 
 interface Batch {
   _id: string;
+  courseId: {
+    _id: string;
+    title: string;
+    courseCode: string;
+    courseShortcut: string;
+    coverPhoto?: string;
+    regularPrice: number;
+    discountPrice?: number;
+  } | null;
+  batchCode: string;
   name: string;
-  description: string;
-  coverPhoto?: string;
+  description?: string;
   courseType: 'online' | 'offline';
-  regularPrice: number;
-  discountPrice?: number;
-  discountPercentage?: number;
   mentorId: {
     _id: string;
     name: string;
@@ -36,26 +42,19 @@ interface Batch {
     experience: number;
     expertise: string[];
   } | null;
-  duration: number;
-  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  additionalMentors: {
+    _id: string;
+    name: string;
+    avatar?: string;
+    designation: string;
+  }[];
   startDate: string;
   endDate: string;
   maxStudents: number;
   currentStudents: number;
-  modules: {
-    title: string;
-    description: string;
-    duration: number;
-    order: number;
-  }[];
-  whatYouWillLearn: string[];
-  requirements: string[];
-  features: string[];
-  marketing: {
-  slug: string;
-  metaDescription?: string;
-    tags: string[];
-  };
+  regularPrice?: number; // Batch-specific regular price
+  discountPrice?: number; // Batch-specific discount price
+  discountPercentage?: number; // Calculated discount percentage
   status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
   createdBy: string;
@@ -242,13 +241,22 @@ export default function BatchesPage() {
           <p className="text-gray-600">সকল ব্যাচের তথ্য দেখুন এবং পরিচালনা করুন</p>
         </div>
         <AdminOnly>
-          <Link
-            href="/dashboard/batches/new"
-            className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-          >
-            <BookOpen className="h-4 w-4 mr-2" />
-            নতুন ব্যাচ
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/dashboard/batches/new"
+              className="inline-flex items-center px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              নতুন ব্যাচ
+            </Link>
+            <Link
+              href="/dashboard/courses"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <BookOpen className="h-4 w-4 mr-2" />
+              কোর্স ব্যবস্থাপনা
+            </Link>
+          </div>
         </AdminOnly>
       </div>
 
@@ -361,6 +369,7 @@ export default function BatchesPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ব্যাচ</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">কোর্স</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">মেন্টর</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ধরন</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">মূল্য</th>
@@ -372,7 +381,7 @@ export default function BatchesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {batches.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                     কোনো ব্যাচ পাওয়া যায়নি
                   </td>
                 </tr>
@@ -381,21 +390,38 @@ export default function BatchesPage() {
                 <tr key={batch._id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      {batch.coverPhoto ? (
-                        <img
-                          className="h-10 w-10 rounded-lg object-cover"
-                          src={batch.coverPhoto}
-                          alt={batch.name}
-                        />
-                      ) : (
-                        <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                          <BookOpen className="h-5 w-5 text-orange-600" />
-                        </div>
-                      )}
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{batch.name}</div>
-                        <div className="text-xs text-gray-500">{batch.courseType === 'online' ? 'অনলাইন' : 'অফলাইন'}</div>
+                      <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <BookOpen className="h-5 w-5 text-orange-600" />
                       </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{batch.batchCode}</div>
+                        <div className="text-xs text-gray-500">{batch.name}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {batch.courseId ? (
+                        <>
+                          {batch.courseId.coverPhoto ? (
+                            <img
+                              className="h-8 w-12 rounded object-cover"
+                              src={batch.courseId.coverPhoto}
+                              alt={batch.courseId.title}
+                            />
+                          ) : (
+                            <div className="h-8 w-12 bg-gray-200 rounded flex items-center justify-center">
+                              <span className="text-xs font-medium">C</span>
+                            </div>
+                          )}
+                          <div className="ml-3">
+                            <div className="text-sm font-medium text-gray-900">{batch.courseId.title}</div>
+                            <div className="text-xs text-gray-500">{batch.courseId.courseCode}</div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-red-600">কোর্স পাওয়া যায়নি</div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -442,11 +468,24 @@ export default function BatchesPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <div>
-                      <div className="font-medium">৳{batch.regularPrice.toLocaleString()}</div>
-                      {batch.discountPrice && (
-                        <div className="text-xs text-gray-500 line-through">
-                          ৳{batch.discountPrice.toLocaleString()}
-                        </div>
+                      {batch.courseId ? (
+                        <>
+                          <div className="font-medium">
+                            ৳{(batch.regularPrice || batch.courseId?.regularPrice || 0).toLocaleString()}
+                          </div>
+                          {(batch.discountPrice || batch.courseId?.discountPrice) && (
+                            <div className="text-xs text-green-600">
+                              ছাড়: ৳{(batch.discountPrice || batch.courseId?.discountPrice || 0).toLocaleString()}
+                            </div>
+                          )}
+                          {batch.regularPrice && batch.courseId?.regularPrice !== batch.regularPrice && (
+                            <div className="text-xs text-blue-600">
+                              ব্যাচ মূল্য
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-red-600">মূল্য পাওয়া যায়নি</div>
                       )}
                     </div>
                   </td>
@@ -476,14 +515,12 @@ export default function BatchesPage() {
                       >
                         সম্পাদনা
                       </Link>
-                      <a
-                        href={`/batches/${batch.marketing.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        href={`/dashboard/courses/${batch.courseId?._id}/batches`}
                         className="text-blue-600 hover:text-blue-900"
                       >
-                        দেখুন
-                      </a>
+                        কোর্স দেখুন
+                      </Link>
                       <button
                         onClick={() => handleDeleteClick(batch)}
                         className="inline-flex items-center justify-center px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded border border-red-600 hover:border-red-700 transition-colors"

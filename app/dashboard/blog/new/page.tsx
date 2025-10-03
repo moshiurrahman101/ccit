@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Save, Eye, ArrowLeft, Link, Hash, Globe } from 'lucide-react';
-import RichTextEditor from '@/components/editor/RichTextEditor';
+import SimpleRichTextEditor from '@/components/editor/SimpleRichTextEditor';
+import FullScreenEditor from '@/components/editor/FullScreenEditor';
 import ImageUpload from '@/components/blog/ImageUpload';
 import SEOPreview from '@/components/blog/SEOPreview';
 import SlugValidator from '@/components/blog/SlugValidator';
@@ -38,6 +39,7 @@ export default function NewBlogPage() {
   const [autoSlug, setAutoSlug] = useState(true);
   const [customSlug, setCustomSlug] = useState('');
   const [slugAvailable, setSlugAvailable] = useState(false);
+  const [isFullScreenEditorOpen, setIsFullScreenEditorOpen] = useState(false);
   const [formData, setFormData] = useState<BlogFormData>({
     title: '',
     excerpt: '',
@@ -355,12 +357,12 @@ export default function NewBlogPage() {
               <CardTitle>ব্লগ কন্টেন্ট</CardTitle>
             </CardHeader>
             <CardContent>
-              <RichTextEditor
+              <SimpleRichTextEditor
                 content={formData.content}
                 onChange={(content) => handleInputChange('content', content)}
                 placeholder="আপনার ব্লগ পোস্ট লিখুন..."
-                className="min-h-[500px]"
-                onImageUpload={handleImageUpload}
+                className="min-h-[300px]"
+                onOpenFullEditor={() => setIsFullScreenEditorOpen(true)}
               />
             </CardContent>
           </Card>
@@ -518,6 +520,16 @@ export default function NewBlogPage() {
           </Card>
         </div>
       </div>
+
+      {/* Full Screen Editor Modal */}
+      <FullScreenEditor
+        content={formData.content}
+        onChange={(content) => handleInputChange('content', content)}
+        onSave={() => setIsFullScreenEditorOpen(false)}
+        onClose={() => setIsFullScreenEditorOpen(false)}
+        title="Create Blog Content"
+        isOpen={isFullScreenEditorOpen}
+      />
     </div>
   );
 }

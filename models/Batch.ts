@@ -1,58 +1,57 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import Course from './Course';
 
 export interface IBatch extends Document {
-  name: string;
-  description: string;
-  coverPhoto?: string;
+  courseId: mongoose.Types.ObjectId; // Reference to Course
+  batchCode: string; // Auto-generated: CourseCode + Year + Serial (e.g., GDI2501)
+  name: string; // Auto-generated from course + batch number
+  description?: string; // Optional batch-specific description
   courseType: 'online' | 'offline';
-  regularPrice: number;
-  discountPrice?: number;
-  discountPercentage?: number;
-  mentorId: mongoose.Types.ObjectId;
-  modules: {
-    title: string;
-    description: string;
-    duration: number; // in hours
-    order: number;
-  }[];
-  whatYouWillLearn: string[];
-  requirements: string[];
-  features: string[];
-  duration: number;
-  durationUnit: 'days' | 'weeks' | 'months' | 'years';
+  mentorId: mongoose.Types.ObjectId; // Primary mentor for this batch
+  additionalMentors?: mongoose.Types.ObjectId[]; // Additional mentors if needed
   startDate: Date;
   endDate: Date;
   maxStudents: number;
   currentStudents: number;
+  regularPrice?: number; // Batch-specific regular price (overrides course price)
+  discountPrice?: number; // Batch-specific discount price
+  discountPercentage?: number; // Calculated discount percentage
+  status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  isActive: boolean;
   marketing: {
     slug: string;
     metaDescription?: string;
     tags: string[];
   };
-  status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
-  isActive: boolean;
   createdBy: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const BatchSchema = new Schema<IBatch>({
+  courseId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Course',
+    required: [true, 'Course is required']
+  },
+  batchCode: {
+    type: String,
+    required: [true, 'Batch code is required'],
+    trim: true,
+    uppercase: true,
+    unique: true,
+    maxlength: [20, 'Batch code cannot exceed 20 characters']
+  },
   name: {
     type: String,
     required: [true, 'Batch name is required'],
     trim: true,
-    unique: true,
     maxlength: [100, 'Batch name cannot exceed 100 characters']
   },
   description: {
     type: String,
-    required: [true, 'Batch description is required'],
     trim: true,
     maxlength: [500, 'Description cannot exceed 500 characters']
-  },
-  coverPhoto: {
-    type: String,
-    trim: true
   },
   courseType: {
     type: String,
@@ -60,70 +59,15 @@ const BatchSchema = new Schema<IBatch>({
     required: [true, 'Course type is required'],
     default: 'online'
   },
-  regularPrice: {
-    type: Number,
-    required: [true, 'Regular price is required'],
-    min: [0, 'Price cannot be negative']
-  },
-  discountPrice: {
-    type: Number,
-    min: [0, 'Discount price cannot be negative']
-  },
-  discountPercentage: {
-    type: Number,
-    min: [0, 'Discount percentage cannot be negative'],
-    max: [100, 'Discount percentage cannot exceed 100%']
-  },
   mentorId: {
     type: Schema.Types.ObjectId,
     ref: 'Mentor',
-    required: [true, 'Mentor is required']
+    required: [true, 'Primary mentor is required']
   },
-  modules: [{
-    title: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    description: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    duration: {
-      type: Number,
-      required: true,
-      min: [0.5, 'Module duration must be at least 0.5 hours']
-    },
-    order: {
-      type: Number,
-      required: true,
-      min: [1, 'Order must be at least 1']
-    }
+  additionalMentors: [{
+    type: Schema.Types.ObjectId,
+    ref: 'Mentor'
   }],
-  whatYouWillLearn: [{
-    type: String,
-    trim: true
-  }],
-  requirements: [{
-    type: String,
-    trim: true
-  }],
-  features: [{
-    type: String,
-    trim: true
-  }],
-  duration: {
-    type: Number,
-    required: [true, 'Duration is required'],
-    min: [1, 'Duration must be at least 1']
-  },
-  durationUnit: {
-    type: String,
-    enum: ['days', 'weeks', 'months', 'years'],
-    required: [true, 'Duration unit is required'],
-    default: 'months'
-  },
   startDate: {
     type: Date,
     required: [true, 'Start date is required']
@@ -142,22 +86,18 @@ const BatchSchema = new Schema<IBatch>({
     default: 0,
     min: [0, 'Current students cannot be negative']
   },
-  marketing: {
-    slug: {
-      type: String,
-      required: [true, 'Slug is required'],
-      trim: true,
-      lowercase: true
-    },
-    metaDescription: {
-      type: String,
-      trim: true,
-      maxlength: [160, 'Meta description cannot exceed 160 characters']
-    },
-    tags: [{
-      type: String,
-      trim: true
-    }]
+  regularPrice: {
+    type: Number,
+    min: [0, 'Regular price cannot be negative']
+  },
+  discountPrice: {
+    type: Number,
+    min: [0, 'Discount price cannot be negative']
+  },
+  discountPercentage: {
+    type: Number,
+    min: [0, 'Discount percentage cannot be negative'],
+    max: [100, 'Discount percentage cannot exceed 100']
   },
   status: {
     type: String,
@@ -168,6 +108,24 @@ const BatchSchema = new Schema<IBatch>({
     type: Boolean,
     default: true
   },
+  marketing: {
+    slug: {
+      type: String,
+      required: [true, 'Marketing slug is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens']
+    },
+    metaDescription: {
+      type: String,
+      maxlength: [160, 'Meta description cannot exceed 160 characters']
+    },
+    tags: [{
+      type: String,
+      trim: true
+    }]
+  },
   createdBy: {
     type: String,
     required: [true, 'Created by is required']
@@ -176,44 +134,174 @@ const BatchSchema = new Schema<IBatch>({
   timestamps: true
 });
 
-// Pre-save middleware to generate slug and calculate discount percentage
-BatchSchema.pre('save', function(next) {
-  // Generate slug from name if not provided
-  if (this.isModified('name') && !this.marketing.slug) {
-    this.marketing.slug = this.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-  }
+// Pre-save middleware to generate batch code and validate data
+BatchSchema.pre('save', async function(next) {
+  console.log('=== PRE-SAVE MIDDLEWARE TRIGGERED ===');
+  try {
+    console.log('Pre-save middleware running for batch:', {
+      isNew: this.isNew,
+      batchCode: this.batchCode,
+      courseId: this.courseId
+    });
+    
+    let course = null;
+    
+    // Generate batch code if not provided
+    if (this.isNew && !this.batchCode) {
+      console.log('Generating batch code...');
+      course = await Course.findById(this.courseId);
+      
+      if (!course) {
+        console.log('Course not found for courseId:', this.courseId);
+        return next(new Error('Course not found'));
+      }
+      
+      console.log('Found course:', course.courseCode, course.courseShortcut);
 
-  // Calculate discount percentage if discount price is provided
-  if (this.discountPrice && this.regularPrice > 0) {
-    this.discountPercentage = Math.round(((this.regularPrice - this.discountPrice) / this.regularPrice) * 100);
-  }
+      // Get current year (last 2 digits)
+      const currentYear = new Date().getFullYear().toString().slice(-2);
+      
+      // Find the next batch number for this course in this year
+      const existingBatches = await mongoose.connection.db?.collection('batches').find({
+        courseId: this.courseId,
+        batchCode: { $regex: `^${course.courseCode}${currentYear}` }
+      }).sort({ batchCode: -1 }).toArray() || [];
 
-  // Validate end date is after start date
-  if (this.endDate <= this.startDate) {
-    return next(new Error('End date must be after start date'));
-  }
+      let nextBatchNumber = 1;
+      if (existingBatches.length > 0) {
+        const lastBatchCode = existingBatches[0].batchCode;
+        const lastBatchNumber = parseInt(lastBatchCode.slice(-2));
+        nextBatchNumber = lastBatchNumber + 1;
+      }
 
-  // Validate current students doesn't exceed max students
-  if (this.currentStudents > this.maxStudents) {
-    return next(new Error('Current students cannot exceed max students'));
-  }
+      // Generate batch code: CourseCode + Year + Serial (e.g., GDI2501)
+      this.batchCode = `${course.courseCode}${currentYear}${nextBatchNumber.toString().padStart(2, '0')}`;
+    }
 
-  next();
+    // Generate batch name if not provided
+    if (this.isNew && !this.name) {
+      console.log('Generating batch name...');
+      if (!course) {
+        course = await Course.findById(this.courseId);
+      }
+      
+      if (course) {
+        const batchNumber = this.batchCode.slice(-2);
+        this.name = `${course.courseShortcut} Batch-${batchNumber}`;
+        console.log('Generated batch name:', this.name);
+      }
+    }
+
+    // Set default pricing from course if not provided
+    if (this.isNew) {
+      if (!course) {
+        course = await Course.findById(this.courseId);
+      }
+      
+      if (course) {
+        // Set regular price from course if not provided
+        if (this.regularPrice === undefined || this.regularPrice === null) {
+          this.regularPrice = course.regularPrice;
+        }
+        
+        // Set discount price from course if not provided
+        if (this.discountPrice === undefined || this.discountPrice === null) {
+          this.discountPrice = course.discountPrice;
+        }
+      }
+    }
+
+    // Calculate discount percentage
+    if (this.regularPrice && this.discountPrice && this.discountPrice < this.regularPrice) {
+      this.discountPercentage = Math.round(((this.regularPrice - this.discountPrice) / this.regularPrice) * 100);
+    } else {
+      this.discountPercentage = 0;
+    }
+
+    console.log('Pre-save middleware completed. Final batch data:', {
+      batchCode: this.batchCode,
+      name: this.name,
+      regularPrice: this.regularPrice,
+      discountPrice: this.discountPrice
+    });
+
+    // Validate end date is after start date
+    if (this.endDate <= this.startDate) {
+      return next(new Error('End date must be after start date'));
+    }
+
+    // Validate current students doesn't exceed max students
+    if (this.currentStudents > this.maxStudents) {
+      return next(new Error('Current students cannot exceed max students'));
+    }
+
+    // Generate marketing slug if not provided
+    if (this.isNew && (!this.marketing || !this.marketing.slug)) {
+      console.log('Generating marketing slug...');
+      
+      if (!course) {
+        course = await Course.findById(this.courseId);
+      }
+      
+      if (course) {
+        // Create slug from course title and batch name
+        const courseSlug = course.title.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .trim();
+        
+        const batchSlug = this.name.toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+          .replace(/\s+/g, '-') // Replace spaces with hyphens
+          .replace(/-+/g, '-') // Replace multiple hyphens with single
+          .trim();
+        
+        let baseSlug = `${courseSlug}-${batchSlug}`;
+        
+        // Ensure slug is unique
+        let slug = baseSlug;
+        let counter = 1;
+        while (await mongoose.connection.db?.collection('batches').findOne({ 'marketing.slug': slug })) {
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+        
+        // Initialize marketing object if it doesn't exist
+        if (!this.marketing) {
+          this.marketing = {
+            slug: '',
+            tags: []
+          };
+        }
+        
+        this.marketing.slug = slug;
+        console.log('Generated slug:', slug);
+      }
+    }
+
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
 });
 
 // Indexes for efficient queries
-// Note: name index is automatically created by unique: true
-BatchSchema.index({ 'marketing.slug': 1 }, { unique: true });
+BatchSchema.index({ courseId: 1 });
+BatchSchema.index({ batchCode: 1 }, { unique: true });
+BatchSchema.index({ name: 1 });
 BatchSchema.index({ status: 1 });
 BatchSchema.index({ isActive: 1 });
 BatchSchema.index({ mentorId: 1 });
-BatchSchema.index({ regularPrice: 1 });
 BatchSchema.index({ courseType: 1, isActive: 1 });
 BatchSchema.index({ startDate: 1, endDate: 1 });
-BatchSchema.index({ 'marketing.tags': 1 });
+BatchSchema.index({ courseId: 1, status: 1 });
 
 export const Batch = mongoose.models.Batch || mongoose.model<IBatch>('Batch', BatchSchema);
+
+// Ensure middleware is registered
+if (!mongoose.models.Batch) {
+  console.log('Registering Batch model with middleware');
+}
+
 export default Batch;

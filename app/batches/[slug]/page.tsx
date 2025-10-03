@@ -13,6 +13,7 @@ interface Batch {
   _id: string;
   name: string;
   description: string;
+  shortDescription?: string;
   coverPhoto?: string;
   courseType: 'online' | 'offline';
   regularPrice: number;
@@ -37,6 +38,25 @@ interface Batch {
     studentsCount?: number;
     coursesCount?: number;
   };
+  courseMentors: {
+    _id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    designation: string;
+    experience: number;
+    expertise: string[];
+    skills: string[];
+    bio: string;
+    socialLinks: {
+      linkedin?: string;
+      github?: string;
+      website?: string;
+    };
+    rating?: number;
+    studentsCount?: number;
+    coursesCount?: number;
+  }[];
   modules: {
     title: string;
     description: string;
@@ -362,11 +382,11 @@ export default function BatchDetailPage() {
               
               {/* Compact Title and Description */}
               <div className="space-y-3">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight bengali-heading">
                   {batch.name}
                 </h1>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  {batch.description}
+                <p className="text-lg text-gray-600 leading-relaxed bengali-text">
+                  {batch.shortDescription || batch.description}
                 </p>
                 
                 {/* Key Benefits - Compact Grid */}
@@ -622,82 +642,93 @@ export default function BatchDetailPage() {
                   মেন্টর সম্পর্কে
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-start gap-4">
-                  {batch.mentorId.avatar ? (
-                    <Image
-                      src={batch.mentorId.avatar}
-                      alt={batch.mentorId.name}
-                      width={60}
-                      height={60}
-                      className="w-15 h-15 rounded-full border-2 border-white shadow-md"
-                    />
-                  ) : (
-                    <div className="w-15 h-15 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                      <span className="text-lg font-bold text-white">{batch.mentorId.name.charAt(0)}</span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <h4 className="text-xl font-bold text-gray-900 mb-1">{batch.mentorId.name}</h4>
-                    <p className="text-base text-blue-600 font-semibold mb-1">{batch.mentorId.designation}</p>
-                    <p className="text-sm text-gray-600 mb-2">{batch.mentorId.experience} বছর অভিজ্ঞতা</p>
-                    {batch.mentorId.rating && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                          <span className="text-base font-bold text-gray-900">{batch.mentorId.rating}</span>
+              <CardContent className="p-4 space-y-6">
+                {/* All Course Mentors */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-semibold text-gray-800 mb-3 bengali-heading">কোর্স মেন্টরগণ</h4>
+                  {batch.courseMentors && batch.courseMentors.length > 0 ? (
+                    <div className="grid gap-4">
+                      {batch.courseMentors.map((mentor, index) => (
+                        <div key={mentor._id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg border">
+                          {mentor.avatar ? (
+                            <Image
+                              src={mentor.avatar}
+                              alt={mentor.name}
+                              width={50}
+                              height={50}
+                              className="w-12 h-12 rounded-full border-2 border-white shadow-md"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                              <span className="text-sm font-bold text-white">{mentor.name.charAt(0)}</span>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h5 className="text-lg font-bold text-gray-900 mb-1 bengali-text">{mentor.name}</h5>
+                            <p className="text-sm text-blue-600 font-semibold mb-1 bengali-text">{mentor.designation}</p>
+                            <p className="text-xs text-gray-600 mb-2 bengali-text">{mentor.experience} বছর অভিজ্ঞতা</p>
+                            {mentor.rating && (
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                  <span className="text-sm font-bold text-gray-900">{mentor.rating}</span>
+                                </div>
+                                <span className="text-xs text-gray-500">
+                                  ({mentor.studentsCount || 0} জন ছাত্র)
+                                </span>
+                              </div>
+                            )}
+                            {mentor.bio && (
+                              <p className="text-xs text-gray-700 leading-relaxed mb-2">{mentor.bio}</p>
+                            )}
+                            {mentor.expertise && mentor.expertise.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {mentor.expertise.slice(0, 3).map((skill, skillIndex) => (
+                                  <Badge key={skillIndex} variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-800">
+                                    {skill}
+                                  </Badge>
+                                ))}
+                                {mentor.expertise.length > 3 && (
+                                  <Badge variant="secondary" className="text-xs px-2 py-1 bg-gray-100 text-gray-600">
+                                    +{mentor.expertise.length - 3} more
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                            <div className="flex gap-2 mt-2">
+                              {mentor.socialLinks.linkedin && (
+                                <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+                                  <Linkedin className="h-3 w-3 mr-1" />
+                                  <a href={mentor.socialLinks.linkedin} target="_blank" rel="noopener noreferrer">
+                                    LinkedIn
+                                  </a>
+                                </Button>
+                              )}
+                              {mentor.socialLinks.github && (
+                                <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+                                  <Github className="h-3 w-3 mr-1" />
+                                  <a href={mentor.socialLinks.github} target="_blank" rel="noopener noreferrer">
+                                    GitHub
+                                  </a>
+                                </Button>
+                              )}
+                              {mentor.socialLinks.website && (
+                                <Button variant="outline" size="sm" className="text-xs px-2 py-1 h-6">
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  <a href={mentor.socialLinks.website} target="_blank" rel="noopener noreferrer">
+                                    Website
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <span className="text-sm text-gray-600">
-                          ({batch.mentorId.studentsCount || 0} জন ছাত্র)
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {batch.mentorId.bio && (
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="text-sm text-gray-700 leading-relaxed">{batch.mentorId.bio}</p>
-                  </div>
-                )}
-
-                {/* Expertise */}
-                <div>
-                  <h5 className="text-base font-bold text-gray-900 mb-2">দক্ষতা</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {batch.mentorId.expertise.map((skill, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-800 hover:bg-blue-200">
-                        {skill}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Social Links */}
-                <div className="flex gap-2">
-                  {batch.mentorId.socialLinks.linkedin && (
-                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
-                      <a href={batch.mentorId.socialLinks.linkedin} target="_blank" rel="noopener noreferrer">
-                        <Linkedin className="h-4 w-4" />
-                        LinkedIn
-                      </a>
-                    </Button>
-                  )}
-                  {batch.mentorId.socialLinks.github && (
-                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
-                      <a href={batch.mentorId.socialLinks.github} target="_blank" rel="noopener noreferrer">
-                        <Github className="h-4 w-4" />
-                        GitHub
-                      </a>
-                    </Button>
-                  )}
-                  {batch.mentorId.socialLinks.website && (
-                    <Button variant="outline" size="sm" asChild className="flex items-center gap-2">
-                      <a href={batch.mentorId.socialLinks.website} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                        Website
-                      </a>
-                    </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <p className="bengali-text">কোন মেন্টর পাওয়া যায়নি</p>
+                    </div>
                   )}
                 </div>
               </CardContent>
