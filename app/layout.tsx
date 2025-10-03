@@ -6,6 +6,8 @@ import { AuthProvider } from "@/components/providers/AuthProvider";
 import { I18nProvider } from "@/components/providers/I18nProvider";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
 import { ScrollToTop } from "@/components/ui/ScrollToTop";
+import { Analytics } from "@/components/analytics/Analytics";
+import { SEOHead } from "@/components/seo/SEOHead";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -67,7 +69,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn" dir="ltr">
+      <head>
+        <SEOHead />
+      </head>
       <body className={`${inter.variable} ${notoSansBengali.variable} font-sans antialiased`} suppressHydrationWarning={true}>
+        <Analytics 
+          googleTagManagerId={process.env.NEXT_PUBLIC_GTM_ID}
+          googleAnalyticsId={process.env.NEXT_PUBLIC_GA_ID}
+          facebookPixelId={process.env.NEXT_PUBLIC_FB_PIXEL_ID}
+          hotjarId={process.env.NEXT_PUBLIC_HOTJAR_ID}
+        />
         <I18nProvider>
           <AuthProvider>
             <ConditionalLayout>

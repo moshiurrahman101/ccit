@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { BookOpen, Users, Calendar, Clock, Star, CheckCircle, ArrowLeft, Loader2, ExternalLink, Github, Linkedin, Briefcase, Timer, Zap } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { SEOHead } from '@/components/seo/SEOHead';
 import { useParams, useRouter } from 'next/navigation';
 
 interface Batch {
@@ -19,6 +20,13 @@ interface Batch {
   regularPrice: number;
   discountPrice?: number;
   discountPercentage?: number;
+  courseId?: {
+    _id: string;
+    title: string;
+    coverPhoto?: string;
+    level?: string;
+    regularPrice?: number;
+  };
   mentorId: {
     _id: string;
     name: string;
@@ -332,7 +340,40 @@ export default function BatchDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <SEOHead
+        title={`${batch.name} - Creative Canvas IT`}
+        description={batch.shortDescription || batch.description || `Join ${batch.name} at Creative Canvas IT. Professional training with expert mentors.`}
+        keywords={`${batch.name}, ${batch.courseId?.title || ''}, আইটি কোর্স, প্রোগ্রামিং, ওয়েব ডেভেলপমেন্ট, Creative Canvas IT`}
+        canonicalUrl={`/batches/${batch.marketing?.slug || batch._id}`}
+        ogImage={batch.coverPhoto || batch.courseId?.coverPhoto || '/og-image.jpg'}
+        ogImageAlt={`${batch.name} - Creative Canvas IT`}
+        ogType="product"
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "Course",
+          "name": batch.name,
+          "description": batch.shortDescription || batch.description,
+          "provider": {
+            "@type": "EducationalOrganization",
+            "name": "Creative Canvas IT",
+            "url": "https://creativecanvasit.com"
+          },
+          "courseMode": batch.courseType === 'online' ? 'online' : 'blended',
+          "educationalLevel": batch.courseId?.level || "Beginner",
+          "inLanguage": "bn",
+          "offers": {
+            "@type": "Offer",
+            "price": batch.regularPrice || batch.courseId?.regularPrice || 0,
+            "priceCurrency": "BDT",
+            "availability": "https://schema.org/InStock"
+          },
+          "startDate": batch.startDate,
+          "endDate": batch.endDate,
+          "maximumAttendeeCapacity": batch.maxStudents
+        }}
+      />
+      <div className="min-h-screen bg-gray-50">
       {/* Header with back button */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
@@ -351,13 +392,14 @@ export default function BatchDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             {/* Cover Photo */}
             {batch.coverPhoto && (
-              <div className="relative h-80 md:h-96 rounded-xl overflow-hidden shadow-lg">
+              <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden shadow-lg">
                 <Image
                   src={batch.coverPhoto}
                   alt={batch.name}
                   fill
                   className="object-cover"
                   priority
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               </div>
@@ -382,7 +424,7 @@ export default function BatchDetailPage() {
               
               {/* Compact Title and Description */}
               <div className="space-y-3">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight bengali-heading">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 leading-tight bengali-heading">
                   {batch.name}
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed bengali-text">
@@ -899,5 +941,6 @@ export default function BatchDetailPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

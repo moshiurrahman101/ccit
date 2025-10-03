@@ -180,7 +180,7 @@ export default function CoursesPage() {
             <span className="text-sm font-semibold bengali-text">প্রফেশনাল কোর্সসমূহ</span>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-bold mb-6 bengali-heading">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-6 bengali-heading">
             আমাদের কোর্সসমূহ
           </h1>
           <p className="text-xl md:text-2xl mb-8 opacity-90 bengali-text max-w-3xl mx-auto leading-relaxed">

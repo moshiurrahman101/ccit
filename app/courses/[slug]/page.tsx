@@ -225,10 +225,10 @@ export default function CourseDetailPage() {
                 <img
                   src={course.coverPhoto}
                   alt={course.title}
-                  className="w-full h-96 object-cover rounded-2xl shadow-2xl"
+                  className="w-full h-48 sm:h-64 md:h-80 lg:h-96 object-cover rounded-2xl shadow-2xl"
                 />
               ) : (
-                <div className="w-full h-96 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-2xl flex items-center justify-center">
+                <div className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-2xl flex items-center justify-center">
                   <div className="text-center text-white">
                     <BookOpen className="h-24 w-24 mx-auto mb-4 opacity-80" />
                     <p className="text-xl font-medium opacity-90">{course.title}</p>

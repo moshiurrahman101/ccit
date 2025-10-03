@@ -179,12 +179,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-12">
         {blog.featuredImage && (
-          <div className="relative h-64 md:h-96 w-full mb-12 rounded-xl overflow-hidden shadow-lg">
+          <div className="relative h-48 sm:h-64 md:h-80 lg:h-96 w-full mb-12 rounded-xl overflow-hidden shadow-lg">
             <Image
               src={blog.featuredImage}
               alt={blog.title}
               fill
               className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
               priority
             />
           </div>

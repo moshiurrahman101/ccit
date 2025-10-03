@@ -38,12 +38,12 @@ export function Hero() {
             {/* Badge */}
             <div className="inline-flex items-center px-6 py-3 rounded-full bg-white/80 backdrop-blur-md border border-blue-200/50 shadow-lg">
               <Star className="w-5 h-5 text-yellow-500 mr-2" />
-              <span className="text-blue-700 font-semibold bengali-text">বাংলাদেশের বিশ্বস্ত আইটি প্রশিক্ষণ প্ল্যাটফর্ম</span>
+              <span className="text-blue-700 font-semibold bengali-text text-sm sm:text-base">বাংলাদেশের বিশ্বস্ত আইটি প্রশিক্ষণ প্ল্যাটফর্ম</span>
             </div>
 
             {/* Main Heading */}
             <div className="space-y-4">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight bengali-heading">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight bengali-heading">
                 <span className="block text-gray-900">Creative Canvas IT</span>
                 <span className="block bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                   অনলাইন প্রশিক্ষণ প্ল্যাটফর্ম

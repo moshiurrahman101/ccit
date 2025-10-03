@@ -208,7 +208,7 @@ export default function BatchesPage() {
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4 bengali-heading">আমাদের ব্যাচসমূহ</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 bengali-heading">আমাদের ব্যাচসমূহ</h1>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto bengali-text">
               নতুন দক্ষতা আয়ত্ত করতে এবং আপনার ক্যারিয়ার এগিয়ে নিতে ডিজাইন করা আমাদের বিস্তৃত শিক্ষামূলক প্রোগ্রামগুলি আবিষ্কার করুন।
             </p>
