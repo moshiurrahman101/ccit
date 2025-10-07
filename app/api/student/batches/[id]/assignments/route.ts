@@ -61,34 +61,12 @@ export async function GET(
     //   );
     // }
 
-    // For now, return mock data - replace with actual assignment system
-    const mockAssignments = [
-      {
-        _id: '1',
-        title: 'React Component Assignment',
-        description: 'Create a reusable React component with props and state management',
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        maxPoints: 100,
-        status: 'assigned',
-        createdAt: new Date().toISOString()
-      },
-      {
-        _id: '2',
-        title: 'JavaScript Functions Project',
-        description: 'Build a calculator using JavaScript functions and DOM manipulation',
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-        maxPoints: 150,
-        status: 'submitted',
-        submittedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        grade: 85,
-        feedback: 'Good work! Consider improving error handling.',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-
+    // TODO: Implement actual assignment system
+    // For now, return empty assignments array
     return NextResponse.json({
-      assignments: mockAssignments,
-      total: mockAssignments.length
+      assignments: [],
+      total: 0,
+      message: 'Assignment system will be available soon'
     });
 
   } catch (error) {

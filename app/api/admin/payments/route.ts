@@ -155,10 +155,43 @@ export async function POST(request: NextRequest) {
         const newPaidAmount = (invoice.paidAmount || 0) + payment.amount;
         const newRemainingAmount = invoice.finalAmount - newPaidAmount;
         
+        // Update invoice embedded payments array if exists
+        const updatedPayments = invoice.payments.map((p: any) => {
+          if (p._id && p._id.toString() === payment._id.toString()) {
+            return {
+              ...p,
+              status: 'verified',
+              verifiedAt: new Date(),
+              adminNotes: verificationNotes
+            };
+          }
+          return p;
+        });
+        
+        // Check if payment exists in embedded array, if not add it
+        const paymentExistsInArray = invoice.payments.some((p: any) => 
+          p._id && p._id.toString() === payment._id.toString()
+        );
+        
+        if (!paymentExistsInArray) {
+          updatedPayments.push({
+            _id: payment._id,
+            amount: payment.amount,
+            method: payment.paymentMethod,
+            senderNumber: payment.senderNumber,
+            transactionId: payment.transactionId,
+            status: 'verified',
+            submittedAt: payment.submittedAt,
+            verifiedAt: new Date(),
+            adminNotes: verificationNotes
+          });
+        }
+        
         await Invoice.findByIdAndUpdate(payment.invoiceId, {
           paidAmount: newPaidAmount,
           remainingAmount: newRemainingAmount,
-          status: newRemainingAmount <= 0 ? 'paid' : 'partial'
+          status: newRemainingAmount <= 0 ? 'paid' : 'partial',
+          payments: updatedPayments
         });
 
         // Update enrollment status to approved when payment is verified
@@ -170,8 +203,7 @@ export async function POST(request: NextRequest) {
         const enrollmentUpdate = await Enrollment.updateMany(
           { 
             student: payment.studentId,
-            batch: payment.batchId,
-            status: 'pending'
+            batch: payment.batchId
           },
           { 
             status: 'approved',

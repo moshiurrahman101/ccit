@@ -54,6 +54,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
     const courseType = searchParams.get('courseType') || '';
     const mentorId = searchParams.get('mentorId') || '';
+    const courseId = searchParams.get('courseId') || '';
 
     // Build query
     const query: Record<string, any> = {};
@@ -76,6 +77,10 @@ export async function GET(request: NextRequest) {
     
     if (mentorId) {
       query.mentorId = mentorId;
+    }
+    
+    if (courseId) {
+      query.courseId = courseId;
     }
 
     // Get batches with course and mentor population
@@ -242,18 +247,38 @@ export async function POST(request: NextRequest) {
     // Generate batch code: CourseCode + Year + Serial (e.g., GDI2501)
     const batchCode = `${course.courseCode}${currentYear}${nextBatchNumber.toString().padStart(2, '0')}`;
     const batchNumber = batchCode.slice(-2);
-    const name = `${course.courseShortcut} Batch-${batchNumber}`;
+    const batchName = validatedData.name || `${course.courseShortcut} Batch-${batchNumber}`;
+
+    // Generate marketing slug from batch name
+    const baseSlug = batchName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    
+    // Make slug unique by checking existing batches
+    let slug = baseSlug;
+    let slugCounter = 1;
+    while (await Batch.findOne({ 'marketing.slug': slug })) {
+      slug = `${baseSlug}-${slugCounter}`;
+      slugCounter++;
+    }
 
     console.log('Generated batch code:', batchCode);
-    console.log('Generated batch name:', name);
+    console.log('Generated batch name:', batchName);
+    console.log('Generated marketing slug:', slug);
 
-    // Create batch with generated code and name
+    // Create batch with generated code, name, and marketing slug
     const batch = new Batch({
       ...validatedData,
       mentorId: primaryMentorId, // Use the determined primary mentor
       createdBy: payload.userId,
       batchCode,
-      name
+      name: batchName,
+      marketing: {
+        slug,
+        metaDescription: validatedData.description || `Join ${batchName} at Creative Canvas IT`,
+        tags: []
+      }
     });
 
     console.log('Batch object created, about to save...');

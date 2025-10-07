@@ -65,6 +65,7 @@ interface Batch {
   discountPrice?: number;
   discountPercentage?: number;
   status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
+  courseId?: string | { _id: string; title: string };
   mentorId: {
     _id: string;
     name: string;
@@ -79,6 +80,7 @@ export default function CourseDetailPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAllBatches, setShowAllBatches] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -88,14 +90,24 @@ export default function CourseDetailPage() {
         const data = await response.json();
 
         if (response.ok && data.courses.length > 0) {
-          setCourse(data.courses[0]);
+          const currentCourse = data.courses[0];
+          setCourse(currentCourse);
           
-          // Fetch batches for this course
-          const batchesResponse = await fetch(`/api/public/batches?courseId=${data.courses[0]._id}`);
+          // Fetch batches for this specific course only
+          const batchesResponse = await fetch(`/api/public/batches?courseId=${currentCourse._id}`);
           const batchesData = await batchesResponse.json();
           
           if (batchesResponse.ok) {
-            setBatches(batchesData.batches || []);
+            // Additional client-side filtering to ensure we only show batches for THIS course
+            const courseBatches = (batchesData.batches || []).filter((batch: Batch) => {
+              // Check if batch has courseId and it matches current course
+              const batchCourseId = typeof batch.courseId === 'string' 
+                ? batch.courseId 
+                : batch.courseId?._id;
+              return batchCourseId === currentCourse._id;
+            });
+            console.log(`Found ${courseBatches.length} batches for course ${currentCourse._id}`);
+            setBatches(courseBatches);
           }
         } else {
           setError('কোর্স পাওয়া যায়নি');
@@ -114,7 +126,10 @@ export default function CourseDetailPage() {
   }, [params.slug]);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-BD').format(price);
+    const formatted = new Intl.NumberFormat('en-BD').format(price);
+    // Convert English numerals to Bengali numerals
+    const bengaliNumerals = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return formatted.replace(/\d/g, (digit) => bengaliNumerals[parseInt(digit)]);
   };
 
   const formatDate = (dateString: string) => {
@@ -152,6 +167,18 @@ export default function CourseDetailPage() {
       'english': 'English'
     };
     return languages[language] || language;
+  };
+
+  // Filter running batches (upcoming and ongoing)
+  const runningBatches = batches.filter(
+    batch => batch.status === 'upcoming' || batch.status === 'ongoing'
+  );
+
+  const scrollToBatches = () => {
+    const batchesElement = document.getElementById('running-batches-section');
+    if (batchesElement) {
+      batchesElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   if (loading) {
@@ -204,7 +231,7 @@ export default function CourseDetailPage() {
                 {course.shortDescription || course.description}
               </p>
               
-              <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex flex-wrap gap-4 text-sm mb-6">
                 <div className="flex items-center gap-2">
                   <Award className="h-4 w-4" />
                   <span>{getLevelLabel(course.level)}</span>
@@ -218,6 +245,29 @@ export default function CourseDetailPage() {
                   <span>{course.mentors.length} মেন্টর</span>
                 </div>
               </div>
+
+              {/* Running Batches Button */}
+              {runningBatches.length > 0 && (
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    size="lg"
+                    onClick={scrollToBatches}
+                    className="bg-white text-orange-600 hover:bg-orange-50 font-semibold shadow-lg"
+                  >
+                    <Calendar className="h-5 w-5 mr-2" />
+                    চলমান ব্যাচ দেখুন ({runningBatches.length})
+                  </Button>
+                  <Link href="/courses">
+                    <Button 
+                      size="lg"
+                      variant="outline"
+                      className="bg-transparent border-2 border-white text-white hover:bg-white/10"
+                    >
+                      সব কোর্স দেখুন
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
             
             <div className="relative">
@@ -348,12 +398,18 @@ export default function CourseDetailPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-orange-600 mb-2">
-                      ৳{formatPrice(course.regularPrice)}
-                    </div>
-                    {course.discountPrice && (
-                      <div className="text-lg text-gray-600 line-through">
-                        ৳{formatPrice(course.discountPrice)}
+                    {course.discountPrice ? (
+                      <>
+                        <div className="text-3xl font-bold text-green-600 mb-2">
+                          ৳{formatPrice(course.discountPrice)}
+                        </div>
+                        <div className="text-lg text-gray-600 line-through">
+                          ৳{formatPrice(course.regularPrice)}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-3xl font-bold text-orange-600 mb-2">
+                        ৳{formatPrice(course.regularPrice)}
                       </div>
                     )}
                   </div>
@@ -401,20 +457,40 @@ export default function CourseDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Available Batches */}
-            {batches.length > 0 && (
-              <Card>
+            {/* No Batches Message */}
+            {batches.length === 0 && (
+              <Card className="border-2 border-gray-200">
                 <CardHeader>
-                  <CardTitle className="text-lg">উপলব্ধ ব্যাচ</CardTitle>
+                  <CardTitle className="text-lg text-gray-600">কোন ব্যাচ উপলব্ধ নেই</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-500 text-center py-4">
+                    এই কোর্সের জন্য বর্তমানে কোনো ব্যাচ চালু নেই। শীঘ্রই নতুন ব্যাচ শুরু হবে।
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Running Batches */}
+            {runningBatches.length > 0 && (
+              <Card id="running-batches-section" className="border-2 border-orange-200 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
+                  <CardTitle className="text-lg flex items-center gap-2 text-orange-700">
+                    <Calendar className="h-5 w-5" />
+                    চলমান ব্যাচ ({runningBatches.length})
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {batches.slice(0, 3).map((batch) => (
-                      <div key={batch._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    {runningBatches.map((batch) => (
+                      <div key={batch._id} className="border-2 border-orange-100 rounded-lg p-4 hover:bg-orange-50 transition-colors bg-white">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">{batch.name}</h4>
-                          <Badge variant={batch.status === 'published' ? 'default' : 'secondary'}>
-                            {batch.status}
+                          <h4 className="font-semibold text-gray-900">{batch.name}</h4>
+                          <Badge 
+                            variant={batch.status === 'ongoing' ? 'default' : 'secondary'}
+                            className={batch.status === 'ongoing' ? 'bg-green-500' : 'bg-blue-500'}
+                          >
+                            {batch.status === 'ongoing' ? 'চলমান' : 'আসন্ন'}
                           </Badge>
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
@@ -428,31 +504,85 @@ export default function CourseDetailPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <DollarSign className="h-4 w-4" />
-                            <span>
-                              ৳{formatPrice(batch.regularPrice || course.regularPrice)}
-                              {batch.discountPrice && (
-                                <span className="text-green-600 ml-2">
-                                  (ছাড়: ৳{formatPrice(batch.discountPrice)})
+                            <div className="flex items-center gap-2">
+                              {batch.discountPrice ? (
+                                <>
+                                  <span className="font-semibold text-green-600">
+                                    ৳{formatPrice(batch.discountPrice)}
+                                  </span>
+                                  <span className="text-sm text-gray-500 line-through">
+                                    ৳{formatPrice(batch.regularPrice || course.regularPrice)}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="font-semibold">
+                                  ৳{formatPrice(batch.regularPrice || course.regularPrice)}
                                 </span>
                               )}
-                            </span>
+                            </div>
                           </div>
                         </div>
                         <Link href={`/batches/${batch._id}`}>
-                          <Button size="sm" className="w-full mt-3">
+                          <Button size="sm" className="w-full mt-3 bg-orange-500 hover:bg-orange-600">
                             বিস্তারিত দেখুন
                           </Button>
                         </Link>
                       </div>
                     ))}
-                    {batches.length > 3 && (
-                      <div className="text-center">
-                        <Link href={`/batches?courseId=${course._id}`}>
-                          <Button variant="outline" size="sm">
-                            সব ব্যাচ দেখুন ({batches.length})
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* All Batches */}
+            {batches.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <span>সব ব্যাচ</span>
+                    <Badge variant="outline">{batches.length}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {(showAllBatches ? batches : batches.slice(0, 2)).map((batch) => (
+                      <div key={batch._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold">{batch.name}</h4>
+                          <Badge variant={
+                            batch.status === 'ongoing' ? 'default' : 
+                            batch.status === 'upcoming' ? 'secondary' : 
+                            'outline'
+                          }>
+                            {batch.status}
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>শুরু: {formatDate(batch.startDate)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            <span>{batch.currentStudents}/{batch.maxStudents} শিক্ষার্থী</span>
+                          </div>
+                        </div>
+                        <Link href={`/batches/${batch._id}`}>
+                          <Button size="sm" variant="outline" className="w-full mt-3">
+                            বিস্তারিত দেখুন
                           </Button>
                         </Link>
                       </div>
+                    ))}
+                    {batches.length > 2 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setShowAllBatches(!showAllBatches)}
+                      >
+                        {showAllBatches ? 'কম দেখুন' : `আরও দেখুন (${batches.length - 2}+)`}
+                      </Button>
                     )}
                   </div>
                 </CardContent>

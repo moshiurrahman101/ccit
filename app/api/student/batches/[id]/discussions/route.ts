@@ -61,37 +61,12 @@ export async function GET(
     //   );
     // }
 
-    // For now, return mock data - replace with actual discussion system
-    const mockDiscussions = [
-      {
-        _id: '1',
-        title: 'Project Ideas Discussion',
-        content: 'Let\'s discuss some interesting project ideas for our final assignment. I was thinking about building an e-commerce website with React and Node.js.',
-        author: {
-          name: 'John Doe',
-          avatar: null
-        },
-        isPinned: true,
-        replies: 5,
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        _id: '2',
-        title: 'JavaScript Best Practices',
-        content: 'Can someone share some JavaScript best practices for writing clean and maintainable code?',
-        author: {
-          name: 'Jane Smith',
-          avatar: null
-        },
-        isPinned: false,
-        replies: 3,
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-
+    // TODO: Implement actual discussion system
+    // For now, return empty discussions array
     return NextResponse.json({
-      discussions: mockDiscussions,
-      total: mockDiscussions.length
+      discussions: [],
+      total: 0,
+      message: 'Discussion system will be available soon'
     });
 
   } catch (error) {

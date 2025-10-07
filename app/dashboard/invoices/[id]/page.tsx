@@ -269,11 +269,11 @@ export default function InvoiceViewPage() {
       </div>
 
       {/* Invoice Card */}
-        <Card className="max-w-4xl mx-auto invoice-print border-green-200 shadow-lg">
-        <CardHeader className="border-b-2 border-green-200">
+        <Card className="max-w-4xl mx-auto invoice-print border-orange-200 shadow-lg">
+        <CardHeader className="border-b-2 border-orange-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <CardTitle className="text-2xl text-green-600">Invoice #{invoice.invoiceNumber}</CardTitle>
+              <CardTitle className="text-2xl text-orange-600">Invoice #{invoice.invoiceNumber}</CardTitle>
               <p className="text-muted-foreground">
                 {formatBanglaDate(invoice.createdAt)}
               </p>
@@ -305,7 +305,7 @@ export default function InvoiceViewPage() {
                     }}
                   />
                 </div>
-                <h2 className="text-xl font-bold text-green-600 mb-2">Creative Canvas IT</h2>
+                {/* Company name removed - logo is shown above */}
                 <p className="text-muted-foreground mb-1">Professional IT Training & Development</p>
                 <p className="text-muted-foreground mb-1">34 W Nakhalpara Rd, Dhaka 1215</p>
                 <p className="text-muted-foreground mb-1">Phone: 01603-718379</p>
@@ -324,8 +324,8 @@ export default function InvoiceViewPage() {
           </div>
 
           {/* Course Information */}
-          <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="font-semibold mb-2 text-green-700">Course Details</h4>
+          <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <h4 className="font-semibold mb-2 text-orange-700">Course Details</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Course Name</p>
@@ -338,7 +338,7 @@ export default function InvoiceViewPage() {
               {(invoice as any).discountAmount > 0 && (
                 <div>
                   <p className="text-sm text-muted-foreground">Discount</p>
-                  <CurrencyDisplay amount={(invoice as any).discountAmount} className="text-green-600" />
+                  <CurrencyDisplay amount={(invoice as any).discountAmount} className="text-orange-600" />
                 </div>
               )}
               <div>
@@ -350,10 +350,10 @@ export default function InvoiceViewPage() {
 
           {/* Items Table */}
           <div className="mb-6">
-            <h4 className="font-semibold mb-4 text-green-700">Items</h4>
+            <h4 className="font-semibold mb-4 text-orange-700">Items</h4>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full">
-                <thead className="bg-green-600">
+                <thead className="bg-orange-600">
                   <tr>
                     <th className="px-4 py-3 text-left font-medium text-white">Description</th>
                     <th className="px-4 py-3 text-right font-medium text-white">Amount</th>
@@ -381,12 +381,12 @@ export default function InvoiceViewPage() {
               {(invoice as any).discountAmount > 0 && (
                 <div className="flex justify-between">
                   <span>Discount:</span>
-                  <CurrencyDisplay amount={-(invoice as any).discountAmount} className="text-green-600" />
+                  <CurrencyDisplay amount={-(invoice as any).discountAmount} className="text-orange-600" />
                 </div>
               )}
-              <div className="flex justify-between border-t-2 border-green-200 pt-2 font-bold text-lg">
+              <div className="flex justify-between border-t-2 border-orange-200 pt-2 font-bold text-lg">
                 <span>Total Amount:</span>
-                <CurrencyDisplay amount={(invoice as any).finalAmount || (invoice.amount - (invoice as any).discountAmount)} className="text-green-600" />
+                <CurrencyDisplay amount={(invoice as any).finalAmount || (invoice.amount - (invoice as any).discountAmount)} className="text-orange-600" />
               </div>
               <div className="flex justify-between">
                 <span>Amount Paid:</span>
@@ -405,10 +405,10 @@ export default function InvoiceViewPage() {
           {/* Payment History */}
           {invoice.payments.length > 0 && (
             <div className="mb-6">
-              <h4 className="font-semibold mb-4 text-green-700">Payment History</h4>
+              <h4 className="font-semibold mb-4 text-orange-700">Payment History</h4>
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-green-600">
+                  <thead className="bg-orange-600">
                     <tr>
                       <th className="px-4 py-3 text-left font-medium text-white">Date</th>
                       <th className="px-4 py-3 text-left font-medium text-white">Method</th>
@@ -418,7 +418,7 @@ export default function InvoiceViewPage() {
                   </thead>
                   <tbody>
                     {invoice.payments.map((payment, index) => (
-                      <tr key={index} className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-green-50'}`}>
+                      <tr key={index} className={`border-t ${index % 2 === 0 ? 'bg-white' : 'bg-orange-50'}`}>
                         <td className="px-4 py-3">{formatBanglaDate(payment.createdAt)}</td>
                         <td className="px-4 py-3">{getPaymentMethodText(payment.method)}</td>
                         <td className="px-4 py-3 text-right">
@@ -438,8 +438,8 @@ export default function InvoiceViewPage() {
           )}
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t-2 border-green-200 text-center text-sm text-muted-foreground">
-            <h3 className="font-semibold text-green-600 mb-2">Thank you for choosing Creative Canvas IT!</h3>
+          <div className="mt-8 pt-6 border-t-2 border-orange-200 text-center text-sm text-muted-foreground">
+            <h3 className="font-semibold text-orange-600 mb-2">Thank you for choosing Creative Canvas IT!</h3>
             <p className="mb-1">For any queries, contact us at creativecanvasit@gmail.com</p>
             <p className="mb-1">Phone: 01603-718379 | Address: 34 W Nakhalpara Rd, Dhaka 1215</p>
             <p>Please make payment by the due date to avoid late fees.</p>

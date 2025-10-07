@@ -35,30 +35,33 @@ interface StudentBatch {
   batch: {
     _id: string;
     name: string;
-    description: string;
+    description?: string;
     coverPhoto?: string;
     courseType: 'online' | 'offline';
-    regularPrice: number;
+    regularPrice?: number;
     discountPrice?: number;
-    mentorId: {
+    mentorId?: {
       _id: string;
       name: string;
       avatar?: string;
       designation: string;
     };
-    duration: number;
-    durationUnit: string;
+    duration?: number;
+    durationUnit?: string;
     startDate: string;
     endDate: string;
     maxStudents: number;
     currentStudents: number;
     status: string;
-    modules: Array<{
+    modules?: Array<{
       title: string;
       description: string;
       duration: number;
       order: number;
     }>;
+    whatYouWillLearn?: string[];
+    requirements?: string[];
+    features?: string[];
   };
   enrollmentDate: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'dropped';
@@ -299,7 +302,12 @@ export default function StudentBatchDetailPage() {
               <Calendar className="h-8 w-8 text-blue-500" />
               <div>
                 <p className="text-sm text-gray-600">সময়কাল</p>
-                <p className="text-2xl font-bold">{formatBanglaNumber(batchData.batch.duration)} {batchData.batch.durationUnit}</p>
+                <p className="text-2xl font-bold">
+                  {batchData.batch.duration ? 
+                    `${formatBanglaNumber(batchData.batch.duration)} ${batchData.batch.durationUnit || ''}` : 
+                    'তথ্য নেই'
+                  }
+                </p>
               </div>
             </div>
           </CardContent>
@@ -371,19 +379,39 @@ export default function StudentBatchDetailPage() {
                 <CardTitle>মেন্টরের তথ্য</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <User className="h-6 w-6 text-orange-600" />
+                {batchData.batch.mentorId && batchData.batch.mentorId.name !== 'Mentor Information Unavailable' ? (
+                  <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    {batchData.batch.mentorId.avatar ? (
+                      <img 
+                        src={batchData.batch.mentorId.avatar} 
+                        alt={batchData.batch.mentorId.name}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-orange-300"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-lg">
+                          {batchData.batch.mentorId.name.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        {batchData.batch.mentorId.name}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {batchData.batch.mentorId.designation}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      {batchData.batch.mentorId?.name || 'মেন্টরের নাম পাওয়া যায়নি'}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {batchData.batch.mentorId?.designation || 'পদবী পাওয়া যায়নি'}
-                    </p>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <User className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-base font-medium text-gray-900 mb-1">মেন্টর তথ্য লোড হচ্ছে</h3>
+                    <p className="text-sm text-gray-600">অ্যাডমিনের সাথে যোগাযোগ করুন যদি সমস্যা থাকে</p>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -415,22 +443,29 @@ export default function StudentBatchDetailPage() {
               <CardTitle>কোর্সের মডিউল</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {batchData.batch.modules.map((module, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-semibold text-orange-600">{index + 1}</span>
+              {batchData.batch.modules && batchData.batch.modules.length > 0 ? (
+                <div className="space-y-4">
+                  {batchData.batch.modules.map((module, index) => (
+                    <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-semibold text-orange-600">{index + 1}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{module.title}</h4>
+                        <p className="text-sm text-gray-600">{module.description}</p>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {module.duration} {module.duration === 1 ? 'সপ্তাহ' : 'সপ্তাহ'}
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900">{module.title}</h4>
-                      <p className="text-sm text-gray-600">{module.description}</p>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {module.duration} {module.duration === 1 ? 'সপ্তাহ' : 'সপ্তাহ'}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <BookOpen className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                  <p>কোনো মডিউল তথ্য পাওয়া যায়নি</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -730,11 +765,11 @@ export default function StudentBatchDetailPage() {
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <FileText className="h-10 w-10 text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Assignments Yet</h3>
-                    <p className="text-gray-600 mb-4">Your mentor hasn't assigned any work yet.</p>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">এখনো কোনো অ্যাসাইনমেন্ট নেই</h3>
+                    <p className="text-gray-600 mb-4">তোমার মেন্টর এখনো কোনো কাজ দেননি।</p>
                     <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
                       <Clock className="h-4 w-4" />
-                      <span>Check back later for new assignments</span>
+                      <span>নতুন অ্যাসাইনমেন্টের জন্য পরে দেখো</span>
                     </div>
                   </div>
                 )}
@@ -779,9 +814,16 @@ export default function StudentBatchDetailPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>No discussions available yet</p>
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <MessageSquare className="h-10 w-10 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">এখনো কোনো আলোচনা নেই</h3>
+                    <p className="text-gray-600 mb-4">আলোচনা ফোরাম শীঘ্রই আসছে!</p>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <Clock className="h-4 w-4" />
+                      <span>নতুন আলোচনার জন্য অপেক্ষা করো</span>
+                    </div>
                   </div>
                 )}
               </div>

@@ -14,10 +14,10 @@ export function middleware(request: NextRequest) {
   // Admin routes that require admin authentication
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin');
   
-  // Student management API routes that require admin authentication (except invoices)
+  // Student management API routes that require admin authentication (except invoices and check-enrollment)
   const isStudentApiRoute = request.nextUrl.pathname.startsWith('/api/students') && 
-    !request.nextUrl.pathname.startsWith('/api/students/invoices') &&
-    !request.nextUrl.pathname.startsWith('/api/students/check-enrollment');
+    !request.nextUrl.pathname.includes('/invoices') &&
+    !request.nextUrl.pathname.includes('/check-enrollment');
   
   // Batch management API routes that require admin authentication
   const isBatchApiRoute = request.nextUrl.pathname.startsWith('/api/batches') && 
@@ -49,9 +49,10 @@ export function middleware(request: NextRequest) {
   // Check if user is authenticated
   let isAuthenticated = false;
   let userRole = null;
+  let payload = null;
   
   if (token) {
-    const payload = verifyTokenEdge(token);
+    payload = verifyTokenEdge(token);
     if (payload) {
       isAuthenticated = true;
       userRole = payload.role;
@@ -183,8 +184,8 @@ export function middleware(request: NextRequest) {
   }
   
   // Student invoice and enrollment check routes that require student authentication
-  const isStudentInvoiceRoute = request.nextUrl.pathname.startsWith('/api/students/invoices') ||
-    request.nextUrl.pathname.startsWith('/api/students/check-enrollment');
+  const isStudentInvoiceRoute = request.nextUrl.pathname.includes('/api/students/invoices') ||
+    request.nextUrl.pathname.includes('/api/students/check-enrollment');
   
   // Student batches API routes
   const isStudentBatchesRoute = request.nextUrl.pathname.startsWith('/api/student/batches');

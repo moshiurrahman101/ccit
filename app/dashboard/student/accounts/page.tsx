@@ -72,6 +72,9 @@ export default function AccountsPage() {
 
   const fetchInvoices = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
+      
       // Get token from cookies
       const getCookie = (name: string) => {
         const value = `; ${document.cookie}`;
@@ -80,52 +83,50 @@ export default function AccountsPage() {
         return '';
       };
       
-      const token = getCookie('auth-token');
-      console.log('Fetching invoices with token:', token ? 'present' : 'missing');
-      console.log('Token value:', token ? token.substring(0, 20) + '...' : 'null');
-      console.log('All cookies:', document.cookie);
-
-      // First test authentication
-      console.log('Testing authentication...');
-      const testResponse = await fetch('/api/test-auth', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const token = getCookie('auth-token') || localStorage.getItem('auth-token');
       
-      const testData = await testResponse.json();
-      console.log('Auth test result:', testData);
-      
-      if (!testResponse.ok) {
-        setError(`Authentication failed: ${testData.error || 'Unknown error'}`);
+      if (!token) {
+        setError('অনুমোদন টোকেন পাওয়া যায়নি। অনুগ্রহ করে আবার লগইন করুন।');
+        setIsLoading(false);
         return;
       }
 
-      // Now fetch invoices
       console.log('Fetching invoices...');
       const response = await fetch('/api/students/invoices', {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-store'
       });
       
       console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log('Response content-type:', response.headers.get('content-type'));
+      
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const textResponse = await response.text();
+        console.error('Non-JSON response:', textResponse.substring(0, 200));
+        setError('সার্ভার থেকে অপ্রত্যাশিত প্রতিক্রিয়া। API এন্ডপয়েন্ট পাওয়া যায়নি।');
+        setIsLoading(false);
+        return;
+      }
       
       const data = await response.json();
       console.log('Response data:', data);
       
       if (response.ok) {
         console.log('Fetched invoices:', data.invoices);
-        setInvoices(data.invoices);
+        setInvoices(data.invoices || []);
       } else {
         console.error('Error response status:', response.status);
         console.error('Error response data:', data);
-        setError(`Failed to fetch invoices: ${data.error || 'Unknown error'}`);
+        setError(data.error || data.message || 'ইনভয়েস লোড করতে সমস্যা হয়েছে');
       }
     } catch (error) {
       console.error('Error fetching invoices:', error);
-      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setError(`নেটওয়ার্ক ত্রুটি: ${error instanceof Error ? error.message : 'অজানা ত্রুটি'}`);
     } finally {
       setIsLoading(false);
     }
@@ -207,7 +208,7 @@ export default function AccountsPage() {
 
   const getPaymentStatusText = (status: string) => {
     switch (status) {
-      case 'verified': return 'যাচাইকৃত';
+      case 'verified': return 'যাচাইকৃত ✓';
       case 'pending': return 'অপেক্ষমান';
       case 'rejected': return 'প্রত্যাখ্যান';
       default: return status;

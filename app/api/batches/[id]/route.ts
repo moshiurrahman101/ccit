@@ -161,10 +161,29 @@ export async function PUT(
       );
     }
 
+    // Update marketing slug if name is being changed
+    let marketingSlug;
+    if (validatedData.name && validatedData.name !== existingBatch.name) {
+      const baseSlug = validatedData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      
+      // Make slug unique by checking existing batches
+      let slug = baseSlug;
+      let slugCounter = 1;
+      while (await Batch.findOne({ 'marketing.slug': slug, _id: { $ne: id } })) {
+        slug = `${baseSlug}-${slugCounter}`;
+        slugCounter++;
+      }
+      marketingSlug = slug;
+    }
+
     // Update batch
     const updateData = {
       ...validatedData,
-      ...(discountPercentage !== undefined && { discountPercentage })
+      ...(discountPercentage !== undefined && { discountPercentage }),
+      ...(marketingSlug && { 'marketing.slug': marketingSlug })
     };
     
     const updatedBatch = await Batch.findByIdAndUpdate(

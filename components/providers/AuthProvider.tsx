@@ -90,6 +90,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('auth-token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
     
+    // Set cookie for middleware to read
+    document.cookie = `auth-token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+    
     return data.user;
   };
 
@@ -112,6 +115,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     localStorage.setItem('auth-token', data.token);
     localStorage.setItem('user', JSON.stringify(data.user));
+    
+    // Set cookie for middleware to read
+    document.cookie = `auth-token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
     
     return data.user;
   };

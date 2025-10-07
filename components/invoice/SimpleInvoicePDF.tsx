@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
   page: {
@@ -14,15 +14,21 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     paddingBottom: 20,
     borderBottomWidth: 3,
-    borderBottomColor: '#059669',
+    borderBottomColor: '#ea580c',
   },
   companyInfo: {
     flex: 1,
   },
+  logo: {
+    width: 120,
+    height: 50,
+    marginBottom: 10,
+    objectFit: 'contain',
+  },
   companyName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#ea580c',
     marginBottom: 5,
   },
   companyDetails: {
@@ -36,7 +42,7 @@ const styles = StyleSheet.create({
   invoiceTitle: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#ea580c',
     marginBottom: 10,
   },
   invoiceNumber: {
@@ -79,11 +85,11 @@ const styles = StyleSheet.create({
   },
   courseInfo: {
     flex: 1,
-    backgroundColor: '#f0fdf4',
+    backgroundColor: '#fff7ed',
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#dcfce7',
+    borderColor: '#fed7aa',
   },
   courseTitle: {
     fontSize: 12,
@@ -101,7 +107,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#059669',
+    backgroundColor: '#ea580c',
     paddingVertical: 10,
     paddingHorizontal: 12,
   },
@@ -138,7 +144,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     borderTopWidth: 2,
-    borderTopColor: '#059669',
+    borderTopColor: '#ea580c',
     paddingTop: 8,
     marginTop: 8,
   },
@@ -158,7 +164,7 @@ const styles = StyleSheet.create({
   totalValueFinal: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#ea580c',
   },
   footer: {
     marginTop: 30,
@@ -175,7 +181,7 @@ const styles = StyleSheet.create({
   footerTitle: {
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#059669',
+    color: '#ea580c',
     marginBottom: 8,
   },
 });
@@ -258,7 +264,10 @@ const SimpleInvoicePDF: React.FC<SimpleInvoicePDFProps> = ({ invoice, student })
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>Creative Canvas IT</Text>
+            <Image 
+              src="/logo.png" 
+              style={styles.logo}
+            />
             <Text style={styles.companyDetails}>
               Professional IT Training & Development{'\n'}
               34 W Nakhalpara Rd, Dhaka 1215{'\n'}

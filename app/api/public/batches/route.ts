@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
     const courseType = searchParams.get('courseType') || '';
     const mentorId = searchParams.get('mentorId') || '';
+    const courseId = searchParams.get('courseId') || '';
 
     // Build query - only show published/active batches
     const query: Record<string, any> = {
@@ -53,6 +54,10 @@ export async function GET(request: NextRequest) {
     
     if (mentorId) {
       query.mentorId = mentorId;
+    }
+    
+    if (courseId) {
+      query.courseId = courseId;
     }
 
     // Get batches with course and mentor information

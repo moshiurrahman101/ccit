@@ -136,10 +136,10 @@ export default function StudentBatchesPage() {
 
   const getPaymentStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return 'Payment Pending';
-      case 'paid': return 'Paid';
-      case 'failed': return 'Failed';
-      case 'refunded': return 'Refunded';
+      case 'pending': return 'পেমেন্ট বাকি';
+      case 'paid': return 'পরিশোধিত';
+      case 'failed': return 'ব্যর্থ';
+      case 'refunded': return 'ফেরত';
       default: return status;
     }
   };

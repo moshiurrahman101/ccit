@@ -46,31 +46,63 @@ export async function GET(request: NextRequest) {
       .populate({
         path: 'batch',
         model: Batch,
-        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId duration durationUnit startDate endDate maxStudents currentStudents status modules'
+        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status'
       })
       .sort({ enrollmentDate: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    // Then manually populate mentor information for each enrollment
+    // Then manually populate mentor and course information for each enrollment
+    const Course = (await import('@/models/Course')).default;
+    const Mentor = (await import('@/models/Mentor')).default;
+    
     for (let enrollment of enrollments) {
-      if (enrollment.batch && enrollment.batch.mentorId) {
-        const mentor = await User.findById(enrollment.batch.mentorId)
-          .select('name avatar designation')
-          .lean();
+      if (enrollment.batch) {
+        const batchData: any = enrollment.batch; // Type assertion for dynamic property assignment
         
-        if (mentor) {
-          enrollment.batch.mentorId = mentor;
-          console.log('Mentor populated for enrollment:', (mentor as any).name);
-        } else {
-          console.log('Mentor not found for ID:', enrollment.batch.mentorId);
-          // Set a default mentor object if mentor doesn't exist
-          enrollment.batch.mentorId = {
-            _id: enrollment.batch.mentorId,
-            name: 'Mentor Information Unavailable',
-            designation: 'Contact Admin'
-          };
+        // Populate mentor information
+        if (batchData.mentorId) {
+          const mentor = await Mentor.findById(batchData.mentorId)
+            .select('name avatar designation')
+            .lean();
+          
+          if (mentor) {
+            batchData.mentorId = mentor;
+            console.log('Mentor populated for enrollment:', (mentor as any).name);
+          } else {
+            console.log('Mentor not found for ID:', batchData.mentorId);
+            // Set a default mentor object if mentor doesn't exist
+            batchData.mentorId = {
+              _id: batchData.mentorId,
+              name: 'Mentor Information Unavailable',
+              designation: 'Contact Admin'
+            };
+          }
+        }
+        
+        // Populate course information to get modules, duration, etc.
+        if (batchData.courseId) {
+          const course: any = await Course.findById(batchData.courseId)
+            .select('modules duration durationUnit whatYouWillLearn requirements features')
+            .lean();
+          
+          if (course) {
+            // Add course fields to batch object
+            batchData.modules = course.modules || [];
+            batchData.duration = course.duration || 0;
+            batchData.durationUnit = course.durationUnit || 'months';
+            batchData.whatYouWillLearn = course.whatYouWillLearn || [];
+            batchData.requirements = course.requirements || [];
+            batchData.features = course.features || [];
+            console.log('Course data populated for batch, modules count:', course.modules?.length || 0);
+          } else {
+            console.log('Course not found for ID:', batchData.courseId);
+            // Set defaults if course doesn't exist
+            batchData.modules = [];
+            batchData.duration = 0;
+            batchData.durationUnit = 'months';
+          }
         }
       }
     }

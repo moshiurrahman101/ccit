@@ -28,7 +28,6 @@ import {
 import { toast } from 'sonner';
 import DeleteConfirmationDialog from '@/components/dashboard/DeleteConfirmationDialog';
 import PaymentVerificationModal from '@/components/dashboard/PaymentVerificationModal';
-import PaymentOtpDialog from '@/components/dashboard/PaymentOtpDialog';
 
 interface Payment {
   _id: string;
@@ -82,8 +81,6 @@ export default function AdminPaymentsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [otpDialogOpen, setOtpDialogOpen] = useState(false);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [verificationModalOpen, setVerificationModalOpen] = useState(false);
   const [paymentToVerify, setPaymentToVerify] = useState<Payment | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -198,33 +195,27 @@ export default function AdminPaymentsPage() {
 
   const handleDeletePayment = async () => {
     if (!paymentToDelete) return;
-    setPendingDeleteId(paymentToDelete._id);
-    setDeleteDialogOpen(false);
-    setOtpDialogOpen(true);
-  };
-
-  const confirmDeleteWithOtp = async (otpCode: string) => {
-    if (!pendingDeleteId) return;
+    
     setIsDeleting(true);
     try {
-      const response = await fetch(`/api/admin/payments?id=${pendingDeleteId}&otp=${encodeURIComponent(otpCode)}`, {
+      const response = await fetch(`/api/admin/payments/${paymentToDelete._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
         }
       });
+      
       if (response.ok) {
         await fetchPayments();
         toast.success('পেমেন্ট সফলভাবে মুছে ফেলা হয়েছে!');
-        setOtpDialogOpen(false);
-        setPendingDeleteId(null);
+        setDeleteDialogOpen(false);
         setPaymentToDelete(null);
       } else {
         const errorData = await response.json();
-        toast.error(errorData.message || 'OTP যাচাই ব্যর্থ');
+        toast.error(errorData.message || 'পেমেন্ট মুছতে সমস্যা হয়েছে');
       }
     } catch (error) {
-      console.error('Error deleting payment with OTP:', error);
+      console.error('Error deleting payment:', error);
       toast.error('পেমেন্ট মুছতে সমস্যা হয়েছে');
     } finally {
       setIsDeleting(false);
@@ -278,8 +269,11 @@ export default function AdminPaymentsPage() {
   };
 
   const formatPrice = (price: number) => {
-    if (!price || isNaN(price)) return '0';
-    return new Intl.NumberFormat('en-BD').format(price);
+    if (!price || isNaN(price)) return '০';
+    const formatted = new Intl.NumberFormat('en-BD').format(price);
+    // Convert English numerals to Bengali numerals
+    const bengaliNumerals = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return formatted.replace(/\d/g, (digit) => bengaliNumerals[parseInt(digit)]);
   };
 
   const filteredPayments = payments.filter(payment => {
@@ -583,15 +577,9 @@ export default function AdminPaymentsPage() {
         }}
         onConfirm={handleDeletePayment}
         title="পেমেন্ট মুছে ফেলুন"
-        description="এই পেমেন্ট রেকর্ড স্থায়ীভাবে মুছে যাবে। পরবর্তী ধাপে ইমেইল OTP যাচাই করা হবে।"
+        description="আপনি কি নিশ্চিত যে এই পেমেন্ট রেকর্ড মুছে ফেলতে চান? এই কাজটি পূর্বাবস্থায় ফিরিয়ে আনা যাবে না।"
         itemName={paymentToDelete?.studentId?.name || 'Unknown'}
         isLoading={isDeleting}
-      />
-
-      <PaymentOtpDialog
-        isOpen={otpDialogOpen}
-        onClose={() => setOtpDialogOpen(false)}
-        onVerified={confirmDeleteWithOtp}
       />
 
       {/* Payment Verification Modal */}

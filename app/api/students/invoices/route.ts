@@ -30,9 +30,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    if (payload.role !== 'student') {
-      console.log('Not a student role:', payload.role);
-      return NextResponse.json({ error: 'Unauthorized - Student role required' }, { status: 401 });
+    // Allow students and admins to access invoices
+    if (!['student', 'admin'].includes(payload.role)) {
+      console.log('Not a student or admin role:', payload.role);
+      return NextResponse.json({ error: 'Unauthorized - Student or Admin role required' }, { status: 403 });
     }
 
     await connectDB();
@@ -45,11 +46,64 @@ export async function GET(request: NextRequest) {
     console.log('Found invoices for student:', invoices.length);
     console.log('Student ID:', payload.userId);
 
-    // Manually add batch data to invoices
+    // Also get Payment collection data for this student
+    const Payment = (await import('@/models/Payment')).default;
+    const payments = await Payment.find({ studentId: payload.userId })
+      .sort({ submittedAt: -1 })
+      .lean();
+    
+    console.log('Found separate payments for student:', payments.length);
+
+    // Manually add batch data to invoices and merge with Payment collection
     const invoicesWithBatchData = await Promise.all(
       invoices.map(async (invoice) => {
         const batch = await Batch.findById(invoice.batchId).select('name regularPrice discountPrice');
         console.log('Batch found for invoice:', batch ? batch.name : 'Not found');
+        
+        // Get related payments from Payment collection
+        const relatedPayments = payments.filter((p: any) => 
+          p.invoiceId && p.invoiceId.toString() === invoice._id.toString()
+        );
+        
+        // Merge embedded payments with Payment collection payments, avoiding duplicates
+        const embeddedPaymentIds = new Set(
+          invoice.payments?.map((p: any) => p._id?.toString()).filter(Boolean) || []
+        );
+        
+        const paymentsFromCollection = relatedPayments
+          .filter((p: any) => !embeddedPaymentIds.has(p._id.toString()))
+          .map((p: any) => ({
+            _id: p._id,
+            amount: p.amount,
+            method: p.paymentMethod,
+            senderNumber: p.senderNumber,
+            transactionId: p.transactionId,
+            status: p.verificationStatus || p.status, // Use verificationStatus as primary
+            createdAt: p.submittedAt,
+            verifiedAt: p.verifiedAt
+          }));
+        
+        // Update embedded payments status from Payment collection (more up-to-date)
+        const updatedEmbeddedPayments = (invoice.payments || []).map((embeddedPayment: any) => {
+          const paymentFromCollection = relatedPayments.find((p: any) => 
+            p._id.toString() === embeddedPayment._id?.toString()
+          );
+          
+          if (paymentFromCollection) {
+            return {
+              ...embeddedPayment,
+              status: paymentFromCollection.verificationStatus || paymentFromCollection.status,
+              verifiedAt: paymentFromCollection.verifiedAt
+            };
+          }
+          return embeddedPayment;
+        });
+        
+        const allPayments = [
+          ...updatedEmbeddedPayments,
+          ...paymentsFromCollection
+        ];
+        
         return {
           ...invoice.toObject(),
           batchId: {
@@ -57,7 +111,8 @@ export async function GET(request: NextRequest) {
             name: batch?.name || invoice.batchName,
             regularPrice: batch?.regularPrice || invoice.amount,
             discountPrice: batch?.discountPrice
-          }
+          },
+          payments: allPayments
         };
       })
     );

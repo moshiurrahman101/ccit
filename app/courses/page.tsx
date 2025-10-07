@@ -127,7 +127,10 @@ export default function CoursesPage() {
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-BD').format(price);
+    const formatted = new Intl.NumberFormat('en-BD').format(price);
+    // Convert English numerals to Bengali numerals
+    const bengaliNumerals = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return formatted.replace(/\d/g, (digit) => bengaliNumerals[parseInt(digit)]);
   };
 
   const formatDate = (dateString: string) => {
@@ -319,7 +322,7 @@ export default function CoursesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {courses.map((course) => (
               <Link key={course._id} href={`/courses/${course.marketing.slug}`} className="group block">
-                <Card className="h-full overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border-0 shadow-lg">
+                <Card className="h-full overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-100 shadow-lg rounded-2xl bg-white flex flex-col">
                   {/* Cover Image */}
                   <div className="relative h-48 overflow-hidden">
                     {course.coverPhoto ? (
@@ -355,14 +358,14 @@ export default function CoursesPage() {
                     </div>
                   </div>
 
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 flex-1 flex flex-col">
                     {/* Title */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors">
+                    <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-orange-600 transition-colors bengali-heading">
                       {course.title}
                     </h3>
                     
                     {/* Short Description */}
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 bengali-text">
                       {course.shortDescription || course.description}
                     </p>
                     
@@ -385,7 +388,7 @@ export default function CoursesPage() {
                     {/* Mentors */}
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-gray-700">মেন্টরগণ:</span>
+                        <span className="text-sm font-medium text-gray-700 bengali-text">মেন্টরগণ:</span>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {course.mentors.slice(0, 3).map((mentor) => (
@@ -401,7 +404,7 @@ export default function CoursesPage() {
                                 <span className="text-white text-xs font-bold">{mentor.name.charAt(0)}</span>
                               </div>
                             )}
-                            <span className="text-xs text-gray-600">{mentor.name}</span>
+                            <span className="text-xs text-gray-600 bengali-text">{mentor.name}</span>
                           </div>
                         ))}
                         {course.mentors.length > 3 && (
@@ -410,32 +413,70 @@ export default function CoursesPage() {
                       </div>
                     </div>
                     
-                    {/* Price Section */}
+                    {/* Price Section - Modern Design */}
                     <div className="mb-4">
                       {course.discountPrice ? (
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl font-bold text-green-600">
-                            ৳{formatPrice(course.discountPrice)}
-                          </span>
-                          <span className="text-lg text-gray-500 line-through">
-                            ৳{formatPrice(course.regularPrice)}
-                          </span>
-                          <span className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-semibold">
-                            {course.discountPercentage}% ছাড়
-                          </span>
+                        <div className="relative">
+                          {/* Discount Banner */}
+                          {course.discountPercentage && (
+                            <div className="absolute -top-2 -right-2 z-10">
+                              <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg animate-bounce">
+                                {course.discountPercentage}% ছাড়
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Main Price Card */}
+                          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 relative overflow-hidden">
+                            {/* Decorative elements */}
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-green-100 rounded-full -translate-y-8 translate-x-8 opacity-50"></div>
+                            <div className="absolute bottom-0 left-0 w-12 h-12 bg-emerald-100 rounded-full translate-y-6 -translate-x-6 opacity-50"></div>
+                            
+                            <div className="relative text-center">
+                              <div className="flex items-center justify-center gap-3 mb-2">
+                                <span className="text-3xl font-bold text-green-600">
+                                  ৳{formatPrice(course.discountPrice)}
+                                </span>
+                                <div className="flex flex-col items-center">
+                                  <div className="text-xs text-gray-500 line-through">
+                                    ৳{formatPrice(course.regularPrice)}
+                                  </div>
+                                  <div className="text-xs text-green-600 font-semibold">
+                                    সাশ্রয়
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Savings amount */}
+                              <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold inline-block">
+                                ৳{formatPrice(course.regularPrice - course.discountPrice)} সাশ্রয়
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ) : (
-                        <div className="text-2xl font-bold text-blue-600">
-                          ৳{formatPrice(course.regularPrice)}
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-2xl p-4 relative overflow-hidden">
+                          {/* Decorative elements */}
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-100 rounded-full -translate-y-8 translate-x-8 opacity-50"></div>
+                          <div className="absolute bottom-0 left-0 w-12 h-12 bg-indigo-100 rounded-full translate-y-6 -translate-x-6 opacity-50"></div>
+                          
+                          <div className="relative text-center">
+                            <div className="text-3xl font-bold text-blue-600 mb-1">
+                              ৳{formatPrice(course.regularPrice)}
+                            </div>
+                            <div className="text-sm text-blue-500 font-medium">
+                              কোর্স মূল্য
+                            </div>
+                          </div>
                         </div>
                       )}
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 mt-2 text-center">
                         মূল্য পরিবর্তন হতে পারে - আসন্ন ব্যাচের মূল্য দেখুন
                       </p>
                     </div>
                     
                     {/* Action Button */}
-                    <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-2 rounded-lg">
+                    <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 bengali-text mt-auto">
                       বিস্তারিত দেখুন
                     </Button>
                   </CardContent>
