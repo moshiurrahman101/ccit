@@ -4,7 +4,6 @@ import Course from '@/models/Course';
 import Mentor from '@/models/Mentor';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
-import mongoose from 'mongoose';
 
 const updateCourseSchema = z.object({
   title: z.string().min(1, 'Course title is required').max(100, 'Title too long').optional(),
@@ -47,7 +46,6 @@ export async function GET(
 ) {
   try {
     await connectDB();
-
     const { id } = await params;
 
     // Verify authentication
@@ -60,17 +58,10 @@ export async function GET(
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'mentor', 'student'].includes(payload.role)) {
+    if (!payload || !['admin', 'mentor'].includes(payload.role)) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
-      );
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid course ID' },
-        { status: 400 }
       );
     }
 
@@ -102,7 +93,6 @@ export async function PUT(
 ) {
   try {
     await connectDB();
-
     const { id } = await params;
 
     // Verify authentication
@@ -115,33 +105,27 @@ export async function PUT(
     }
 
     const payload = verifyToken(token);
-    if (!payload || !['admin', 'mentor'].includes(payload.role)) {
+    if (!payload || payload.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Insufficient permissions - Admin only' },
         { status: 403 }
-      );
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid course ID' },
-        { status: 400 }
       );
     }
 
     const body = await request.json();
     const validatedData = updateCourseSchema.parse(body);
 
-    const course = await Course.findById(id);
-    if (!course) {
+    // Check if course exists
+    const existingCourse = await Course.findById(id);
+    if (!existingCourse) {
       return NextResponse.json(
         { error: 'Course not found' },
         { status: 404 }
       );
     }
 
-    // Check if mentors exist (if mentors are being updated)
-    if (validatedData.mentors) {
+    // Check if mentors exist (if mentors array is being updated)
+    if (validatedData.mentors && validatedData.mentors.length > 0) {
       const mentors = await Mentor.find({ _id: { $in: validatedData.mentors } });
       if (mentors.length !== validatedData.mentors.length) {
         return NextResponse.json(
@@ -151,43 +135,40 @@ export async function PUT(
       }
     }
 
-    // Check for conflicts if updating unique fields
-    if (validatedData.title && validatedData.title !== course.title) {
-      const existingCourse = await Course.findOne({ title: validatedData.title });
-      if (existingCourse) {
+    // Check if slug is unique (if slug is being updated)
+    if (validatedData.marketing?.slug && validatedData.marketing.slug !== existingCourse.marketing?.slug) {
+      const slugExists = await Course.findOne({ 
+        'marketing.slug': validatedData.marketing.slug,
+        _id: { $ne: id }
+      });
+      if (slugExists) {
         return NextResponse.json(
-          { error: 'Course with this title already exists' },
+          { error: 'Slug already exists' },
           { status: 409 }
         );
       }
     }
 
-    if (validatedData.courseCode && validatedData.courseCode !== course.courseCode) {
-      const existingCode = await Course.findOne({ courseCode: validatedData.courseCode });
-      if (existingCode) {
-        return NextResponse.json(
-          { error: 'Course with this code already exists' },
-          { status: 409 }
-        );
-      }
-    }
-
-    if (validatedData.marketing?.slug && validatedData.marketing.slug !== course.marketing.slug) {
-      const existingSlug = await Course.findOne({ 'marketing.slug': validatedData.marketing.slug });
-      if (existingSlug) {
-        return NextResponse.json(
-          { error: 'Course with this slug already exists' },
-          { status: 409 }
-        );
-      }
+    // Calculate discount percentage if both prices are provided
+    let discountPercentage;
+    if (validatedData.regularPrice && validatedData.discountPrice) {
+      discountPercentage = Math.round(
+        ((validatedData.regularPrice - validatedData.discountPrice) / validatedData.regularPrice) * 100
+      );
     }
 
     // Update course
+    const updateData = {
+      ...validatedData,
+      ...(discountPercentage !== undefined && { discountPercentage })
+    };
+
     const updatedCourse = await Course.findByIdAndUpdate(
       id,
-      validatedData,
+      updateData,
       { new: true, runValidators: true }
-    ).populate('mentors', 'name email avatar designation experience expertise');
+    )
+    .populate('mentors', 'name email avatar designation experience expertise');
 
     return NextResponse.json({
       message: 'Course updated successfully',
@@ -199,7 +180,10 @@ export async function PUT(
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation failed', details: error.issues },
+        { 
+          error: 'Validation failed', 
+          details: error.issues.map(e => ({ field: e.path.join('.'), message: e.message }))
+        },
         { status: 400 }
       );
     }
@@ -218,7 +202,6 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-
     const { id } = await params;
 
     // Verify authentication
@@ -233,18 +216,12 @@ export async function DELETE(
     const payload = verifyToken(token);
     if (!payload || payload.role !== 'admin') {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Insufficient permissions - Admin only' },
         { status: 403 }
       );
     }
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid course ID' },
-        { status: 400 }
-      );
-    }
-
+    // Check if course exists
     const course = await Course.findById(id);
     if (!course) {
       return NextResponse.json(
@@ -254,19 +231,20 @@ export async function DELETE(
     }
 
     // Check if course has active batches
-    const Batch = mongoose.model('Batch');
+    const Batch = (await import('@/models/Batch')).default;
     const activeBatches = await Batch.countDocuments({ 
       courseId: id, 
-      status: { $in: ['published', 'upcoming', 'ongoing'] } 
+      status: { $in: ['published', 'upcoming', 'ongoing'] }
     });
 
     if (activeBatches > 0) {
       return NextResponse.json(
-        { error: 'Cannot delete course with active batches' },
+        { error: `Cannot delete course with ${activeBatches} active batch(es). Archive the course instead.` },
         { status: 400 }
       );
     }
 
+    // Delete the course
     await Course.findByIdAndDelete(id);
 
     return NextResponse.json({
