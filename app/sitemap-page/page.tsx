@@ -228,16 +228,36 @@ export default function SitemapPage() {
         </div>
 
         {/* Technical Sitemap */}
-        <div className="mt-8 text-center">
-          <p className="text-sm text-gray-600 mb-2">
-            Search Engine Optimization এর জন্য XML Sitemap প্রয়োজন?
-          </p>
-          <a 
-            href="/sitemap.xml" 
-            className="text-blue-600 hover:underline text-sm font-medium"
-          >
-            XML Sitemap দেখুন →
-          </a>
+        <div className="mt-8 bg-white rounded-xl shadow-lg p-8">
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">XML Sitemap</h3>
+            <p className="text-gray-600 mb-6">
+              Search Engine Optimization এর জন্য XML Sitemap প্রয়োজন? আমাদের XML Sitemap দেখুন যা Google Search Console এ সাবমিট করা হয়েছে।
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a 
+                href="/sitemap.xml" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                <Settings className="w-4 h-4" />
+                XML Sitemap দেখুন
+              </a>
+              <a 
+                href="https://www.google.com/webmasters/tools/sitemap-list?hl=en&siteUrl=https://www.creativecanvasit.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                <Map className="w-4 h-4" />
+                Google Search Console
+              </a>
+            </div>
+            <div className="mt-6 text-sm text-gray-500">
+              <p>XML Sitemap URL: <code className="bg-gray-100 px-2 py-1 rounded">https://www.creativecanvasit.com/sitemap.xml</code></p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

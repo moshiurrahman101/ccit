@@ -7,7 +7,7 @@ Allow: /
 # Allow OG image generation routes
 Allow: /api/og/*
 
-Sitemap: ${process.env.NEXT_PUBLIC_APP_URL || 'https://creativecanvasit.com'}/sitemap.xml`;
+Sitemap: ${process.env.NEXT_PUBLIC_APP_URL || 'https://www.creativecanvasit.com'}/sitemap.xml`;
 
   return new NextResponse(robotsTxt, {
     headers: {
