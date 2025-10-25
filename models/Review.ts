@@ -4,13 +4,14 @@ export interface IReview {
   studentId: Types.ObjectId; // Reference to User collection
   batchId?: Types.ObjectId; // Reference to Batch (optional)
   name: string; // Student name
-  email: string; // Student email
+  email?: string; // Student email (optional)
   avatar?: string; // Student avatar URL
   role: string; // Student's current role/position
   company?: string; // Company name (optional)
   rating: number; // 1-5 stars
   review: string; // Review text/content
   earning?: string; // Monthly earning or achievement
+  earningScreenshot?: string; // Screenshot of earning proof
   isSuccessStory: boolean; // Whether this is a success story
   isApproved: boolean; // Admin approval status
   isFeatured: boolean; // Featured on homepage
@@ -53,8 +54,9 @@ const reviewSchema = new Schema<ReviewDocument>({
   },
   email: {
     type: String,
-    required: true,
-    maxlength: 200
+    required: false,
+    maxlength: 200,
+    default: ''
   },
   avatar: {
     type: String,
@@ -84,6 +86,10 @@ const reviewSchema = new Schema<ReviewDocument>({
   earning: {
     type: String,
     maxlength: 50
+  },
+  earningScreenshot: {
+    type: String,
+    default: ''
   },
   isSuccessStory: {
     type: Boolean,

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check, X, Star as StarIcon, Star, Filter, Trash2, TrendingUp, Eye, Plus } from 'lucide-react';
+import { Loader2, Check, X, Star as StarIcon, Star, Filter, Trash2, TrendingUp, Eye, Plus, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { AdminReviewForm } from '@/components/review/AdminReviewForm';
@@ -19,6 +19,7 @@ interface Review {
   review: string;
   earning?: string;
   avatar?: string;
+  earningScreenshot?: string;
   isApproved: boolean;
   isFeatured: boolean;
   isSuccessStory: boolean;
@@ -35,6 +36,7 @@ export default function ReviewsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
 
   useEffect(() => {
     fetchReviews();
@@ -153,12 +155,26 @@ export default function ReviewsManagementPage() {
       </div>
 
       {/* Add Review Form */}
-      {showAddForm && (
+      {showAddForm && !editingReview && (
         <div className="mb-8">
           <AdminReviewForm onSuccess={() => {
             setShowAddForm(false);
             fetchReviews();
           }} />
+        </div>
+      )}
+
+      {/* Edit Review Form */}
+      {editingReview && (
+        <div className="mb-8">
+          <AdminReviewForm 
+            review={editingReview}
+            onSuccess={() => {
+              setEditingReview(null);
+              fetchReviews();
+            }}
+            onCancel={() => setEditingReview(null)}
+          />
         </div>
       )}
 
@@ -334,6 +350,14 @@ export default function ReviewsManagementPage() {
                         বৈশিষ্ট্য সরান
                       </Button>
                     )}
+                    <Button
+                      onClick={() => setEditingReview(review)}
+                      variant="outline"
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      সম্পাদনা করুন
+                    </Button>
                     <Button
                       onClick={() => handleAction(review._id, 'delete')}
                       variant="outline"

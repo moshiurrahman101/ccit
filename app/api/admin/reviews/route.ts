@@ -137,6 +137,10 @@ export async function PATCH(request: NextRequest) {
         break;
       
       case 'update':
+        // Handle avatar generation if not provided
+        if (data && !data.avatar) {
+          data.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name || review.name)}&background=random`;
+        }
         updateData = data || {};
         break;
       

@@ -119,16 +119,6 @@ export function SuccessStoriesClient() {
           <Filter className="inline w-4 h-4 mr-2" />
           সফলতার গল্প ({reviews.filter(r => r.isSuccessStory).length})
         </button>
-        <button
-          onClick={() => setFilter('featured')}
-          className={`px-6 py-3 rounded-full font-semibold transition-all ${
-            filter === 'featured'
-              ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
-              : 'bg-white/10 text-white hover:bg-white/20'
-          }`}
-        >
-          বৈশিষ্ট্যযুক্ত ({featuredReviews.length})
-        </button>
       </div>
 
       {/* Reviews Grid */}

@@ -78,6 +78,8 @@ export async function POST(request: NextRequest) {
       rating,
       review,
       earning,
+      earningScreenshot,
+      avatar,
       isSuccessStory,
       tags,
       batchId,
@@ -100,18 +102,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create review
+    // Create review - use provided name and email, not admin's name/email
     const newReview = new Review({
       studentId: payload.userId,
       batchId: batchId ? new mongoose.Types.ObjectId(batchId) : undefined,
-      name: currentUser.name || name,
-      email: currentUser.email || email,
-      avatar: currentUser.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+      name: name, // Use the provided student name
+      email: email || '', // Use the provided email or empty string
+      avatar: avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
       role,
       company,
       rating,
       review,
       earning,
+      earningScreenshot: earningScreenshot || '',
       isSuccessStory: isSuccessStory || false,
       isApproved: currentUser.role === 'admin', // Auto-approve for admins
       isFeatured: false,
