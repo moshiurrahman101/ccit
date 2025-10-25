@@ -29,6 +29,7 @@ export function verifyTokenEdge(token: string): JWTPayload | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) {
+      console.log('Invalid token format: not 3 parts');
       return null;
     }
 
@@ -36,10 +37,13 @@ export function verifyTokenEdge(token: string): JWTPayload | null {
     
     // Decode payload
     const decodedPayload = JSON.parse(atob(payload));
-    
     // Check if token is expired
-    if (decodedPayload.exp && Date.now() >= decodedPayload.exp * 1000) {
-      return null;
+    if (decodedPayload.exp) {
+      const isExpired = Date.now() >= decodedPayload.exp * 1000;
+      if (isExpired) {
+        console.log('Token expired for user:', decodedPayload.email);
+        return null;
+      }
     }
 
     // For now, we'll trust the token if it's properly formatted and not expired
@@ -52,6 +56,7 @@ export function verifyTokenEdge(token: string): JWTPayload | null {
       exp: decodedPayload.exp
     };
   } catch (error) {
+    console.log('Error verifying token:', error);
     return null;
   }
 }

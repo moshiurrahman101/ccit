@@ -26,7 +26,8 @@ import {
   UserCheck,
   LogOut,
   Bell,
-  UserPlus
+  UserPlus,
+  Star
 } from 'lucide-react';
 import { User } from '@/types';
 
@@ -141,6 +142,14 @@ const menuItems: MenuItem[] = [
     path: '/dashboard/newsletter',
     roles: ['admin', 'marketing'],
     description: 'নিউজলেটার ব্যবস্থাপনা'
+  },
+  {
+    id: 'reviews',
+    label: 'রিভিউ',
+    icon: Star,
+    path: '/dashboard/reviews',
+    roles: ['admin'],
+    description: 'রিভিউ ব্যবস্থাপনা ও অনুমোদন'
   },
   {
     id: 'payments',
