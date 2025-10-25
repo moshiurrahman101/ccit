@@ -234,7 +234,7 @@ export default function SitemapPage() {
             <p className="text-gray-600 mb-6">
               Search Engine Optimization এর জন্য XML Sitemap প্রয়োজন? আমাদের XML Sitemap দেখুন যা Google Search Console এ সাবমিট করা হয়েছে।
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <a 
                 href="/sitemap.xml" 
                 target="_blank"
@@ -243,15 +243,6 @@ export default function SitemapPage() {
               >
                 <Settings className="w-4 h-4" />
                 XML Sitemap দেখুন
-              </a>
-              <a 
-                href="https://www.google.com/webmasters/tools/sitemap-list?hl=en&siteUrl=https://www.creativecanvasit.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
-              >
-                <Map className="w-4 h-4" />
-                Google Search Console
               </a>
             </div>
             <div className="mt-6 text-sm text-gray-500">
