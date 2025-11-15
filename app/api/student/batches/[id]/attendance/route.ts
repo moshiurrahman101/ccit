@@ -67,13 +67,13 @@ export async function GET(
         batchId: id
       });
 
-      if (invoice && invoice.status === 'paid') {
+      if (invoice && (invoice.status === 'paid' || invoice.status === 'partial')) {
         enrollment = {
           _id: new mongoose.Types.ObjectId(),
           student: payload.userId,
           batch: batchObjectId,
           status: 'approved',
-          paymentStatus: 'paid'
+          paymentStatus: invoice.status === 'paid' ? 'paid' : 'partial'
         } as any;
       }
     }
@@ -85,8 +85,8 @@ export async function GET(
       );
     }
 
-    // Check if payment is verified
-    if (enrollment.paymentStatus !== 'paid') {
+    // Check if payment is verified (full or partial)
+    if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'partial') {
       return NextResponse.json(
         { 
           error: 'Access denied - payment verification pending',

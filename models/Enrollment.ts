@@ -6,7 +6,7 @@ export interface IEnrollment extends Document {
   batch?: mongoose.Types.ObjectId; // for offline students
   enrollmentDate: Date;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'dropped';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
   paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'cash';
   transactionId?: string;
   senderNumber?: string;
@@ -46,7 +46,7 @@ const EnrollmentSchema = new Schema<IEnrollment>({
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'paid', 'failed', 'refunded'],
+    enum: ['pending', 'paid', 'partial', 'failed', 'refunded'],
     default: 'pending'
   },
   paymentMethod: {

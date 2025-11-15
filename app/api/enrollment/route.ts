@@ -92,11 +92,20 @@ export async function POST(request: NextRequest) {
       batchId: validatedData.batchId
     });
 
-    const existingEnrollment = await Enrollment.findOne({
+    // Check for existing enrollment - try multiple queries to catch all cases
+    let existingEnrollment = await Enrollment.findOne({
       student: payload.userId,
       course: course._id,
       batch: validatedData.batchId
     });
+
+    // Also check without batch (in case batch is optional in some records)
+    if (!existingEnrollment) {
+      existingEnrollment = await Enrollment.findOne({
+        student: payload.userId,
+        course: course._id
+      });
+    }
 
     console.log('Existing invoice check:', existingInvoice ? 'Found existing invoice' : 'No existing invoice');
     console.log('Existing enrollment check:', existingEnrollment ? 'Found existing enrollment' : 'No existing enrollment');
@@ -210,18 +219,61 @@ export async function POST(request: NextRequest) {
     // Create enrollment record only if it doesn't exist
     let enrollment = existingEnrollment;
     if (!enrollment) {
-      enrollment = new Enrollment({
-        student: payload.userId,
-        course: course._id,
-        batch: validatedData.batchId,
-        amount: finalAmount,
-        status: 'pending', // Will be approved when payment is confirmed
-        paymentStatus: 'pending',
-        progress: 0
-      });
+      // Ensure course._id is valid
+      if (!course || !course._id) {
+        console.error('Course or course._id is missing:', course);
+        return NextResponse.json({ 
+          error: 'Course information is missing' 
+        }, { status: 500 });
+      }
 
-      await enrollment.save();
-      console.log('Enrollment record created successfully');
+      try {
+        enrollment = new Enrollment({
+          student: payload.userId,
+          course: course._id,
+          batch: validatedData.batchId,
+          amount: finalAmount,
+          status: 'pending', // Will be approved when payment is confirmed
+          paymentStatus: 'pending',
+          progress: 0
+        });
+
+        await enrollment.save();
+        console.log('Enrollment record created successfully:', enrollment._id);
+      } catch (enrollmentError: any) {
+        // If it's a duplicate key error, try to find the existing enrollment
+        if (enrollmentError.code === 11000) {
+          console.log('Duplicate enrollment detected, trying to find existing enrollment...');
+          enrollment = await Enrollment.findOne({
+            student: payload.userId,
+            course: course._id,
+            batch: validatedData.batchId
+          });
+          
+          if (!enrollment) {
+            // Try without batch (in case batch is optional)
+            enrollment = await Enrollment.findOne({
+              student: payload.userId,
+              course: course._id
+            });
+          }
+          
+          if (enrollment) {
+            console.log('Found existing enrollment:', enrollment._id);
+          } else {
+            console.error('Duplicate key error but enrollment not found:', enrollmentError);
+            // Clean up invoice if enrollment creation fails
+            await Invoice.findByIdAndDelete(invoice._id);
+            return NextResponse.json({ 
+              error: 'Failed to create enrollment. Please try again.' 
+            }, { status: 500 });
+          }
+        } else {
+          // Clean up invoice if enrollment creation fails
+          await Invoice.findByIdAndDelete(invoice._id);
+          throw enrollmentError;
+        }
+      }
     } else {
       console.log('Using existing enrollment record');
     }

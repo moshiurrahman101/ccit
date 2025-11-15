@@ -65,14 +65,14 @@ export async function GET(
         batchId: id
       });
 
-      if (invoice && invoice.status === 'paid') {
+      if (invoice && (invoice.status === 'paid' || invoice.status === 'partial')) {
         // Create a mock enrollment object from invoice for access check
         enrollment = {
           _id: new mongoose.Types.ObjectId(),
           student: payload.userId,
           batch: batchObjectId,
           status: 'approved',
-          paymentStatus: 'paid',
+          paymentStatus: invoice.status === 'paid' ? 'paid' : 'partial',
           amount: invoice.finalAmount || 0,
           progress: 0,
           enrollmentDate: invoice.createdAt || new Date(),
@@ -100,8 +100,8 @@ export async function GET(
     }
 
     // Check if enrollment is approved and payment is verified
-    // Students can only access batch features after payment is verified by admin
-    if (enrollment.paymentStatus !== 'paid') {
+    // Students can access batch features after payment (full or partial) is verified by admin
+    if (enrollment.paymentStatus !== 'paid' && enrollment.paymentStatus !== 'partial') {
       return NextResponse.json(
         { 
           error: 'Access denied - payment verification pending. Please wait for admin approval.',

@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import { Enrollment } from '@/models/Enrollment';
 import User from '@/models/User';
 import Batch from '@/models/Batch';
+import Mentor from '@/models/Mentor';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -50,7 +51,12 @@ export async function GET(request: NextRequest) {
       .populate({
         path: 'batch',
         model: Batch,
-        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status'
+        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status',
+        populate: {
+          path: 'mentorId',
+          model: 'Mentor',
+          select: 'name avatar designation email'
+        }
       })
       .sort({ enrollmentDate: -1 })
       .skip(skip)
@@ -65,7 +71,12 @@ export async function GET(request: NextRequest) {
       .populate({
         path: 'batchId',
         model: Batch,
-        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status'
+        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status',
+        populate: {
+          path: 'mentorId',
+          model: 'Mentor',
+          select: 'name avatar designation email'
+        }
       })
       .sort({ createdAt: -1 })
       .lean();
@@ -87,8 +98,8 @@ export async function GET(request: NextRequest) {
           course: invoice.batchId.courseId || null,
           batch: invoice.batchId,
           enrollmentDate: invoice.createdAt || new Date(),
-          status: 'pending', // Payment pending
-          paymentStatus: invoice.status === 'paid' ? 'paid' : 'pending',
+          status: invoice.status === 'paid' || invoice.status === 'partial' ? 'approved' : 'pending', // Approved if paid or partial
+          paymentStatus: invoice.status === 'paid' ? 'paid' : invoice.status === 'partial' ? 'partial' : 'pending',
           amount: invoice.finalAmount || invoice.amount,
           progress: 0,
           lastAccessed: new Date(),
@@ -100,6 +111,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Then manually populate mentor and course information for each enrollment
+    // (Only if mentor wasn't populated in the initial query)
     const Course = (await import('@/models/Course')).default;
     const Mentor = (await import('@/models/Mentor')).default;
     
@@ -107,39 +119,60 @@ export async function GET(request: NextRequest) {
       if (enrollment.batch) {
         const batchData: any = enrollment.batch; // Type assertion for dynamic property assignment
         
-        // Populate mentor information
+        // Populate mentor information if not already populated
         // Handle both ObjectId and populated mentor object
         let mentorIdValue = batchData.mentorId;
-        if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue._id) {
-          mentorIdValue = mentorIdValue._id;
-        } else if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue.toString) {
-          mentorIdValue = mentorIdValue.toString();
-        }
         
-        if (mentorIdValue && typeof mentorIdValue === 'string') {
-          const mentor = await Mentor.findById(mentorIdValue)
-            .select('name avatar designation')
-            .lean();
+        // Check if mentor is already populated (has name property)
+        if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue.name) {
+          // Already populated, skip
+          console.log('Mentor already populated:', mentorIdValue.name);
+        } else {
+          // Need to populate mentor
+          if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue._id) {
+            mentorIdValue = mentorIdValue._id;
+          } else if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue.toString) {
+            mentorIdValue = mentorIdValue.toString();
+          }
           
-          if (mentor) {
-            batchData.mentorId = mentor;
-            console.log('Mentor populated for enrollment:', (mentor as any).name);
-          } else {
-            console.log('Mentor not found for ID:', mentorIdValue);
-            // Set a default mentor object if mentor doesn't exist
+          if (mentorIdValue) {
+            // Try to find mentor by ID (handle both ObjectId and string)
+            let mentor = null;
+            try {
+              if (typeof mentorIdValue === 'string') {
+                mentor = await Mentor.findById(mentorIdValue)
+                  .select('name avatar designation email')
+                  .lean();
+              } else {
+                mentor = await Mentor.findById(mentorIdValue)
+                  .select('name avatar designation email')
+                  .lean();
+              }
+            } catch (error) {
+              console.error('Error finding mentor:', error);
+            }
+            
+            if (mentor) {
+              batchData.mentorId = mentor;
+              console.log('Mentor populated for enrollment:', (mentor as any).name);
+            } else {
+              console.log('Mentor not found for ID:', mentorIdValue);
+              // Set a default mentor object if mentor doesn't exist
+              batchData.mentorId = {
+                _id: mentorIdValue,
+                name: 'Mentor Information Unavailable',
+                designation: 'Contact Admin'
+              };
+            }
+          } else if (!mentorIdValue) {
+            // No mentor ID, set default
+            console.log('No mentorId found for batch:', batchData.name);
             batchData.mentorId = {
-              _id: mentorIdValue,
+              _id: null,
               name: 'Mentor Information Unavailable',
               designation: 'Contact Admin'
             };
           }
-        } else if (!mentorIdValue) {
-          // No mentor ID, set default
-          batchData.mentorId = {
-            _id: null,
-            name: 'Mentor Information Unavailable',
-            designation: 'Contact Admin'
-          };
         }
         
         // Populate course information to get modules, duration, etc.

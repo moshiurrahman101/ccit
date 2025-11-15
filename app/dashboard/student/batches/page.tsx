@@ -51,7 +51,7 @@ interface StudentBatch {
   };
   enrollmentDate: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'dropped';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
   progress: number;
   lastAccessed: string;
   amount: number;
@@ -318,7 +318,7 @@ export default function StudentBatchesPage() {
                     <Badge className="bg-yellow-500 text-white text-xs">
                       পেমেন্ট বাকি
                     </Badge>
-                  ) : batch.paymentStatus === 'paid' ? (
+                  ) : batch.paymentStatus === 'paid' || batch.paymentStatus === 'partial' ? (
                     <Badge className="bg-green-500 text-white text-xs">
                       Active
                     </Badge>
@@ -358,7 +358,7 @@ export default function StudentBatchesPage() {
                 )}
 
                 {/* Progress - Simple */}
-                {batch.paymentStatus === 'paid' && (
+                {(batch.paymentStatus === 'paid' || batch.paymentStatus === 'partial') && (
                   <div className="mb-3">
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
                       <span>Progress</span>

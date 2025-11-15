@@ -67,7 +67,7 @@ interface StudentBatch {
   };
   enrollmentDate: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'dropped';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
   progress: number;
   lastAccessed: string;
   amount: number;
@@ -341,7 +341,7 @@ export default function StudentBatchDetailPage() {
       </div>
 
       {/* Payment Pending Warning */}
-      {batchData.paymentStatus !== 'paid' && (
+      {batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' && (
         <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -369,8 +369,8 @@ export default function StudentBatchDetailPage() {
       <Tabs 
         value={activeTab} 
         onValueChange={(value) => {
-          // Only allow tab change if payment is paid
-          if (batchData.paymentStatus === 'paid') {
+          // Allow tab change if payment is paid or partial
+          if (batchData.paymentStatus === 'paid' || batchData.paymentStatus === 'partial') {
             setActiveTab(value);
           } else if (value === 'overview') {
             // Always allow overview tab
@@ -383,29 +383,29 @@ export default function StudentBatchDetailPage() {
           <TabsTrigger value="overview">সারসংক্ষেপ</TabsTrigger>
           <TabsTrigger 
             value="schedule"
-            disabled={batchData.paymentStatus !== 'paid'}
-            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+            disabled={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial'}
+            className={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}
           >
             শিডিউল
           </TabsTrigger>
           <TabsTrigger 
             value="assignments"
-            disabled={batchData.paymentStatus !== 'paid'}
-            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+            disabled={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial'}
+            className={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}
           >
             অ্যাসাইনমেন্ট
           </TabsTrigger>
           <TabsTrigger 
             value="attendance"
-            disabled={batchData.paymentStatus !== 'paid'}
-            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+            disabled={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial'}
+            className={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}
           >
             উপস্থিতি
           </TabsTrigger>
           <TabsTrigger 
             value="discussions"
-            disabled={batchData.paymentStatus !== 'paid'}
-            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+            disabled={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial'}
+            className={batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? 'opacity-50 cursor-not-allowed' : ''}
           >
             আলোচনা
           </TabsTrigger>
@@ -536,7 +536,7 @@ export default function StudentBatchDetailPage() {
 
         {/* Schedule Tab - Google Classroom Style */}
         <TabsContent value="schedule" className="space-y-6">
-          {batchData.paymentStatus !== 'paid' ? (
+          {batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -707,7 +707,7 @@ export default function StudentBatchDetailPage() {
 
         {/* Assignments Tab */}
         <TabsContent value="assignments" className="space-y-6">
-          {batchData.paymentStatus !== 'paid' ? (
+          {batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -884,7 +884,7 @@ export default function StudentBatchDetailPage() {
 
         {/* Attendance Tab */}
         <TabsContent value="attendance" className="space-y-6">
-          {batchData.paymentStatus !== 'paid' ? (
+          {batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -909,7 +909,7 @@ export default function StudentBatchDetailPage() {
 
         {/* Discussions Tab */}
         <TabsContent value="discussions" className="space-y-6">
-          {batchData.paymentStatus !== 'paid' ? (
+          {batchData.paymentStatus !== 'paid' && batchData.paymentStatus !== 'partial' ? (
             <Card>
               <CardContent className="p-12 text-center">
                 <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
