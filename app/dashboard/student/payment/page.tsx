@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import * as SelectPrimitive from '@radix-ui/react-select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -79,12 +80,35 @@ export default function StudentPaymentPage() {
       if (user.role !== 'student' && user.role !== 'admin') {
         router.push('/dashboard');
         return;
+      } else if (user.role === 'student') {
+        checkApprovalStatus();
+      } else {
+        fetchData();
       }
-      fetchData();
     } else if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  const checkApprovalStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const status = data.user.approvalStatus || 'pending';
+        
+        if (status !== 'approved') {
+          router.push('/dashboard/student');
+          return;
+        }
+        
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -136,21 +160,84 @@ export default function StudentPaymentPage() {
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [field]: value
+      };
+      
+      // Auto-select payment type based on amount
+      if (field === 'amount' && selectedInvoice) {
+        const amount = parseFloat(value) || 0;
+        const remainingAmount = selectedInvoice.remainingAmount;
+        updated.paymentType = amount >= remainingAmount ? 'full' : 'partial';
+      }
+      
+      return updated;
+    });
   };
 
   const handleInvoiceSelect = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv._id === invoiceId);
     setSelectedInvoice(invoice || null);
     if (invoice) {
+      // Check if it's a free batch (price is 0)
+      if (invoice.finalAmount === 0) {
+        // Auto-submit payment for free batches
+        handleFreeBatchPayment(invoice);
+        return;
+      }
+      
       setFormData(prev => ({
         ...prev,
         amount: invoice.remainingAmount.toString(),
         paymentType: invoice.remainingAmount === invoice.finalAmount ? 'full' : 'partial'
       }));
+    }
+  };
+
+  const handleFreeBatchPayment = async (invoice: Invoice) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/payments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
+        },
+        body: JSON.stringify({
+          invoiceId: invoice._id,
+          amount: 0,
+          paymentMethod: 'free',
+          senderNumber: 'N/A',
+          transactionId: 'FREE_BATCH',
+          paymentType: 'full',
+          otherDocuments: ['Free batch - automatic payment']
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success('ফ্রি ব্যাচের জন্য পেমেন্ট স্বয়ংক্রিয়ভাবে সম্পন্ন হয়েছে!');
+        setFormData({
+          amount: '',
+          paymentMethod: '',
+          senderNumber: '',
+          transactionId: '',
+          paymentType: 'partial',
+          notes: ''
+        });
+        setSelectedInvoice(null);
+        await fetchData();
+      } else {
+        toast.error(data.message || 'পেমেন্ট জমা দিতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error submitting free batch payment:', error);
+      toast.error('পেমেন্ট জমা দিতে সমস্যা হয়েছে');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -297,30 +384,192 @@ export default function StudentPaymentPage() {
         </Link>
       </div>
 
+      {/* Payment Instructions Section - At Top */}
+      <Card className="bg-gradient-to-br from-blue-50 to-orange-50 border-2 border-blue-200">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-lg text-blue-900">পেমেন্ট নির্দেশাবলী</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Payment Account Numbers */}
+          <div className="bg-white rounded-lg p-4 border border-blue-200">
+            <Label className="font-semibold text-blue-900 mb-3 block">পেমেন্ট করুন এই নম্বরে:</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-700 font-bold text-sm">bK</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">bKash নম্বর</p>
+                    <p className="text-xl font-bold text-green-700 font-mono">01603718379</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-purple-700 font-bold text-sm">NG</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Nagad নম্বর</p>
+                    <p className="text-xl font-bold text-purple-700 font-mono">01845202101</p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-blue-700 font-bold text-sm">RK</span>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Rocket নম্বর</p>
+                    <p className="text-xl font-bold text-blue-700 font-mono">01845202101</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Steps */}
+          <div className="bg-white rounded-lg p-4 border border-orange-200">
+            <Label className="font-semibold text-orange-900 mb-3 block">পেমেন্ট করার ধাপসমূহ:</Label>
+            <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
+              <li className="flex items-start gap-2">
+                <span className="font-semibold">১.</span>
+                <span>উপরের নম্বরে পেমেন্ট করুন</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold">২.</span>
+                <span>পেমেন্টের পর ট্রানজেকশন আইডি সংগ্রহ করুন</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold">৩.</span>
+                <span>নিচের ফর্মে প্রেরক নম্বর এবং ট্রানজেকশন আইডি দিন</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold">৪.</span>
+                <span>"পেমেন্ট জমা দিন" বাটনে ক্লিক করুন</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-semibold">৫.</span>
+                <span>অ্যাডমিন যাচাই করার পর আপনার পেমেন্ট নিশ্চিত করা হবে</span>
+              </li>
+            </ol>
+          </div>
+
+          {/* Important Notes */}
+          <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-xs text-yellow-800">
+                <p className="font-semibold mb-1">গুরুত্বপূর্ণ:</p>
+                <ul className="space-y-1 list-disc list-inside">
+                  <li>শুধুমাত্র উপরের নম্বরে পেমেন্ট করুন</li>
+                  <li>পেমেন্টের পর অবশ্যই ট্রানজেকশন আইডি সংরক্ষণ করুন</li>
+                  <li>পেমেন্ট যাচাই হতে ২৪-৪৮ ঘন্টা সময় লাগতে পারে</li>
+                  <li>কোন সমস্যা হলে সাপোর্টে যোগাযোগ করুন: creativecanvasit@gmail.com</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Payment Form */}
-        <Card>
+        <Card className="overflow-visible">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
               নতুন পেমেন্ট জমা দিন
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-visible">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Invoice Selection */}
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="invoice">ইনভয়েস নির্বাচন করুন</Label>
-                <Select onValueChange={handleInvoiceSelect}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="একটি ইনভয়েস নির্বাচন করুন" />
+                <Select onValueChange={handleInvoiceSelect} value={selectedInvoice?._id || undefined}>
+                  <SelectTrigger className="w-full">
+                    {selectedInvoice ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
+                        <span className="font-medium truncate flex-1">{selectedInvoice.batchId.name}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-sm text-gray-600 font-mono">{selectedInvoice.invoiceNumber}</span>
+                        <span className="text-gray-400">•</span>
+                        <span className="text-orange-600 font-semibold">৳{formatPrice(selectedInvoice.remainingAmount)}</span>
+                      </div>
+                    ) : (
+                      <SelectValue placeholder="একটি ইনভয়েস নির্বাচন করুন" />
+                    )}
                   </SelectTrigger>
-                  <SelectContent>
-                    {invoices.map((invoice) => (
-                      <SelectItem key={invoice._id} value={invoice._id}>
-                        {invoice.invoiceNumber} - {invoice.batchId.name} (৳{formatPrice(invoice.remainingAmount)} বাকি)
-                      </SelectItem>
-                    ))}
+                  <SelectContent 
+                    position="popper"
+                    className="max-h-[400px] w-[var(--radix-select-trigger-width)] overflow-y-auto z-[100] p-2"
+                    sideOffset={4}
+                  >
+                    {invoices.length === 0 ? (
+                      <div className="px-3 py-6 text-center text-sm text-gray-500">
+                        <p>কোন ইনভয়েস পাওয়া যায়নি</p>
+                      </div>
+                    ) : (
+                      invoices.map((invoice) => (
+                        <SelectItem 
+                          key={invoice._id} 
+                          value={invoice._id}
+                          className="p-0 focus:bg-transparent data-[highlighted]:bg-transparent"
+                        >
+                          {/* Detailed card design for dropdown */}
+                          <div className="w-full p-3 rounded-lg border border-gray-200 hover:border-orange-300 hover:bg-orange-50 transition-all">
+                              <div className="flex items-start justify-between gap-3 mb-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
+                                    <p className="font-semibold text-sm text-gray-900 truncate">
+                                      {invoice.batchId.name}
+                                    </p>
+                                  </div>
+                                  <p className="text-xs text-gray-500 font-mono ml-4">
+                                    {invoice.invoiceNumber}
+                                  </p>
+                                </div>
+                                <div className="flex-shrink-0">
+                                  <div className="px-2 py-1 bg-orange-100 rounded-md">
+                                    <p className="text-xs font-bold text-orange-700">
+                                      ৳{formatPrice(invoice.remainingAmount)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                                <div className="flex items-center gap-4 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-500">মোট:</span>
+                                    <span className="font-medium text-gray-700">৳{formatPrice(invoice.finalAmount)}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-gray-500">পরিশোধিত:</span>
+                                    <span className="font-medium text-green-600">৳{formatPrice(invoice.paidAmount)}</span>
+                                  </div>
+                                </div>
+                                <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                  invoice.status === 'paid' 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : invoice.status === 'partial'
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-red-100 text-red-700'
+                                }`}>
+                                  {invoice.status === 'paid' ? 'পরিশোধিত' : invoice.status === 'partial' ? 'আংশিক' : 'বাকি'}
+                                </div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -369,14 +618,15 @@ export default function StudentPaymentPage() {
                     </p>
                   </div>
 
-                  {/* Payment Type */}
+                  {/* Payment Type - Auto-selected based on amount */}
                   <div className="space-y-2">
                     <Label htmlFor="paymentType">পেমেন্টের ধরন</Label>
                     <Select 
                       value={formData.paymentType} 
                       onValueChange={(value) => handleInputChange('paymentType', value)}
+                      disabled={true}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-gray-50">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -385,6 +635,11 @@ export default function StudentPaymentPage() {
                         <SelectItem value="installment">কিস্তি পেমেন্ট</SelectItem>
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-gray-500">
+                      {formData.paymentType === 'full' 
+                        ? 'সম্পূর্ণ পরিমাণ দেওয়া হয়েছে - সম্পূর্ণ পেমেন্ট হিসেবে নির্বাচিত' 
+                        : 'আংশিক পরিমাণ দেওয়া হয়েছে - আংশিক পেমেন্ট হিসেবে নির্বাচিত'}
+                    </p>
                   </div>
 
                   {/* Payment Method */}
@@ -456,6 +711,7 @@ export default function StudentPaymentPage() {
                       rows={3}
                     />
                   </div>
+
 
                   <Button 
                     type="submit" 

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +24,8 @@ import {
   DollarSign,
   Receipt,
   History,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { formatBanglaNumber, formatBanglaDate, formatBanglaCurrency } from '@/lib/utils/banglaNumbers';
 import { CurrencyDisplay } from '@/components/ui/CurrencyDisplay';
@@ -60,15 +63,55 @@ interface Payment {
 }
 
 export default function AccountsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<string>('pending');
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
   useEffect(() => {
-    fetchInvoices();
-  }, []);
+    if (!authLoading && user) {
+      if (user.role !== 'student' && user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      } else if (user.role === 'student') {
+        checkApprovalStatus();
+      } else {
+        setIsCheckingApproval(false);
+        fetchInvoices();
+      }
+    } else if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  const checkApprovalStatus = async () => {
+    try {
+      setIsCheckingApproval(true);
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const status = data.user.approvalStatus || 'pending';
+        setApprovalStatus(status);
+        
+        if (status !== 'approved') {
+          router.push('/dashboard/student');
+          return;
+        }
+        
+        fetchInvoices();
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
 
   const fetchInvoices = async () => {
     try {
@@ -224,6 +267,25 @@ export default function AccountsPage() {
       default: return method;
     }
   };
+
+  if (authLoading || isCheckingApproval || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+          <span>লোড হচ্ছে...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'student' && user?.role !== 'admin') {
+    return null;
+  }
+
+  if (user?.role === 'student' && approvalStatus !== 'approved') {
+    return null; // Will redirect
+  }
 
   const totalOwed = invoices.reduce((sum, invoice) => sum + invoice.remainingAmount, 0);
   const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.paidAmount, 0);
@@ -404,31 +466,70 @@ export default function AccountsPage() {
               <CardTitle>পেমেন্ট হিস্ট্রি</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {invoices.flatMap(invoice => 
-                  invoice.payments.map(payment => (
-                    <div key={payment._id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          <CreditCard className="h-5 w-5 text-orange-600" />
-                        </div>
-                        <div>
-                          <CurrencyDisplay amount={payment.amount} />
-                          <p className="text-sm text-gray-600">{invoice.batchId.name}</p>
-                          <p className="text-xs text-gray-500">{formatBanglaDate(payment.createdAt)}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getPaymentStatusColor(payment.status)}>
-                          {getPaymentStatusText(payment.status)}
-                        </Badge>
-                        <p className="text-sm text-gray-600 mt-1">{getPaymentMethodText(payment.method)}</p>
-                        <p className="text-xs text-gray-500">{payment.senderNumber}</p>
-                      </div>
+              {(() => {
+                // Collect all payments from all invoices
+                const allPayments = invoices.flatMap((invoice) => 
+                  (invoice.payments || [])
+                    .filter(payment => payment && payment._id)
+                    .map((payment) => {
+                      // Handle different payment data structures       
+                      const paymentAmount = payment.amount || 0;        
+                      const paymentDate = payment.createdAt || (payment as any).submittedAt || (payment as any).date || (payment as any).verifiedAt || invoice.createdAt;
+                      const paymentMethod = (payment as any).method || (payment as any).paymentMethod || 'unknown';
+                      const paymentStatus = (payment as any).status || (payment as any).verificationStatus || 'pending';
+                      const senderNumber = (payment as any).senderNumber || (payment as any).sender || 'N/A';
+                      
+                      return {
+                        ...payment,
+                        paymentAmount,
+                        paymentDate,
+                        paymentMethod,
+                        paymentStatus,
+                        senderNumber,
+                        invoiceId: invoice._id,
+                        batchName: invoice.batchId?.name || 'Unknown Batch'
+                      };
+                    })
+                ).filter(p => p.paymentAmount > 0); // Only show payments with amount > 0
+
+                if (allPayments.length === 0) {
+                  return (
+                    <div className="text-center py-8">
+                      <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">কোন পেমেন্ট নেই</h3>
+                      <p className="text-gray-600">আপনার কোন পেমেন্ট ইতিহাস পাওয়া যায়নি</p>
                     </div>
-                  ))
-                )}
-              </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {allPayments.map((payment, index) => (
+                      <div key={`${payment.invoiceId}-${payment._id || index}`} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <CreditCard className="h-5 w-5 text-orange-600" />
+                          </div>
+                          <div>
+                            <CurrencyDisplay amount={payment.paymentAmount} />
+                            <p className="text-sm text-gray-600">{payment.batchName}</p>
+                            <p className="text-xs text-gray-500">
+                              {payment.paymentDate ? formatBanglaDate(payment.paymentDate) : 'তারিখ নেই'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className={getPaymentStatusColor(payment.paymentStatus)}>
+                            {getPaymentStatusText(payment.paymentStatus)}
+                          </Badge>
+                          <p className="text-sm text-gray-600 mt-1">{getPaymentMethodText(payment.paymentMethod)}</p>
+                          <p className="text-xs text-gray-500">{payment.senderNumber}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

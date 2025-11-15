@@ -194,27 +194,52 @@ export async function POST(request: NextRequest) {
           payments: updatedPayments
         });
 
-        // Update enrollment status to approved when payment is verified
+        // Update or create enrollment status to approved when payment is verified
         console.log('=== PAYMENT VERIFICATION ENROLLMENT UPDATE ===');
         console.log('Payment ID:', paymentId);
         console.log('Student ID:', payment.studentId);
         console.log('Batch ID:', payment.batchId);
         
-        const enrollmentUpdate = await Enrollment.updateMany(
-          { 
-            student: payment.studentId,
-            batch: payment.batchId
-          },
-          { 
-            status: 'approved',
-            paymentStatus: 'paid',
-            approvedBy: currentUser._id,
-            approvedAt: new Date()
-          }
-        );
+        // Check if enrollment exists
+        let existingEnrollment = await Enrollment.findOne({
+          student: payment.studentId,
+          batch: payment.batchId
+        });
         
-        console.log('Enrollment update result:', enrollmentUpdate);
-        console.log('Modified enrollments count:', enrollmentUpdate.modifiedCount);
+        if (existingEnrollment) {
+          // Update existing enrollment
+          existingEnrollment.status = 'approved';
+          existingEnrollment.paymentStatus = 'paid';
+          existingEnrollment.approvedBy = currentUser._id;
+          existingEnrollment.approvedAt = new Date();
+          await existingEnrollment.save();
+          console.log('Enrollment updated:', existingEnrollment._id);
+        } else {
+          // Create new enrollment if it doesn't exist
+          // Get batch and course info from invoice
+          const Batch = (await import('@/models/Batch')).default;
+          const batch = await Batch.findById(payment.batchId);
+          
+          if (batch) {
+            const newEnrollment = new Enrollment({
+              student: payment.studentId,
+              course: batch.courseId || null,
+              batch: payment.batchId,
+              enrollmentDate: new Date(),
+              status: 'approved',
+              paymentStatus: 'paid',
+              amount: invoice.finalAmount || payment.amount,
+              progress: 0,
+              lastAccessed: new Date(),
+              approvedBy: currentUser._id,
+              approvedAt: new Date()
+            });
+            await newEnrollment.save();
+            console.log('New enrollment created:', newEnrollment._id);
+          } else {
+            console.log('Batch not found, cannot create enrollment');
+          }
+        }
         
         // Also update User approval status if not already approved
         const User = (await import('@/models/User')).default;

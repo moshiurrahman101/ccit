@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,17 @@ interface ScheduleClassFormProps {
   onSuccess: () => void;
   batchId: string;
   courseType: 'online' | 'offline';
+  schedule?: {
+    _id: string;
+    title: string;
+    description?: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    meetingLink?: string;
+    location?: string;
+    isOnline?: boolean;
+  } | null;
 }
 
 export default function ScheduleClassForm({ 
@@ -23,20 +34,50 @@ export default function ScheduleClassForm({
   onClose, 
   onSuccess, 
   batchId, 
-  courseType 
+  courseType,
+  schedule = null
 }: ScheduleClassFormProps) {
+  const isEditMode = !!schedule;
+  
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    startTime: '',
-    endTime: '',
-    meetingLink: '',
-    location: '',
-    isOnline: courseType === 'online'
+    title: schedule?.title || '',
+    description: schedule?.description || '',
+    date: schedule?.date ? new Date(schedule.date).toISOString().split('T')[0] : '',
+    startTime: schedule?.startTime || '',
+    endTime: schedule?.endTime || '',
+    meetingLink: schedule?.meetingLink || '',
+    location: schedule?.location || '',
+    isOnline: schedule?.isOnline !== undefined ? schedule.isOnline : courseType === 'online'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update form data when schedule changes
+  useEffect(() => {
+    if (schedule && isOpen) {
+      setFormData({
+        title: schedule.title || '',
+        description: schedule.description || '',
+        date: schedule.date ? new Date(schedule.date).toISOString().split('T')[0] : '',
+        startTime: schedule.startTime || '',
+        endTime: schedule.endTime || '',
+        meetingLink: schedule.meetingLink || '',
+        location: schedule.location || '',
+        isOnline: schedule.isOnline !== undefined ? schedule.isOnline : courseType === 'online'
+      });
+    } else if (!schedule && isOpen) {
+      setFormData({
+        title: '',
+        description: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        meetingLink: '',
+        location: '',
+        isOnline: courseType === 'online'
+      });
+    }
+  }, [schedule, isOpen, courseType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,49 +132,57 @@ export default function ScheduleClassForm({
     
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('auth-token');
+      const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || localStorage.getItem('auth-token');
       if (!token) {
         toast.error('Authentication required');
         return;
       }
       
-      const response = await fetch(`/api/mentor/batches/${batchId}/schedule`, {
-        method: 'POST',
+      const url = `/api/mentor/batches/${batchId}/schedule`;
+      const method = isEditMode ? 'PUT' : 'POST';
+      const body = isEditMode 
+        ? JSON.stringify({ scheduleId: schedule?._id, ...formData })
+        : JSON.stringify(formData);
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to schedule class');
+        throw new Error(errorData.error || `Failed to ${isEditMode ? 'update' : 'schedule'} class`);
       }
       
-      toast.success('Class scheduled successfully!');
+      toast.success(`Class ${isEditMode ? 'updated' : 'scheduled'} successfully!`);
       onSuccess();
       handleClose();
       
     } catch (error) {
-      console.error('Error scheduling class:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to schedule class');
+      console.error(`Error ${isEditMode ? 'updating' : 'scheduling'} class:`, error);
+      toast.error(error instanceof Error ? error.message : `Failed to ${isEditMode ? 'update' : 'schedule'} class`);
     } finally {
       setIsLoading(false);
     }
   };
   
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      startTime: '',
-      endTime: '',
-      meetingLink: '',
-      location: '',
-      isOnline: courseType === 'online'
-    });
+    if (!isEditMode) {
+      setFormData({
+        title: '',
+        description: '',
+        date: '',
+        startTime: '',
+        endTime: '',
+        meetingLink: '',
+        location: '',
+        isOnline: courseType === 'online'
+      });
+    }
     setErrors({});
     onClose();
   };
@@ -184,7 +233,7 @@ export default function ScheduleClassForm({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Schedule Class
+            {isEditMode ? 'Edit Class Schedule' : 'Schedule Class'}
           </DialogTitle>
         </DialogHeader>
         
@@ -308,10 +357,10 @@ export default function ScheduleClassForm({
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Scheduling...
+                  {isEditMode ? 'Updating...' : 'Scheduling...'}
                 </>
               ) : (
-                'Schedule Class'
+                isEditMode ? 'Update Schedule' : 'Schedule Class'
               )}
             </Button>
           </div>

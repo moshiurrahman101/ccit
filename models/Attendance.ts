@@ -2,8 +2,9 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IAttendance extends Document {
   student: mongoose.Types.ObjectId;
-  course: mongoose.Types.ObjectId;
-  batch?: mongoose.Types.ObjectId; // for offline students
+  course?: mongoose.Types.ObjectId;
+  batch: mongoose.Types.ObjectId; // Required - attendance is per batch
+  scheduleId?: mongoose.Types.ObjectId; // Link to specific scheduled class
   classDate: Date;
   status: 'present' | 'absent' | 'late' | 'excused';
   checkInTime?: Date;
@@ -24,12 +25,16 @@ const AttendanceSchema = new Schema<IAttendance>({
   },
   course: {
     type: Schema.Types.ObjectId,
-    ref: 'Course',
-    required: true
+    ref: 'Course'
   },
   batch: {
     type: Schema.Types.ObjectId,
-    ref: 'Batch'
+    ref: 'Batch',
+    required: true
+  },
+  scheduleId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Schedule'
   },
   classDate: {
     type: Date,
@@ -63,9 +68,9 @@ const AttendanceSchema = new Schema<IAttendance>({
   timestamps: true
 });
 
-// Compound index to prevent duplicate attendance for same student on same date
-AttendanceSchema.index({ student: 1, course: 1, classDate: 1 }, { unique: true });
-AttendanceSchema.index({ student: 1, batch: 1, classDate: 1 }, { unique: true, sparse: true });
+// Compound index to prevent duplicate attendance for same student on same schedule/date
+AttendanceSchema.index({ student: 1, batch: 1, classDate: 1 }, { unique: true });
+AttendanceSchema.index({ student: 1, scheduleId: 1 }, { unique: true, sparse: true });
 
 // Index for efficient queries
 AttendanceSchema.index({ classDate: 1, status: 1 });

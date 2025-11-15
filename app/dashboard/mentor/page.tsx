@@ -110,14 +110,16 @@ export default function MentorDashboardPage() {
         }
       });
 
+      let fetchedBatches: Batch[] = [];
       if (batchesResponse.ok) {
         const batchesData = await batchesResponse.json();
-        setBatches(batchesData.batches || []);
+        fetchedBatches = batchesData.batches || [];
+        setBatches(fetchedBatches);
       }
 
-      // Fetch all students from all batches
+      // Fetch all students from all batches (use fetchedBatches instead of state)
       const allStudents: Student[] = [];
-      for (const batch of batches) {
+      for (const batch of fetchedBatches) {
         try {
           const studentsResponse = await fetch(`/api/mentor/batches/${batch._id}/students`, {
             headers: {
@@ -141,7 +143,7 @@ export default function MentorDashboardPage() {
 
       // Fetch upcoming schedules
       const upcomingSchedules: Schedule[] = [];
-      for (const batch of batches) {
+      for (const batch of fetchedBatches) {
         try {
           const schedulesResponse = await fetch(`/api/mentor/batches/${batch._id}/schedule`, {
             headers: {
@@ -174,10 +176,10 @@ export default function MentorDashboardPage() {
       // Calculate stats
       const totalStudents = allStudents.length;
       const upcomingClasses = upcoming.length;
-      const totalRevenue = batches.reduce((sum, batch) => sum + (batch.currentStudents * (batch.discountPrice || batch.regularPrice)), 0);
+      const totalRevenue = fetchedBatches.reduce((sum, batch) => sum + (batch.currentStudents * (batch.discountPrice || batch.regularPrice)), 0);
 
       setStats({
-        totalBatches: batches.length,
+        totalBatches: fetchedBatches.length,
         totalStudents,
         upcomingClasses,
         totalRevenue

@@ -27,7 +27,8 @@ import {
   LogOut,
   Bell,
   UserPlus,
-  Star
+  Star,
+  Calendar
 } from 'lucide-react';
 import { User } from '@/types';
 
@@ -128,6 +129,14 @@ const menuItems: MenuItem[] = [
     description: 'আপনার ব্যাচ ও কোর্স ব্যবস্থাপনা'
   },
   {
+    id: 'mentor-attendance',
+    label: 'উপস্থিতি',
+    icon: Calendar,
+    path: '/dashboard/mentor/attendance',
+    roles: ['mentor'],
+    description: 'শিক্ষার্থীদের উপস্থিতি নিন'
+  },
+  {
     id: 'blog',
     label: 'ব্লগ',
     icon: FileText,
@@ -200,6 +209,14 @@ const menuItems: MenuItem[] = [
     description: 'পেমেন্ট ও বিলিং ব্যবস্থাপনা'
   },
   {
+    id: 'payment',
+    label: 'পেমেন্ট',
+    icon: CreditCard,
+    path: '/dashboard/student/payment',
+    roles: ['student'],
+    description: 'পেমেন্ট জমা দিন ও ট্র্যাক করুন'
+  },
+  {
     id: 'cleanup',
     label: 'ডেটা ক্লিনআপ',
     icon: Settings,
@@ -219,9 +236,36 @@ const menuItems: MenuItem[] = [
 
 export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<string>('pending');
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const { logout } = useAuth();
+
+  useEffect(() => {
+    // Check approval status for students
+    if (user?.role === 'student') {
+      checkApprovalStatus();
+    } else {
+      setIsCheckingApproval(false);
+    }
+  }, [user]);
+
+  const checkApprovalStatus = async () => {
+    try {
+      setIsCheckingApproval(true);
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        setApprovalStatus(data.user.approvalStatus || 'pending');
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -232,6 +276,17 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
   const filteredMenuItems = menuItems.filter(item => 
     item.roles.includes(user.role)
   );
+
+  // Check if a menu item should be disabled for students
+  const isMenuItemDisabled = (item: MenuItem) => {
+    if (user.role !== 'student') return false;
+    if (isCheckingApproval) return true;
+    if (approvalStatus !== 'approved') {
+      // Allow only the dashboard overview page
+      return item.id !== 'student-overview';
+    }
+    return false;
+  };
 
   const handleMenuClick = (path: string) => {
     router.push(path);
@@ -306,33 +361,52 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
             {filteredMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
+              const isDisabled = isMenuItemDisabled(item);
               
               return (
                 <button
                   key={item.id}
-                  onClick={() => handleMenuClick(item.path)}
+                  onClick={() => {
+                    if (!isDisabled) {
+                      handleMenuClick(item.path);
+                    }
+                  }}
+                  disabled={isDisabled}
                   className={`w-full flex items-center space-x-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl transition-all duration-200 group ${
-                    isActive
+                    isDisabled
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isActive
                       ? 'bg-green-50 shadow-sm border border-green-200'
                       : 'hover:bg-gray-50'
                   }`}
+                  title={isDisabled ? 'অনুমোদনের অপেক্ষায় - এই পেজে অ্যাক্সেস পেতে আপনার অ্যাকাউন্ট অনুমোদিত হতে হবে' : ''}
                 >
                   <Icon className={`h-4 w-4 sm:h-5 sm:w-5 transition-colors ${
-                    isActive ? 'text-green-600' : 'text-gray-700 group-hover:text-green-600'
+                    isDisabled
+                      ? 'text-gray-400'
+                      : isActive
+                      ? 'text-green-600'
+                      : 'text-gray-700 group-hover:text-green-600'
                   }`} />
                   <div className="flex-1 text-left">
                     <p className={`text-xs sm:text-sm font-medium transition-colors ${
-                      isActive ? 'text-gray-900' : 'text-gray-800 group-hover:text-gray-900'
+                      isDisabled
+                        ? 'text-gray-400'
+                        : isActive
+                        ? 'text-gray-900'
+                        : 'text-gray-800 group-hover:text-gray-900'
                     }`}>
                       {item.label}
                     </p>
                     {item.description && (
-                      <p className="text-xs text-gray-600 mt-0.5 hidden sm:block">
+                      <p className={`text-xs mt-0.5 hidden sm:block ${
+                        isDisabled ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
                         {item.description}
                       </p>
                     )}
                   </div>
-                  {item.badge && (
+                  {item.badge && !isDisabled && (
                     <Badge className="bg-red-500 text-white text-xs">
                       {item.badge}
                     </Badge>

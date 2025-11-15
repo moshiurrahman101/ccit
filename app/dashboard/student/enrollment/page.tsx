@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/providers/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +94,8 @@ interface AvailableBatch {
 }
 
 export default function EnrollmentPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
   const [enrolledBatches, setEnrolledBatches] = useState<EnrolledBatch[]>([]);
   const [availableBatches, setAvailableBatches] = useState<AvailableBatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,12 +103,50 @@ export default function EnrollmentPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [courseTypeFilter, setCourseTypeFilter] = useState('');
-  
+  const [approvalStatus, setApprovalStatus] = useState<string>('pending');
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
   useEffect(() => {
-    fetchEnrolledBatches();
-    fetchAvailableBatches();
-  }, []);
+    if (!loading && user) {
+      if (user.role !== 'student' && user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      } else if (user.role === 'student') {
+        checkApprovalStatus();
+      } else {
+        setIsCheckingApproval(false);
+        fetchEnrolledBatches();
+        fetchAvailableBatches();
+      }
+    } else if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  const checkApprovalStatus = async () => {
+    try {
+      setIsCheckingApproval(true);
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const status = data.user.approvalStatus || 'pending';
+        setApprovalStatus(status);
+        
+        if (status !== 'approved') {
+          router.push('/dashboard/student');
+          return;
+        }
+        
+        fetchEnrolledBatches();
+        fetchAvailableBatches();
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
 
   const fetchEnrolledBatches = async () => {
     try {
@@ -237,6 +279,25 @@ export default function EnrollmentPage() {
     
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  if (loading || isCheckingApproval) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+          <span>লোড হচ্ছে...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (user?.role !== 'student' && user?.role !== 'admin') {
+    return null;
+  }
+
+  if (user?.role === 'student' && approvalStatus !== 'approved') {
+    return null; // Will redirect
+  }
 
   return (
     <div className="space-y-6">

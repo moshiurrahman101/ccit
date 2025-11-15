@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +16,9 @@ import {
   ArrowRight,
   TrendingUp,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Loader2,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -55,13 +58,52 @@ interface StudentBatch {
 }
 
 export default function StudentBatchesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [batches, setBatches] = useState<StudentBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [approvalStatus, setApprovalStatus] = useState<string>('pending');
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
   useEffect(() => {
-    fetchStudentBatches();
-  }, []);
+    if (!authLoading && user) {
+      if (user.role !== 'student' && user.role !== 'admin') {
+        router.push('/dashboard');
+        return;
+      } else if (user.role === 'student') {
+        checkApprovalStatus();
+      } else {
+        setIsCheckingApproval(false);
+        fetchStudentBatches();
+      }
+    } else if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  const checkApprovalStatus = async () => {
+    try {
+      setIsCheckingApproval(true);
+      const response = await fetch('/api/auth/me');
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        const status = data.user.approvalStatus || 'pending';
+        setApprovalStatus(status);
+        
+        if (status !== 'approved') {
+          router.push('/dashboard/student');
+          return;
+        }
+        
+        fetchStudentBatches();
+      }
+    } catch (error) {
+      console.error('Error checking approval status:', error);
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
 
   const fetchStudentBatches = async () => {
     try {
@@ -83,6 +125,12 @@ export default function StudentBatchesPage() {
       }
 
       const data = await response.json();
+      console.log('=== STUDENT BATCHES DATA ===');
+      console.log('Batches received:', data.batches?.length);
+      if (data.batches && data.batches.length > 0) {
+        console.log('First batch status:', data.batches[0].status);
+        console.log('First batch paymentStatus:', data.batches[0].paymentStatus);
+      }
       setBatches(data.batches || []);
       
     } catch (error) {
@@ -144,15 +192,23 @@ export default function StudentBatchesPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || isCheckingApproval || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-600"></div>
-          <span>Loading your batches...</span>
+          <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+          <span>লোড হচ্ছে...</span>
         </div>
       </div>
     );
+  }
+
+  if (user?.role !== 'student' && user?.role !== 'admin') {
+    return null;
+  }
+
+  if (user?.role === 'student' && approvalStatus !== 'approved') {
+    return null; // Will redirect
   }
 
   if (batches.length === 0) {
@@ -232,133 +288,95 @@ export default function StudentBatchesPage() {
         </Card>
       </div>
 
-      {/* Batches Grid - Card System */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {batches.map((batch) => (
+      {/* Batches Grid - Google Classroom Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {batches.map((batch) => {
+          // Determine link based on payment status
+          const linkHref = batch.paymentStatus === 'pending' 
+            ? '/dashboard/student/payment'
+            : `/dashboard/student/batches/${batch.batch._id}`;
+          
+          return (
           <Link
             key={batch._id}
-            href={`/dashboard/student/batches/${batch.batch._id}`}
+            href={linkHref}
             className="block"
           >
-            <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-orange-500 cursor-pointer">
-              {/* Cover Photo */}
-              <div className="relative h-48 bg-gradient-to-br from-orange-400 to-orange-600 rounded-t-lg overflow-hidden">
-                {batch.batch.coverPhoto ? (
+            <Card className="h-full hover:shadow-md transition-all duration-200 border rounded-lg overflow-hidden cursor-pointer group">
+              {/* Simple Header Strip - Google Classroom Style */}
+              <div className="h-24 bg-gradient-to-r from-orange-500 to-orange-600 relative">
+                {batch.batch.coverPhoto && (
                   <img
                     src={batch.batch.coverPhoto}
                     alt={batch.batch.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover opacity-80"
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <BookOpen className="h-16 w-16 text-white opacity-50" />
-                  </div>
                 )}
-                {/* Status Badges */}
-                <div className="absolute top-3 right-3 flex flex-col gap-2">
-                  <Badge className={getStatusColor(batch.status)}>
-                    {getStatusText(batch.status)}
-                  </Badge>
-                  <Badge className={getPaymentStatusColor(batch.paymentStatus)}>
-                    {getPaymentStatusText(batch.paymentStatus)}
-                  </Badge>
+                {/* Status Badge - Top Right */}
+                <div className="absolute top-2 right-2">
+                  {batch.paymentStatus === 'pending' ? (
+                    <Badge className="bg-yellow-500 text-white text-xs">
+                      পেমেন্ট বাকি
+                    </Badge>
+                  ) : batch.paymentStatus === 'paid' ? (
+                    <Badge className="bg-green-500 text-white text-xs">
+                      Active
+                    </Badge>
+                  ) : batch.status === 'pending' ? (
+                    <Badge className="bg-blue-500 text-white text-xs">
+                      অনুমোদনের অপেক্ষায়
+                    </Badge>
+                  ) : (
+                    <Badge className="bg-gray-500 text-white text-xs">
+                      {batch.status}
+                    </Badge>
+                  )}
                 </div>
               </div>
 
-              <CardContent className="p-6">
-                {/* Batch Name */}
-                <h3 className="text-xl font-bold text-gray-900 mb-2 line-clamp-2">
+              <CardContent className="p-4">
+                {/* Course Name */}
+                <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-1 group-hover:text-orange-600 transition-colors">
                   {batch.batch.name}
                 </h3>
 
-                {/* Batch Description */}
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {batch.batch.description}
-                </p>
-
-                {/* Mentor Info */}
-                <div className="flex items-center gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                    <Users className="h-4 w-4 text-orange-600" />
+                {/* Teacher Name */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Users className="h-3 w-3 text-orange-600" />
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{batch.batch.mentorId.name}</p>
-                    <p className="text-xs text-gray-500">{batch.batch.mentorId.designation}</p>
-                  </div>
+                  <p className="text-sm text-gray-600 line-clamp-1">
+                    {batch.batch.mentorId?.name || 'Mentor Information Unavailable'}
+                  </p>
                 </div>
 
-                {/* Course Details */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Video className="h-4 w-4 text-blue-500" />
-                    <span>{batch.batch.courseType === 'online' ? 'Online' : 'Offline'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4 text-purple-500" />
-                    <span>{batch.batch.duration} {batch.batch.durationUnit}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="h-4 w-4 text-green-500" />
-                    <span>{formatBanglaDate(batch.enrollmentDate)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <FileText className="h-4 w-4 text-orange-500" />
-                    <span>{formatBanglaCurrency(batch.amount)}</span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Progress</span>
-                    <span className="font-semibold">{batch.progress}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-orange-600 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${batch.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Warning for Pending Status */}
-                {batch.status === 'pending' && (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-yellow-900">Pending Approval</p>
-                        <p className="text-xs text-yellow-700">Admin review required to access course</p>
-                      </div>
-                    </div>
+                {/* Simple Status Indicator */}
+                {batch.paymentStatus === 'pending' && (
+                  <div className="mb-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                    <p className="text-xs text-yellow-800 font-medium">পেমেন্ট প্রয়োজন</p>
                   </div>
                 )}
 
-                {/* Action Button */}
-                <Button 
-                  className={`w-full ${
-                    batch.status === 'approved' 
-                      ? 'bg-orange-600 hover:bg-orange-700' 
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
-                  disabled={batch.status !== 'approved'}
-                >
-                  {batch.status === 'approved' ? (
-                    <>
-                      Continue Learning
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  ) : (
-                    <>
-                      Awaiting Approval
-                      <Clock className="h-4 w-4 ml-2" />
-                    </>
-                  )}
-                </Button>
+                {/* Progress - Simple */}
+                {batch.paymentStatus === 'paid' && (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs text-gray-600 mb-1">
+                      <span>Progress</span>
+                      <span className="font-medium">{batch.progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-orange-600 h-1.5 rounded-full transition-all" 
+                        style={{ width: `${batch.progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </Link>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add More Batches Card */}

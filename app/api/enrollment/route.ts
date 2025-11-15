@@ -80,25 +80,32 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Check if student is already enrolled
+    // Calculate amount from batch (use batch pricing if available, fallback to course pricing)
+    const course = batch.courseId;
+    if (!course) {
+      return NextResponse.json({ error: 'Course not found for this batch' }, { status: 404 });
+    }
+
+    // Check if student is already enrolled (check both invoice and enrollment)
     const existingInvoice = await Invoice.findOne({
       studentId: payload.userId,
       batchId: validatedData.batchId
     });
 
-    console.log('Existing invoice check:', existingInvoice ? 'Found existing enrollment' : 'No existing enrollment');
+    const existingEnrollment = await Enrollment.findOne({
+      student: payload.userId,
+      course: course._id,
+      batch: validatedData.batchId
+    });
 
-    if (existingInvoice) {
+    console.log('Existing invoice check:', existingInvoice ? 'Found existing invoice' : 'No existing invoice');
+    console.log('Existing enrollment check:', existingEnrollment ? 'Found existing enrollment' : 'No existing enrollment');
+
+    if (existingInvoice || existingEnrollment) {
       console.log('Student already enrolled');
       return NextResponse.json({ 
         error: 'You are already enrolled in this batch' 
       }, { status: 400 });
-    }
-
-    // Calculate amount from batch (use batch pricing if available, fallback to course pricing)
-    const course = batch.courseId;
-    if (!course) {
-      return NextResponse.json({ error: 'Course not found for this batch' }, { status: 404 });
     }
     
     // Use batch pricing if available, otherwise use course pricing
@@ -200,19 +207,24 @@ export async function POST(request: NextRequest) {
     await invoice.save();
     console.log('Invoice saved successfully');
 
-    // Create enrollment record
-    const enrollment = new Enrollment({
-      student: payload.userId,
-      course: course._id,
-      batch: validatedData.batchId,
-      amount: finalAmount,
-      status: 'pending', // Will be approved when payment is confirmed
-      paymentStatus: 'pending',
-      progress: 0
-    });
+    // Create enrollment record only if it doesn't exist
+    let enrollment = existingEnrollment;
+    if (!enrollment) {
+      enrollment = new Enrollment({
+        student: payload.userId,
+        course: course._id,
+        batch: validatedData.batchId,
+        amount: finalAmount,
+        status: 'pending', // Will be approved when payment is confirmed
+        paymentStatus: 'pending',
+        progress: 0
+      });
 
-    await enrollment.save();
-    console.log('Enrollment record created successfully');
+      await enrollment.save();
+      console.log('Enrollment record created successfully');
+    } else {
+      console.log('Using existing enrollment record');
+    }
 
     // Update batch current students count
     await Batch.findByIdAndUpdate(validatedData.batchId, {

@@ -104,7 +104,7 @@ export default function StudentDashboardPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">সাপোর্ট ইমেইল</p>
-                        <p className="font-medium text-gray-900">support@ccit.com</p>
+                        <p className="font-medium text-gray-900">creativecanvasit@gmail.com</p>
                       </div>
                     </div>
                     <div className="flex items-center">
@@ -113,20 +113,11 @@ export default function StudentDashboardPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">সাপোর্ট ফোন</p>
-                        <p className="font-medium text-gray-900">+880 1234 567890</p>
+                        <p className="font-medium text-gray-900">০১৬০৩৭১৮৩৭৯</p>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-orange-600 text-sm font-semibold">জ</span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">জরুরী হেল্পলাইন</p>
-                        <p className="font-medium text-gray-900">+880 9876 543210</p>
-                      </div>
-                    </div>
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
                         <span className="text-purple-600 text-sm font-semibold">ট</span>
@@ -179,7 +170,7 @@ export default function StudentDashboardPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">সাপোর্ট ইমেইল</p>
-                        <p className="font-medium text-gray-900">support@ccit.com</p>
+                        <p className="font-medium text-gray-900">creativecanvasit@gmail.com</p>
                       </div>
                     </div>
                     <div className="flex items-center">
@@ -188,20 +179,11 @@ export default function StudentDashboardPage() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">সাপোর্ট ফোন</p>
-                        <p className="font-medium text-gray-900">+880 1234 567890</p>
+                        <p className="font-medium text-gray-900">০১৬০৩৭১৮৩৭৯</p>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-orange-600 text-sm font-semibold">জ</span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">জরুরী হেল্পলাইন</p>
-                        <p className="font-medium text-gray-900">+880 9876 543210</p>
-                      </div>
-                    </div>
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
                         <span className="text-red-600 text-sm font-semibold">আ</span>

@@ -154,52 +154,6 @@ export default function AdminEnrollmentPage() {
     }
   };
 
-  const handleApproveEnrollment = async (enrollmentId: string) => {
-    try {
-      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
-        }
-      });
-
-      if (response.ok) {
-        await fetchEnrollments();
-        toast.success('এনরোলমেন্ট সফলভাবে অনুমোদিত হয়েছে!');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'এনরোলমেন্ট অনুমোদন করতে সমস্যা হয়েছে');
-      }
-    } catch (error) {
-      console.error('Error approving enrollment:', error);
-      toast.error('এনরোলমেন্ট অনুমোদন করতে সমস্যা হয়েছে');
-    }
-  };
-
-  const handleRejectEnrollment = async (enrollmentId: string, reason: string) => {
-    try {
-      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${document.cookie.split('auth-token=')[1]?.split(';')[0] || ''}`
-        },
-        body: JSON.stringify({ reason })
-      });
-
-      if (response.ok) {
-        await fetchEnrollments();
-        toast.success('এনরোলমেন্ট সফলভাবে প্রত্যাখ্যান করা হয়েছে!');
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'এনরোলমেন্ট প্রত্যাখ্যান করতে সমস্যা হয়েছে');
-      }
-    } catch (error) {
-      console.error('Error rejecting enrollment:', error);
-      toast.error('এনরোলমেন্ট প্রত্যাখ্যান করতে সমস্যা হয়েছে');
-    }
-  };
 
   const handleDeleteEnrollment = (enrollmentId: string, studentName: string) => {
     setItemToDelete({ type: 'enrollment', id: enrollmentId, name: studentName });
@@ -553,27 +507,6 @@ export default function AdminEnrollmentPage() {
                         </div>
 
                         <div className="flex gap-2">
-                          {enrollment.status === 'pending' && (
-                            <>
-                              <Button 
-                                onClick={() => handleApproveEnrollment(enrollment._id)}
-                                className="bg-green-500 hover:bg-green-600 text-white"
-                              >
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                অনুমোদন
-                              </Button>
-                              <Button 
-                                onClick={() => {
-                                  const reason = prompt('প্রত্যাখ্যানের কারণ লিখুন:');
-                                  if (reason) handleRejectEnrollment(enrollment._id, reason);
-                                }}
-                                variant="destructive"
-                              >
-                                <XCircle className="h-4 w-4 mr-2" />
-                                প্রত্যাখ্যান
-                              </Button>
-                            </>
-                          )}
                           <Button 
                             onClick={() => handleDeleteEnrollment(enrollment._id, enrollment.student?.name || 'Unknown Student')}
                             variant="outline"

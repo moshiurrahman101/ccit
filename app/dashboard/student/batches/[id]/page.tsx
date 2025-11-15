@@ -23,12 +23,14 @@ import {
   Mail,
   Phone,
   GraduationCap,
-  Users
+  Users,
+  CreditCard
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { formatBanglaNumber, formatBanglaDate, formatBanglaCurrency } from '@/lib/utils/banglaNumbers';
+import StudentAttendanceView from '@/components/dashboard/StudentAttendanceView';
 
 interface StudentBatch {
   _id: string;
@@ -338,13 +340,75 @@ export default function StudentBatchDetailPage() {
         </Card>
       </div>
 
+      {/* Payment Pending Warning */}
+      {batchData.paymentStatus !== 'paid' && (
+        <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <AlertCircle className="h-6 w-6 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-yellow-900 mb-2">
+                পেমেন্ট বাকি
+              </h3>
+              <p className="text-yellow-800 mb-4">
+                কোর্সের ক্লাস, অ্যাসাইনমেন্ট এবং আলোচনা দেখতে পেমেন্ট সম্পন্ন করতে হবে। পেমেন্ট যাচাই হওয়ার পর সব ফিচার অ্যাক্সেস পাবেন।
+              </p>
+              <Link href="/dashboard/student/payment">
+                <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  এখনই পেমেন্ট করুন
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(value) => {
+          // Only allow tab change if payment is paid
+          if (batchData.paymentStatus === 'paid') {
+            setActiveTab(value);
+          } else if (value === 'overview') {
+            // Always allow overview tab
+            setActiveTab(value);
+          }
+        }} 
+        className="space-y-6"
+      >
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">সারসংক্ষেপ</TabsTrigger>
-          <TabsTrigger value="schedule">শিডিউল</TabsTrigger>
-          <TabsTrigger value="assignments">অ্যাসাইনমেন্ট</TabsTrigger>
-          <TabsTrigger value="discussions">আলোচনা</TabsTrigger>
+          <TabsTrigger 
+            value="schedule"
+            disabled={batchData.paymentStatus !== 'paid'}
+            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+          >
+            শিডিউল
+          </TabsTrigger>
+          <TabsTrigger 
+            value="assignments"
+            disabled={batchData.paymentStatus !== 'paid'}
+            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+          >
+            অ্যাসাইনমেন্ট
+          </TabsTrigger>
+          <TabsTrigger 
+            value="attendance"
+            disabled={batchData.paymentStatus !== 'paid'}
+            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+          >
+            উপস্থিতি
+          </TabsTrigger>
+          <TabsTrigger 
+            value="discussions"
+            disabled={batchData.paymentStatus !== 'paid'}
+            className={batchData.paymentStatus !== 'paid' ? 'opacity-50 cursor-not-allowed' : ''}
+          >
+            আলোচনা
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -379,7 +443,7 @@ export default function StudentBatchDetailPage() {
                 <CardTitle>মেন্টরের তথ্য</CardTitle>
               </CardHeader>
               <CardContent>
-                {batchData.batch.mentorId && batchData.batch.mentorId.name !== 'Mentor Information Unavailable' ? (
+                {batchData.batch.mentorId && batchData.batch.mentorId.name && batchData.batch.mentorId.name !== 'Mentor Information Unavailable' ? (
                   <div className="flex items-center gap-3 p-4 bg-orange-50 rounded-lg border border-orange-200">
                     {batchData.batch.mentorId.avatar ? (
                       <img 
@@ -390,7 +454,7 @@ export default function StudentBatchDetailPage() {
                     ) : (
                       <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">
-                          {batchData.batch.mentorId.name.charAt(0)}
+                          {batchData.batch.mentorId.name && batchData.batch.mentorId.name.length > 0 ? batchData.batch.mentorId.name.charAt(0).toUpperCase() : 'M'}
                         </span>
                       </div>
                     )}
@@ -399,7 +463,7 @@ export default function StudentBatchDetailPage() {
                         {batchData.batch.mentorId.name}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {batchData.batch.mentorId.designation}
+                        {batchData.batch.mentorId.designation || 'Mentor'}
                       </p>
                     </div>
                   </div>
@@ -472,24 +536,43 @@ export default function StudentBatchDetailPage() {
 
         {/* Schedule Tab - Google Classroom Style */}
         <TabsContent value="schedule" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  ক্লাস শিডিউল
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-green-600 border-green-200">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    লাইভ ক্লাস
-                  </Badge>
+          {batchData.paymentStatus !== 'paid' ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-10 w-10 text-yellow-600" />
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {schedules.length > 0 ? (
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">পেমেন্ট বাকি</h3>
+                <p className="text-gray-600 mb-4">
+                  ক্লাস শিডিউল দেখতে পেমেন্ট সম্পন্ন করতে হবে। পেমেন্ট যাচাই হওয়ার পর সব ক্লাস দেখতে পাবেন।
+                </p>
+                <Link href="/dashboard/student/payment">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    এখনই পেমেন্ট করুন
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    ক্লাস শিডিউল
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                      লাইভ ক্লাস
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {schedules.length > 0 ? (
                   schedules.map((schedule) => {
                     const isToday = new Date(schedule.date).toDateString() === new Date().toDateString();
                     const isUpcoming = new Date(schedule.date) > new Date();
@@ -616,31 +699,51 @@ export default function StudentBatchDetailPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Assignments Tab */}
         <TabsContent value="assignments" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Assignments
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-blue-600 border-blue-200">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    Active Assignments
-                  </Badge>
+          {batchData.paymentStatus !== 'paid' ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-10 w-10 text-yellow-600" />
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {assignments.length > 0 ? (
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">পেমেন্ট বাকি</h3>
+                <p className="text-gray-600 mb-4">
+                  অ্যাসাইনমেন্ট দেখতে পেমেন্ট সম্পন্ন করতে হবে। পেমেন্ট যাচাই হওয়ার পর সব অ্যাসাইনমেন্ট দেখতে পাবেন।
+                </p>
+                <Link href="/dashboard/student/payment">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    এখনই পেমেন্ট করুন
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Assignments
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-blue-600 border-blue-200">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                      Active Assignments
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {assignments.length > 0 ? (
                   assignments.map((assignment) => {
                     const isOverdue = new Date(assignment.dueDate) < new Date() && assignment.status === 'assigned';
                     const isDueToday = new Date(assignment.dueDate).toDateString() === new Date().toDateString();
@@ -773,20 +876,65 @@ export default function StudentBatchDetailPage() {
                     </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Attendance Tab */}
+        <TabsContent value="attendance" className="space-y-6">
+          {batchData.paymentStatus !== 'paid' ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-10 w-10 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">পেমেন্ট বাকি</h3>
+                <p className="text-gray-600 mb-4">
+                  উপস্থিতি দেখতে পেমেন্ট সম্পন্ন করতে হবে। পেমেন্ট যাচাই হওয়ার পর তোমার উপস্থিতি দেখতে পাবেন।
+                </p>
+                <Link href="/dashboard/student/payment">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    এখনই পেমেন্ট করুন
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <StudentAttendanceView batchId={batchData.batch._id} />
+          )}
         </TabsContent>
 
         {/* Discussions Tab */}
         <TabsContent value="discussions" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Discussions
-              </CardTitle>
-            </CardHeader>
+          {batchData.paymentStatus !== 'paid' ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-10 w-10 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">পেমেন্ট বাকি</h3>
+                <p className="text-gray-600 mb-4">
+                  আলোচনা দেখতে পেমেন্ট সম্পন্ন করতে হবে। পেমেন্ট যাচাই হওয়ার পর আলোচনায় অংশগ্রহণ করতে পারবেন।
+                </p>
+                <Link href="/dashboard/student/payment">
+                  <Button className="bg-orange-600 hover:bg-orange-700 text-white">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    এখনই পেমেন্ট করুন
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Discussions
+                </CardTitle>
+              </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {discussions.length > 0 ? (
@@ -829,6 +977,7 @@ export default function StudentBatchDetailPage() {
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

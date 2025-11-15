@@ -22,11 +22,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file type - support both images and documents
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedDocTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip', 'application/x-rar-compressed'];
+    const isImage = allowedImageTypes.includes(file.type);
+    const isDocument = allowedDocTypes.includes(file.type);
+    
+    if (!isImage && !isDocument) {
       return NextResponse.json({ 
-        error: 'Invalid file type. Please upload a JPG, PNG, GIF, or WebP image.' 
+        error: 'Invalid file type. Please upload an image (JPG, PNG, GIF, WebP), PDF, DOC, DOCX, ZIP, or RAR file.' 
       }, { status: 400 });
     }
 
@@ -34,7 +38,7 @@ export async function POST(request: NextRequest) {
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json({ 
-        error: 'File size too large. Please upload an image smaller than 10MB.' 
+        error: 'File size too large. Please upload a file smaller than 10MB.' 
       }, { status: 400 });
     }
 
@@ -43,44 +47,60 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     // Upload to Cloudinary with transformations based on folder
-    let transformation = [];
+    // Determine resource type and transformation
+    const resourceType = isImage ? 'image' : 'raw';
+    let transformation: any[] = [];
     
-    if (folder === 'seo-images') {
-      // For SEO images, create OG-optimized versions
-      transformation = [
-        { width: 1200, height: 630, crop: 'fill', quality: 'auto' },
-        { format: 'auto' }
-      ];
-    } else if (folder === 'blog-images') {
-      // For blog images, limit size
-      transformation = [
-        { width: 800, height: 800, crop: 'limit', quality: 'auto' },
-        { format: 'auto' }
-      ];
-    } else if (folder === 'course-covers') {
-      // For course covers, maintain aspect ratio
-      transformation = [
-        { width: 600, height: 400, crop: 'fill', quality: 'auto' },
-        { format: 'auto' }
-      ];
-    } else {
-      // Default transformation
-      transformation = [
-        { width: 800, height: 800, crop: 'limit', quality: 'auto' },
-        { format: 'auto' }
-      ];
+    if (isImage) {
+      if (folder === 'seo-images') {
+        // For SEO images, create OG-optimized versions
+        transformation = [
+          { width: 1200, height: 630, crop: 'fill', quality: 'auto' },
+          { format: 'auto' }
+        ];
+      } else if (folder === 'blog-images') {
+        // For blog images, limit size
+        transformation = [
+          { width: 800, height: 800, crop: 'limit', quality: 'auto' },
+          { format: 'auto' }
+        ];
+      } else if (folder === 'course-covers') {
+        // For course covers, maintain aspect ratio
+        transformation = [
+          { width: 600, height: 400, crop: 'fill', quality: 'auto' },
+          { format: 'auto' }
+        ];
+      } else if (folder === 'assignment-attachments') {
+        // For assignment attachments, limit size but maintain aspect ratio
+        transformation = [
+          { width: 1200, height: 1200, crop: 'limit', quality: 'auto' },
+          { format: 'auto' }
+        ];
+      } else {
+        // Default transformation
+        transformation = [
+          { width: 800, height: 800, crop: 'limit', quality: 'auto' },
+          { format: 'auto' }
+        ];
+      }
+    }
+
+    const uploadOptions: any = {
+      folder: folder,
+      resource_type: resourceType,
+      tags: folder === 'seo-images' ? ['seo', 'og-image'] : [folder],
+      context: folder === 'seo-images' ? 'alt=SEO Image' : undefined
+    };
+
+    // Only add image-specific options for images
+    if (isImage) {
+      uploadOptions.allowed_formats = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      uploadOptions.transformation = transformation;
     }
 
     const result = await new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
-        {
-          folder: folder,
-          resource_type: 'image',
-          allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-          transformation: transformation,
-          tags: folder === 'seo-images' ? ['seo', 'og-image'] : [folder],
-          context: folder === 'seo-images' ? 'alt=SEO Image' : undefined
-        },
+        uploadOptions,
         (error, result) => {
           if (error) reject(error);
           else resolve(result);

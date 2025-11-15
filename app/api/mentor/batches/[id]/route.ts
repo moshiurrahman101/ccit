@@ -2,8 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Batch from '@/models/Batch';
 import Mentor from '@/models/Mentor';
+import { Enrollment } from '@/models/Enrollment';
+import Invoice from '@/models/Invoice';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import mongoose from 'mongoose';
 
 const updateBatchSchema = z.object({
   name: z.string().min(1, 'Batch name is required').max(100, 'Batch name too long').optional(),
@@ -105,7 +108,48 @@ export async function GET(
       batch.mentorId = null;
     }
 
-    return NextResponse.json({ batch });
+    // Calculate actual enrollment count (all enrollments, not just paid)
+    let batchObjectId;
+    try {
+      batchObjectId = new mongoose.Types.ObjectId(id);
+    } catch (error) {
+      console.error('Invalid batch ID format:', id);
+    }
+
+    let actualEnrollmentCount = 0;
+    if (batchObjectId) {
+      // Count all enrollments for this batch (any payment status)
+      const enrollmentCount = await Enrollment.countDocuments({
+        $or: [
+          { batch: batchObjectId },
+          { batch: id }
+        ]
+      });
+      actualEnrollmentCount = enrollmentCount;
+
+      // If no enrollments found, check invoices (since invoices store batchId as string)
+      if (actualEnrollmentCount === 0) {
+        const invoiceCount = await Invoice.countDocuments({
+          batchId: id
+        });
+        actualEnrollmentCount = invoiceCount;
+      } else {
+        // Also check for invoices that might not have enrollment records yet
+        const invoiceCount = await Invoice.countDocuments({
+          batchId: id
+        });
+        // Use the higher count to ensure we show all enrolled students
+        actualEnrollmentCount = Math.max(actualEnrollmentCount, invoiceCount);
+      }
+    }
+
+    // Update batch object with actual count
+    const batchWithActualCount = {
+      ...batch.toObject(),
+      currentStudents: actualEnrollmentCount
+    };
+
+    return NextResponse.json({ batch: batchWithActualCount });
 
   } catch (error) {
     console.error('Error fetching batch:', error);

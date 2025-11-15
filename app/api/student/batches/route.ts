@@ -30,18 +30,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const status = searchParams.get('status');
 
-    // Build query
+    // Build query - show all enrollments regardless of status
+    // Students should see their enrolled batches even if payment is pending
     const query: any = {
       student: payload.userId
     };
     
-    if (status && status !== 'all') {
+    // Only filter by status if explicitly requested and not 'all'
+    // This allows students to see pending enrollments
+    if (status && status !== 'all' && status !== 'pending') {
       query.status = status;
     }
 
     const skip = (page - 1) * limit;
 
     // First, get enrollments with batch populated
+    // Also include enrollments where batch might be null (for invoices without enrollment)
     const enrollments = await Enrollment.find(query)
       .populate({
         path: 'batch',
@@ -53,6 +57,48 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean();
 
+    // Also check for invoices that might not have enrollment records yet
+    const Invoice = (await import('@/models/Invoice')).default;
+    const invoices = await Invoice.find({
+      studentId: payload.userId
+    })
+      .populate({
+        path: 'batchId',
+        model: Batch,
+        select: 'name description coverPhoto courseType regularPrice discountPrice mentorId courseId startDate endDate maxStudents currentStudents status'
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Create a map of batch IDs that already have enrollments
+    const enrolledBatchIds = new Set(
+      enrollments
+        .filter(e => e.batch && e.batch._id)
+        .map(e => e.batch._id.toString())
+    );
+
+    // Add invoices that don't have enrollment records yet
+    for (const invoice of invoices) {
+      if (invoice.batchId && !enrolledBatchIds.has(invoice.batchId._id.toString())) {
+        // Create a mock enrollment object from invoice
+        const mockEnrollment: any = {
+          _id: invoice._id,
+          student: payload.userId,
+          course: invoice.batchId.courseId || null,
+          batch: invoice.batchId,
+          enrollmentDate: invoice.createdAt || new Date(),
+          status: 'pending', // Payment pending
+          paymentStatus: invoice.status === 'paid' ? 'paid' : 'pending',
+          amount: invoice.finalAmount || invoice.amount,
+          progress: 0,
+          lastAccessed: new Date(),
+          createdAt: invoice.createdAt || new Date(),
+          updatedAt: invoice.updatedAt || new Date()
+        };
+        enrollments.push(mockEnrollment);
+      }
+    }
+
     // Then manually populate mentor and course information for each enrollment
     const Course = (await import('@/models/Course')).default;
     const Mentor = (await import('@/models/Mentor')).default;
@@ -62,8 +108,16 @@ export async function GET(request: NextRequest) {
         const batchData: any = enrollment.batch; // Type assertion for dynamic property assignment
         
         // Populate mentor information
-        if (batchData.mentorId) {
-          const mentor = await Mentor.findById(batchData.mentorId)
+        // Handle both ObjectId and populated mentor object
+        let mentorIdValue = batchData.mentorId;
+        if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue._id) {
+          mentorIdValue = mentorIdValue._id;
+        } else if (mentorIdValue && typeof mentorIdValue === 'object' && mentorIdValue.toString) {
+          mentorIdValue = mentorIdValue.toString();
+        }
+        
+        if (mentorIdValue && typeof mentorIdValue === 'string') {
+          const mentor = await Mentor.findById(mentorIdValue)
             .select('name avatar designation')
             .lean();
           
@@ -71,14 +125,21 @@ export async function GET(request: NextRequest) {
             batchData.mentorId = mentor;
             console.log('Mentor populated for enrollment:', (mentor as any).name);
           } else {
-            console.log('Mentor not found for ID:', batchData.mentorId);
+            console.log('Mentor not found for ID:', mentorIdValue);
             // Set a default mentor object if mentor doesn't exist
             batchData.mentorId = {
-              _id: batchData.mentorId,
+              _id: mentorIdValue,
               name: 'Mentor Information Unavailable',
               designation: 'Contact Admin'
             };
           }
+        } else if (!mentorIdValue) {
+          // No mentor ID, set default
+          batchData.mentorId = {
+            _id: null,
+            name: 'Mentor Information Unavailable',
+            designation: 'Contact Admin'
+          };
         }
         
         // Populate course information to get modules, duration, etc.
@@ -107,16 +168,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const total = await Enrollment.countDocuments(query);
+    // Count total enrollments and invoices
+    const enrollmentCount = await Enrollment.countDocuments(query);
+    const invoiceCount = await Invoice.countDocuments({ studentId: payload.userId });
+    // Total is the unique count (enrollments + invoices without enrollment)
+    const total = Math.max(enrollmentCount, invoiceCount);
 
     console.log('=== STUDENT BATCH API DEBUG ===');
     console.log('Query:', query);
     console.log('Found enrollments:', enrollments.length);
+    console.log('Enrollment count:', enrollmentCount);
+    console.log('Invoice count:', invoiceCount);
     if (enrollments.length > 0) {
       console.log('First enrollment batch:', enrollments[0].batch);
+      console.log('First enrollment status:', enrollments[0].status);
+      console.log('First enrollment paymentStatus:', enrollments[0].paymentStatus);
       console.log('First enrollment mentorId:', enrollments[0].batch?.mentorId);
-      console.log('First enrollment mentorId type:', typeof enrollments[0].batch?.mentorId);
-      console.log('Is mentorId populated?', enrollments[0].batch?.mentorId && typeof enrollments[0].batch?.mentorId === 'object');
     }
 
     return NextResponse.json({
@@ -124,8 +191,8 @@ export async function GET(request: NextRequest) {
       batches: enrollments,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
+        totalPages: Math.ceil(enrollments.length / limit),
+        totalItems: enrollments.length,
         itemsPerPage: limit
       }
     });

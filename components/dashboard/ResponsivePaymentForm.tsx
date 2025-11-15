@@ -360,6 +360,16 @@ export default function ResponsivePaymentForm({
               <li>• {formData.paymentType === 'full' ? 'পূর্ণ পেমেন্ট' : 'আংশিক পেমেন্ট'} করুন</li>
               <li>• পরিমাণ: ৳{formData.paymentAmount ? parseFloat(formData.paymentAmount).toLocaleString('en-BD') : '0'} টাকা</li>
               <li>• {getPaymentMethodText(formData.paymentMethod)} এর মাধ্যমে পেমেন্ট করুন</li>
+              <li className="font-semibold mt-2">পেমেন্ট করুন এই নম্বরে:</li>
+              {formData.paymentMethod === 'bkash' && (
+                <li className="ml-4">• bKash: <strong>০১৬০৩৭১৮৩৭৯</strong></li>
+              )}
+              {formData.paymentMethod === 'nagad' && (
+                <li className="ml-4">• Nagad: <strong>০১৮৪৫২০২১০১</strong></li>
+              )}
+              {formData.paymentMethod === 'rocket' && (
+                <li className="ml-4">• Rocket: <strong>০১৮৪৫২০২১০১</strong></li>
+              )}
               <li>• সঠিক ট্রানজেকশন আইডি প্রদান করুন</li>
               <li>• পেমেন্ট স্লিপ/স্ক্রিনশট সংরক্ষণ করুন</li>
               <li>• প্রশাসক যাচাই করার পর পেমেন্ট অনুমোদিত হবে</li>
