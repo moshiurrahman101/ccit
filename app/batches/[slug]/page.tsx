@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Users, Calendar, Clock, Star, CheckCircle, ArrowLeft, Loader2, ExternalLink, Github, Linkedin, Briefcase, Timer, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BookOpen, Users, Calendar, Clock, Star, CheckCircle, ArrowLeft, Loader2, ExternalLink, Github, Linkedin, Briefcase, Timer, Zap, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { SEOHead } from '@/components/seo/SEOHead';
@@ -98,6 +99,16 @@ export default function BatchDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(false);
   const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [enrolledBatchName, setEnrolledBatchName] = useState<string>('');
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
+
+  // Debug: Log when dialog state changes
+  useEffect(() => {
+    if (showSuccessDialog) {
+      console.log('Success dialog should be visible now');
+    }
+  }, [showSuccessDialog]);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -235,16 +246,18 @@ export default function BatchDetailPage() {
 
           if (enrollmentResponse.ok) {
             const successData = await enrollmentResponse.json();
-            // Enrollment successful, show success message and redirect to dashboard
-            alert(`Successfully enrolled in ${batch?.name}! Redirecting to dashboard...`);
-            router.push('/dashboard');
+            // Enrollment successful, show success dialog
+            console.log('Enrollment successful, showing dialog for:', batch?.name);
+            setEnrolledBatchName(batch?.name || '');
+            setShowSuccessDialog(true);
+            console.log('Dialog state set to true');
           } else {
             const errorData = await enrollmentResponse.json();
-            alert(errorData.error || 'Enrollment failed. Please try again.');
+            setEnrollmentError(errorData.error || 'Enrollment failed. Please try again.');
           }
         } catch (enrollmentError) {
           console.error('Enrollment error:', enrollmentError);
-          alert('Enrollment failed. Please try again.');
+          setEnrollmentError('Enrollment failed. Please try again.');
         }
       } else {
         // User is not authenticated, redirect to registration
@@ -941,6 +954,78 @@ export default function BatchDetailPage() {
         </div>
       </div>
     </div>
+
+    {/* Success Dialog */}
+    <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+      <DialogContent className="sm:max-w-md" showCloseButton={true}>
+        <DialogHeader>
+          <div className="flex items-center justify-center mb-4">
+            <div className="p-3 bg-green-100 rounded-full">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+          <DialogTitle className="text-center text-xl font-semibold text-gray-900">
+            সফলভাবে এনরোল হয়েছে!
+          </DialogTitle>
+          <DialogDescription className="text-center text-gray-600 mt-2">
+            Successfully enrolled in <span className="font-semibold text-gray-900">{enrolledBatchName}</span>! Please complete payment to access the course.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800 text-center">
+            <strong>পরবর্তী ধাপ:</strong> এখন আপনার পেমেন্ট সম্পন্ন করুন এবং কোর্সে অ্যাক্সেস পান।
+          </p>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowSuccessDialog(false)}
+            className="w-full sm:w-auto"
+          >
+            বন্ধ করুন
+          </Button>
+          <Button
+            onClick={() => {
+              setShowSuccessDialog(false);
+              router.push('/dashboard/student/enrollment');
+            }}
+            className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+          >
+            ইনভয়েস দেখুন
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Error Dialog */}
+    <Dialog open={!!enrollmentError} onOpenChange={(open) => !open && setEnrollmentError(null)}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-center mb-4">
+            <div className="p-3 bg-red-100 rounded-full">
+              <AlertCircle className="h-8 w-8 text-red-600" />
+            </div>
+          </div>
+          <DialogTitle className="text-center text-xl font-semibold text-gray-900">
+            এনরোলমেন্ট ব্যর্থ হয়েছে
+          </DialogTitle>
+          <DialogDescription className="text-center text-gray-600 mt-2">
+            {enrollmentError}
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
+          <Button
+            onClick={() => setEnrollmentError(null)}
+            className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+          >
+            ঠিক আছে
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }

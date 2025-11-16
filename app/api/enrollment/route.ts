@@ -93,6 +93,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Check for existing enrollment - try multiple queries to catch all cases
+    // First check with batch
     let existingEnrollment = await Enrollment.findOne({
       student: payload.userId,
       course: course._id,
@@ -100,11 +101,46 @@ export async function POST(request: NextRequest) {
     });
 
     // Also check without batch (in case batch is optional in some records)
+    // Since the unique index is on {student: 1, course: 1}, a student can only
+    // enroll once per course, even across different batches
     if (!existingEnrollment) {
       existingEnrollment = await Enrollment.findOne({
         student: payload.userId,
         course: course._id
       });
+    }
+
+    // Check if there are any orphaned records with null student values
+    // This can happen when a user account is deleted but enrollment records remain
+    // We need to clean these up before creating new enrollments
+    // Also check for old field names (studentId, courseId) from old indexes
+    const collection = Enrollment.collection;
+    
+    const orphanedRecords = await collection.find({
+      $or: [
+        { student: null },
+        { student: { $exists: false } },
+        { studentId: null },
+        { studentId: { $exists: false } }
+      ]
+    }).limit(100).toArray(); // Limit to avoid performance issues
+
+    if (orphanedRecords.length > 0) {
+      console.log(`Found ${orphanedRecords.length} orphaned enrollment records with null/missing student (including old field names), cleaning up...`);
+      
+      // Delete all orphaned records using collection.deleteMany
+      const deleteResult = await collection.deleteMany({
+        $or: [
+          { student: null },
+          { student: { $exists: false } },
+          { studentId: null },
+          { studentId: { $exists: false } }
+        ]
+      });
+      
+      if (deleteResult.deletedCount > 0) {
+        console.log(`Cleaned up ${deleteResult.deletedCount} orphaned enrollment records`);
+      }
     }
 
     console.log('Existing invoice check:', existingInvoice ? 'Found existing invoice' : 'No existing invoice');
@@ -244,36 +280,217 @@ export async function POST(request: NextRequest) {
         // If it's a duplicate key error, try to find the existing enrollment
         if (enrollmentError.code === 11000) {
           console.log('Duplicate enrollment detected, trying to find existing enrollment...');
+          console.log('Error details:', {
+            code: enrollmentError.code,
+            keyPattern: enrollmentError.keyPattern,
+            keyValue: enrollmentError.keyValue
+          });
+
+          // Try multiple queries to find the existing enrollment
+          // Check with batch first
           enrollment = await Enrollment.findOne({
             student: payload.userId,
             course: course._id,
             batch: validatedData.batchId
           });
           
+          // If not found, try without batch
           if (!enrollment) {
-            // Try without batch (in case batch is optional)
             enrollment = await Enrollment.findOne({
               student: payload.userId,
               course: course._id
             });
           }
+
+          // If still not found, try to find by matching the keyValue from the error
+          if (!enrollment && enrollmentError.keyValue) {
+            const query: any = {};
+            if (enrollmentError.keyPattern) {
+              // Map MongoDB field names to our schema field names
+              if (enrollmentError.keyPattern.studentId || enrollmentError.keyPattern.student) {
+                query.student = enrollmentError.keyValue.studentId || enrollmentError.keyValue.student || payload.userId;
+              }
+              if (enrollmentError.keyPattern.courseId || enrollmentError.keyPattern.course) {
+                query.course = enrollmentError.keyValue.courseId || enrollmentError.keyValue.course || course._id;
+              }
+              if (enrollmentError.keyPattern.batchId || enrollmentError.keyPattern.batch) {
+                query.batch = enrollmentError.keyValue.batchId || enrollmentError.keyValue.batch || validatedData.batchId;
+              }
+              
+              if (Object.keys(query).length > 0) {
+                enrollment = await Enrollment.findOne(query);
+              }
+            }
+          }
+
+          // If still not found, try a broader search
+          if (!enrollment) {
+            enrollment = await Enrollment.findOne({
+              $or: [
+                { student: payload.userId, course: course._id },
+                { student: payload.userId, batch: validatedData.batchId }
+              ]
+            });
+          }
           
           if (enrollment) {
             console.log('Found existing enrollment:', enrollment._id);
+            // Update the batch field if it's missing
+            if (!enrollment.batch && validatedData.batchId) {
+              enrollment.batch = validatedData.batchId as any;
+              await enrollment.save();
+              console.log('Updated existing enrollment with batch ID');
+            }
           } else {
-            console.error('Duplicate key error but enrollment not found:', enrollmentError);
-            // Clean up invoice if enrollment creation fails
-            await Invoice.findByIdAndDelete(invoice._id);
-            return NextResponse.json({ 
-              error: 'Failed to create enrollment. Please try again.' 
-            }, { status: 500 });
-          }
+            console.error('Duplicate key error but enrollment not found:', {
+              error: enrollmentError.message,
+              keyPattern: enrollmentError.keyPattern,
+              keyValue: enrollmentError.keyValue,
+              studentId: payload.userId,
+              courseId: course._id,
+              batchId: validatedData.batchId
+            });
+            
+            // If we still can't find it, there might be corrupt records with null values
+            // The error shows keyPattern has old field names (studentId/courseId) from an old index
+            // but our schema uses student/course. We need to use MongoDB collection directly
+            // to find and delete records that match the old index pattern
+            console.log('Attempting to find and clean up all records with null values (including old field names)...');
+            
+            // Use MongoDB collection directly to find records with null in ANY indexed field
+            // This handles both old field names (studentId, courseId) and new ones (student, course)
+            const collection = Enrollment.collection;
+            
+            // Find all records with null in student/studentId OR course/courseId
+            const allNullRecords = await collection.find({
+              $or: [
+                { student: null },
+                { course: null },
+                { studentId: null },
+                { courseId: null },
+                { student: { $exists: false } },
+                { course: { $exists: false } },
+                { studentId: { $exists: false } },
+                { courseId: { $exists: false } }
+              ]
+            }).toArray();
+
+            // Always try to drop the old index if it exists (might be causing the issue even without null records)
+            try {
+              await collection.dropIndex('studentId_1_courseId_1');
+              console.log('✅ Dropped old index: studentId_1_courseId_1');
+            } catch (idxError: any) {
+              if (idxError.code === 27) { // 27 = IndexNotFound error
+                console.log('Old index studentId_1_courseId_1 does not exist');
+              } else {
+                console.log('Could not drop old index:', idxError.message);
+              }
+            }
+            
+            if (allNullRecords.length > 0) {
+              console.log(`Found ${allNullRecords.length} records with null values (including old field names), deleting all...`);
+              
+              // Delete all null records using collection.deleteMany
+              const deleteResult = await collection.deleteMany({
+                $or: [
+                  { student: null },
+                  { course: null },
+                  { studentId: null },
+                  { courseId: null },
+                  { student: { $exists: false } },
+                  { course: { $exists: false } },
+                  { studentId: { $exists: false } },
+                  { courseId: { $exists: false } }
+                ]
+              });
+              
+              console.log(`✅ Deleted ${deleteResult.deletedCount} records with null values`);
+            } else {
+              console.log('No null records found, but old index may have been dropped');
+            }
+            
+            // Try creating enrollment again after cleanup (whether or not null records were found)
+            try {
+              enrollment = new Enrollment({
+                student: payload.userId,
+                course: course._id,
+                batch: validatedData.batchId,
+                amount: finalAmount,
+                status: 'pending',
+                paymentStatus: 'pending',
+                progress: 0
+              });
+              await enrollment.save();
+              console.log('Enrollment created successfully after cleaning all null records');
+            } catch (retryError: any) {
+              console.error('Failed to create enrollment after cleaning null records:', retryError);
+              
+              // If still failing, try to find any record that might conflict
+              if (retryError.code === 11000) {
+                console.log('Still getting duplicate key error after cleanup. Attempting direct collection query...');
+                
+                // Try to find the conflicting record directly
+                const conflictingRecord = await collection.findOne({
+                  $or: [
+                    { student: payload.userId, course: course._id.toString() },
+                    { student: payload.userId, course: course._id },
+                    { studentId: payload.userId, courseId: course._id.toString() },
+                    { studentId: payload.userId, courseId: course._id }
+                  ]
+                });
+                
+                if (conflictingRecord) {
+                  console.log('Found conflicting record, deleting it:', conflictingRecord._id);
+                  await collection.deleteOne({ _id: conflictingRecord._id });
+                  
+                  // Try one more time
+                  try {
+                    enrollment = new Enrollment({
+                      student: payload.userId,
+                      course: course._id,
+                      batch: validatedData.batchId,
+                      amount: finalAmount,
+                      status: 'pending',
+                      paymentStatus: 'pending',
+                      progress: 0
+                    });
+                    await enrollment.save();
+                    console.log('Enrollment created successfully after deleting conflicting record');
+                  } catch (finalError: any) {
+                    console.error('Final enrollment creation failed:', finalError);
+                    await Invoice.findByIdAndDelete(invoice._id);
+                    return NextResponse.json({ 
+                      error: 'Failed to create enrollment after cleanup. Please contact support.' 
+                    }, { status: 500 });
+                  }
+                } else {
+                  await Invoice.findByIdAndDelete(invoice._id);
+                  return NextResponse.json({ 
+                    error: 'Failed to create enrollment. Duplicate key constraint issue persists. Please contact support.' 
+                  }, { status: 500 });
+                }
+              } else {
+                await Invoice.findByIdAndDelete(invoice._id);
+                return NextResponse.json({ 
+                  error: 'Failed to create enrollment. Please try again or contact support.' 
+                }, { status: 500 });
+              }
+            }
+
+            // If we still don't have an enrollment, clean up and return error
+            if (!enrollment) {
+              await Invoice.findByIdAndDelete(invoice._id);
+              return NextResponse.json({ 
+                error: 'Failed to create enrollment. You may already be enrolled in this course. Please check your enrollments or contact support.' 
+              }, { status: 500 });
+            }
+          } // end of else block for enrollment not found
         } else {
-          // Clean up invoice if enrollment creation fails
+          // Clean up invoice if enrollment creation fails (non-11000 error)
           await Invoice.findByIdAndDelete(invoice._id);
           throw enrollmentError;
-        }
-      }
+        } // end of else block for non-11000 errors
+      } // end of catch block
     } else {
       console.log('Using existing enrollment record');
     }

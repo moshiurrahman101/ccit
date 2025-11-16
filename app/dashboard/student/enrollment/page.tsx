@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   BookOpen, 
   Users, 
@@ -105,6 +106,9 @@ export default function EnrollmentPage() {
   const [courseTypeFilter, setCourseTypeFilter] = useState('');
   const [approvalStatus, setApprovalStatus] = useState<string>('pending');
   const [isCheckingApproval, setIsCheckingApproval] = useState(true);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [enrolledBatchName, setEnrolledBatchName] = useState<string>('');
+  const [enrollmentError, setEnrollmentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
@@ -218,17 +222,18 @@ export default function EnrollmentPage() {
 
       if (response.ok) {
         const data = await response.json();
-        alert(`Successfully enrolled in ${batchName}! Please complete payment to access the course.`);
+        setEnrolledBatchName(batchName);
+        setShowSuccessDialog(true);
         await fetchEnrolledBatches(); // Refresh enrolled batches
         await fetchAvailableBatches(); // Refresh available batches
       } else {
         const errorData = await response.json();
         console.log('Enrollment failed:', errorData);
-        alert(errorData.error || 'Enrollment failed. Please try again.');
+        setEnrollmentError(errorData.error || 'Enrollment failed. Please try again.');
       }
     } catch (error) {
       console.error('Enrollment error:', error);
-      alert('Enrollment failed. Please try again.');
+      setEnrollmentError('Enrollment failed. Please try again.');
     }
   };
 
@@ -656,6 +661,78 @@ export default function EnrollmentPage() {
         </div>
       )}
 
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md" showCloseButton={true}>
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-green-100 rounded-full">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl font-semibold text-gray-900">
+              সফলভাবে এনরোল হয়েছে!
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600 mt-2">
+              Successfully enrolled in <span className="font-semibold text-gray-900">{enrolledBatchName}</span>! Please complete payment to access the course.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 text-center">
+              <strong>পরবর্তী ধাপ:</strong> এখন আপনার পেমেন্ট সম্পন্ন করুন এবং কোর্সে অ্যাক্সেস পান।
+            </p>
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setShowSuccessDialog(false)}
+              className="w-full sm:w-auto"
+            >
+              বন্ধ করুন
+            </Button>
+            <Button
+              onClick={() => {
+                setShowSuccessDialog(false);
+                setActiveTab('enrolled');
+                fetchEnrolledBatches();
+              }}
+              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              আমার এনরোলমেন্ট দেখুন
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={!!enrollmentError} onOpenChange={(open) => !open && setEnrollmentError(null)}>
+        <DialogContent className="sm:max-w-md" showCloseButton={true}>
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="p-3 bg-red-100 rounded-full">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl font-semibold text-gray-900">
+              এনরোলমেন্ট ব্যর্থ হয়েছে
+            </DialogTitle>
+            <DialogDescription className="text-center text-gray-600 mt-2">
+              {enrollmentError}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2 mt-6">
+            <Button
+              onClick={() => setEnrollmentError(null)}
+              className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+            >
+              ঠিক আছে
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
