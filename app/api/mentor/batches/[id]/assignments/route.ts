@@ -3,6 +3,7 @@ import connectDB from '@/lib/mongodb';
 import Batch from '@/models/Batch';
 import Mentor from '@/models/Mentor';
 import Assignment from '@/models/Assignment';
+import User from '@/models/User';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import mongoose from 'mongoose';
@@ -80,21 +81,64 @@ export async function GET(
     const assignments = await Assignment.find({ batchId: id })
       .sort({ createdAt: -1 })
       .populate('createdBy', 'name email')
+      .populate('submissions.student', 'name email')
       .lean();
 
-    // Format assignments for response
-    const formattedAssignments = assignments.map((assignment: any) => ({
-      _id: assignment._id?.toString() || assignment._id,
-      title: assignment.title,
-      description: assignment.description,
-      instructions: assignment.instructions || '',
-      dueDate: assignment.dueDate?.toISOString() || new Date(assignment.dueDate).toISOString(),
-      maxPoints: assignment.maxPoints,
-      attachments: assignment.attachments || [],
-      status: assignment.status || 'published',
-      submissions: assignment.submissions?.length || 0,
-      createdAt: assignment.createdAt?.toISOString() || new Date(assignment.createdAt).toISOString(),
-      updatedAt: assignment.updatedAt?.toISOString() || new Date(assignment.updatedAt).toISOString()
+    // User model is already imported
+
+    // Format assignments for response with submission details
+    const formattedAssignments = await Promise.all(assignments.map(async (assignment: any) => {
+      // Get submission details with student info
+      const submissionsWithDetails = await Promise.all(
+        (assignment.submissions || []).map(async (sub: any) => {
+          let studentInfo = null;
+          if (sub.student) {
+            if (typeof sub.student === 'object' && sub.student._id) {
+              studentInfo = {
+                _id: sub.student._id?.toString(),
+                name: sub.student.name,
+                email: sub.student.email
+              };
+            } else {
+              // Fetch student info if not populated
+              const student = await User.findById(sub.student).select('name email').lean();
+              if (student && !Array.isArray(student)) {
+                studentInfo = {
+                  _id: (student as any)._id?.toString() || String((student as any)._id),
+                  name: (student as any).name,
+                  email: (student as any).email
+                };
+              }
+            }
+          }
+
+          return {
+            _id: sub._id?.toString() || sub._id,
+            student: studentInfo || sub.student?.toString(),
+            content: sub.content,
+            submittedAt: sub.submittedAt?.toISOString() || new Date(sub.submittedAt).toISOString(),
+            grade: sub.grade,
+            feedback: sub.feedback,
+            gradedBy: sub.gradedBy?.toString(),
+            gradedAt: sub.gradedAt?.toISOString()
+          };
+        })
+      );
+
+      return {
+        _id: assignment._id?.toString() || assignment._id,
+        title: assignment.title,
+        description: assignment.description,
+        instructions: assignment.instructions || '',
+        dueDate: assignment.dueDate?.toISOString() || new Date(assignment.dueDate).toISOString(),
+        maxPoints: assignment.maxPoints,
+        attachments: assignment.attachments || [],
+        status: assignment.status || 'published',
+        submissions: submissionsWithDetails,
+        submissionsCount: assignment.submissions?.length || 0,
+        createdAt: assignment.createdAt?.toISOString() || new Date(assignment.createdAt).toISOString(),
+        updatedAt: assignment.updatedAt?.toISOString() || new Date(assignment.updatedAt).toISOString()
+      };
     }));
 
     return NextResponse.json({

@@ -170,8 +170,9 @@ export async function POST(
     const now = new Date();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    scheduleDate.setHours(0, 0, 0, 0);
     
-    // Check if the selected date is before today
+    // Check if the selected date is before today (allow today)
     if (scheduleDate < today) {
       return NextResponse.json(
         { error: 'Date cannot be in the past' },
@@ -180,9 +181,12 @@ export async function POST(
     }
     
     // If we have both date and time, validate the combined datetime
+    // Allow scheduling for today if the time hasn't passed yet
     if (validatedData.startTime) {
       const scheduleDateTime = new Date(`${validatedData.date}T${validatedData.startTime}`);
-      if (scheduleDateTime < now) {
+      // Only check if it's in the past if it's not today
+      const isToday = scheduleDate.getTime() === today.getTime();
+      if (!isToday && scheduleDateTime < now) {
         return NextResponse.json(
           { error: 'Class time cannot be in the past' },
           { status: 400 }

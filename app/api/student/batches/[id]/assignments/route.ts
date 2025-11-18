@@ -122,20 +122,42 @@ export async function GET(
       .populate('createdBy', 'name email')
       .lean();
 
-    // Format assignments for response
-    const formattedAssignments = assignments.map((assignment: any) => ({
-      _id: assignment._id?.toString() || assignment._id,
-      title: assignment.title,
-      description: assignment.description,
-      instructions: assignment.instructions || '',
-      dueDate: assignment.dueDate?.toISOString() || new Date(assignment.dueDate).toISOString(),
-      maxPoints: assignment.maxPoints,
-      attachments: assignment.attachments || [],
-      status: assignment.status,
-      submissions: assignment.submissions?.length || 0,
-      createdAt: assignment.createdAt?.toISOString() || new Date(assignment.createdAt).toISOString(),
-      updatedAt: assignment.updatedAt?.toISOString() || new Date(assignment.updatedAt).toISOString()
-    }));
+    // Format assignments for response with student's submission data
+    const formattedAssignments = assignments.map((assignment: any) => {
+      // Find student's submission if exists
+      const studentSubmission = assignment.submissions?.find((sub: any) => 
+        sub.student?.toString() === payload.userId || 
+        (typeof sub.student === 'object' && sub.student._id?.toString() === payload.userId)
+      );
+
+      // Determine status based on submission
+      let status = 'assigned';
+      if (studentSubmission) {
+        if (studentSubmission.grade !== undefined && studentSubmission.grade !== null) {
+          status = 'graded';
+        } else {
+          status = 'submitted';
+        }
+      }
+
+      return {
+        _id: assignment._id?.toString() || assignment._id,
+        title: assignment.title,
+        description: assignment.description,
+        instructions: assignment.instructions || '',
+        dueDate: assignment.dueDate?.toISOString() || new Date(assignment.dueDate).toISOString(),
+        maxPoints: assignment.maxPoints,
+        attachments: assignment.attachments || [],
+        status: status,
+        submittedAt: studentSubmission?.submittedAt?.toISOString() || null,
+        submissionLink: studentSubmission?.content || null,
+        grade: studentSubmission?.grade || null,
+        feedback: studentSubmission?.feedback || null,
+        submissions: assignment.submissions?.length || 0,
+        createdAt: assignment.createdAt?.toISOString() || new Date(assignment.createdAt).toISOString(),
+        updatedAt: assignment.updatedAt?.toISOString() || new Date(assignment.updatedAt).toISOString()
+      };
+    });
 
     return NextResponse.json({
       assignments: formattedAssignments,

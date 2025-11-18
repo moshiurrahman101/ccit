@@ -109,16 +109,20 @@ export default function ScheduleClassForm({
       const now = new Date();
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
       
-      // Check if the selected date is before today
+      // Check if the selected date is before today (allow today)
       if (selectedDate < today) {
         newErrors.date = 'Date cannot be in the past';
       }
       
       // If we have both date and time, validate the combined datetime
+      // Allow scheduling for today if the time hasn't passed yet
       if (formData.startTime && formData.date) {
         const selectedDateTime = new Date(`${formData.date}T${formData.startTime}`);
-        if (selectedDateTime < now) {
+        const isToday = selectedDate.getTime() === today.getTime();
+        // Only check if it's in the past if it's not today
+        if (!isToday && selectedDateTime < now) {
           newErrors.date = 'Class time cannot be in the past';
         }
       }

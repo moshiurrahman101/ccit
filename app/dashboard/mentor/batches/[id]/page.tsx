@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ArrowLeft, 
   Users, 
@@ -89,15 +93,32 @@ interface ClassSchedule {
   createdAt: string;
 }
 
+interface AssignmentSubmission {
+  _id: string;
+  student: {
+    _id: string;
+    name: string;
+    email: string;
+  } | string;
+  content: string;
+  submittedAt: string;
+  grade?: number;
+  feedback?: string;
+  gradedBy?: string;
+  gradedAt?: string;
+}
+
 interface Assignment {
   _id: string;
   title: string;
   description: string;
+  instructions?: string;
   dueDate: string;
   maxPoints: number;
   attachments: string[];
   status: 'draft' | 'published' | 'closed';
-  submissions: number;
+  submissions: AssignmentSubmission[];
+  submissionsCount: number;
   createdAt: string;
 }
 
@@ -141,6 +162,10 @@ export default function BatchManagementPage() {
   const [deleteScheduleDialog, setDeleteScheduleDialog] = useState<{ isOpen: boolean; schedule: ClassSchedule | null }>({ isOpen: false, schedule: null });
   const [deleteAssignmentDialog, setDeleteAssignmentDialog] = useState<{ isOpen: boolean; assignment: Assignment | null }>({ isOpen: false, assignment: null });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [gradingDialog, setGradingDialog] = useState<{ isOpen: boolean; assignment: Assignment | null; submission: AssignmentSubmission | null }>({ isOpen: false, assignment: null, submission: null });
+  const [grade, setGrade] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [isGrading, setIsGrading] = useState(false);
 
   useEffect(() => {
     if (batchId) {
@@ -214,7 +239,31 @@ export default function BatchManagementPage() {
       
       if (schedulesResponse.ok) {
         const schedulesData = await schedulesResponse.json();
-        setSchedules(schedulesData.schedules || []);
+        const schedulesList = schedulesData.schedules || [];
+        
+        // Sort schedules: upcoming first (by date and time), then past
+        const now = new Date();
+        const sortedSchedules = schedulesList.sort((a: ClassSchedule, b: ClassSchedule) => {
+          const dateA = new Date(`${a.date}T${a.startTime}`);
+          const dateB = new Date(`${b.date}T${b.startTime}`);
+          const isAPast = dateA < now;
+          const isBPast = dateB < now;
+          
+          // If one is past and one is upcoming, upcoming comes first
+          if (isAPast && !isBPast) return 1;
+          if (!isAPast && isBPast) return -1;
+          
+          // If both are upcoming or both are past, sort by date/time
+          // Upcoming: ascending (earliest first)
+          // Past: descending (most recent first)
+          if (!isAPast && !isBPast) {
+            return dateA.getTime() - dateB.getTime();
+          } else {
+            return dateB.getTime() - dateA.getTime();
+          }
+        });
+        
+        setSchedules(sortedSchedules);
       } else {
         // Fallback to mock data if API fails
         setSchedules([
@@ -308,7 +357,31 @@ export default function BatchManagementPage() {
       
       if (schedulesResponse.ok) {
         const schedulesData = await schedulesResponse.json();
-        setSchedules(schedulesData.schedules || []);
+        const schedulesList = schedulesData.schedules || [];
+        
+        // Sort schedules: upcoming first (by date and time), then past
+        const now = new Date();
+        const sortedSchedules = schedulesList.sort((a: ClassSchedule, b: ClassSchedule) => {
+          const dateA = new Date(`${a.date}T${a.startTime}`);
+          const dateB = new Date(`${b.date}T${b.startTime}`);
+          const isAPast = dateA < now;
+          const isBPast = dateB < now;
+          
+          // If one is past and one is upcoming, upcoming comes first
+          if (isAPast && !isBPast) return 1;
+          if (!isAPast && isBPast) return -1;
+          
+          // If both are upcoming or both are past, sort by date/time
+          // Upcoming: ascending (earliest first)
+          // Past: descending (most recent first)
+          if (!isAPast && !isBPast) {
+            return dateA.getTime() - dateB.getTime();
+          } else {
+            return dateB.getTime() - dateA.getTime();
+          }
+        });
+        
+        setSchedules(sortedSchedules);
       }
     } catch (error) {
       console.error('Error refreshing schedules:', error);
@@ -805,9 +878,71 @@ export default function BatchManagementPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          {assignment.submissions} submissions
+                          {assignment.submissionsCount || assignment.submissions?.length || 0} submissions
                         </div>
                       </div>
+                      
+                      {/* Submissions List */}
+                      {assignment.submissions && assignment.submissions.length > 0 && (
+                        <div className="mt-4 border-t pt-4">
+                          <h4 className="font-semibold text-sm mb-3">Submissions ({assignment.submissions.length})</h4>
+                          <div className="space-y-2">
+                            {assignment.submissions.map((submission) => {
+                              const studentName = typeof submission.student === 'object' 
+                                ? submission.student.name 
+                                : 'Unknown Student';
+                              const studentId = typeof submission.student === 'object' 
+                                ? submission.student._id 
+                                : submission.student;
+                              
+                              return (
+                                <div key={submission._id} className="p-3 bg-gray-50 rounded-lg border">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <User className="h-4 w-4 text-gray-500" />
+                                        <span className="font-medium text-sm">{studentName}</span>
+                                        {submission.grade !== undefined && submission.grade !== null && (
+                                          <Badge className="bg-green-100 text-green-800 text-xs">
+                                            {submission.grade}/{assignment.maxPoints}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <a 
+                                        href={submission.content} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                                      >
+                                        <LinkIcon className="h-3 w-3" />
+                                        View Facebook Post
+                                      </a>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Submitted: {formatBanglaDate(submission.submittedAt)}
+                                      </p>
+                                    </div>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setGradingDialog({ 
+                                          isOpen: true, 
+                                          assignment, 
+                                          submission 
+                                        });
+                                        setGrade(submission.grade?.toString() || '');
+                                        setFeedback(submission.feedback || '');
+                                      }}
+                                    >
+                                      {submission.grade !== undefined && submission.grade !== null ? 'Update Grade' : 'Grade'}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className={getStatusColor(assignment.status)}>
@@ -957,6 +1092,132 @@ export default function BatchManagementPage() {
         itemName={deleteAssignmentDialog.assignment?.title}
         isLoading={isDeleting}
       />
+
+      {/* Grading Dialog */}
+      <Dialog open={gradingDialog.isOpen} onOpenChange={(open) => {
+        if (!isGrading) {
+          setGradingDialog({ isOpen: open, assignment: null, submission: null });
+          setGrade('');
+          setFeedback('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Grade Assignment</DialogTitle>
+            <DialogDescription>
+              {gradingDialog.assignment?.title} - {typeof gradingDialog.submission?.student === 'object' 
+                ? gradingDialog.submission.student.name 
+                : 'Student'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="grade">Grade (out of {gradingDialog.assignment?.maxPoints || 100}) *</Label>
+              <Input
+                id="grade"
+                type="number"
+                min="0"
+                max={gradingDialog.assignment?.maxPoints || 100}
+                value={grade}
+                onChange={(e) => setGrade(e.target.value)}
+                disabled={isGrading}
+                placeholder="Enter grade"
+              />
+            </div>
+            <div>
+              <Label htmlFor="feedback">Feedback</Label>
+              <Textarea
+                id="feedback"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                disabled={isGrading}
+                placeholder="Enter feedback for the student"
+                rows={4}
+              />
+            </div>
+            {gradingDialog.submission?.content && (
+              <div>
+                <Label>Submission Link</Label>
+                <a 
+                  href={gradingDialog.submission.content} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  View Facebook Post
+                </a>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGradingDialog({ isOpen: false, assignment: null, submission: null });
+                setGrade('');
+                setFeedback('');
+              }}
+              disabled={isGrading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!grade.trim() || !gradingDialog.assignment || !gradingDialog.submission) return;
+                
+                const gradeNum = parseFloat(grade);
+                if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > (gradingDialog.assignment.maxPoints || 100)) {
+                  toast.error(`Grade must be between 0 and ${gradingDialog.assignment.maxPoints || 100}`);
+                  return;
+                }
+
+                const studentId = typeof gradingDialog.submission.student === 'object' 
+                  ? gradingDialog.submission.student._id 
+                  : gradingDialog.submission.student;
+
+                setIsGrading(true);
+                try {
+                  const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
+                  const response = await fetch(`/api/mentor/batches/${batchId}/assignments/grade`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      assignmentId: gradingDialog.assignment._id,
+                      studentId: studentId,
+                      grade: gradeNum,
+                      feedback: feedback.trim()
+                    })
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to grade assignment');
+                  }
+
+                  toast.success('Assignment graded successfully!');
+                  setGradingDialog({ isOpen: false, assignment: null, submission: null });
+                  setGrade('');
+                  setFeedback('');
+                  await fetchBatchData(); // Refresh assignments
+                } catch (error: any) {
+                  console.error('Error grading assignment:', error);
+                  toast.error(error.message || 'Failed to grade assignment');
+                } finally {
+                  setIsGrading(false);
+                }
+              }}
+              disabled={!grade.trim() || isGrading}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              {isGrading ? 'Grading...' : 'Submit Grade'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

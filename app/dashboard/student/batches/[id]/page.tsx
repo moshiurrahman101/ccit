@@ -6,6 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -24,7 +28,9 @@ import {
   Phone,
   GraduationCap,
   Users,
-  CreditCard
+  CreditCard,
+  ExternalLink,
+  Info
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -91,10 +97,12 @@ interface Assignment {
   _id: string;
   title: string;
   description: string;
+  instructions?: string;
   dueDate: string;
   maxPoints: number;
   status: 'assigned' | 'submitted' | 'graded';
   submittedAt?: string;
+  submissionLink?: string;
   grade?: number;
   feedback?: string;
   createdAt: string;
@@ -125,6 +133,9 @@ export default function StudentBatchDetailPage() {
   const [discussions, setDiscussions] = useState<Discussion[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [submissionDialog, setSubmissionDialog] = useState<{ isOpen: boolean; assignment: Assignment | null }>({ isOpen: false, assignment: null });
+  const [facebookLink, setFacebookLink] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (batchId) {
@@ -784,6 +795,37 @@ export default function StudentBatchDetailPage() {
                             </div>
                             <p className="text-gray-600 mb-4">{assignment.description}</p>
                             
+                            {/* Instructions Section */}
+                            {assignment.instructions && (
+                              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div className="flex items-start gap-2">
+                                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-blue-900 mb-2">Instructions:</h5>
+                                    <p className="text-sm text-blue-800 whitespace-pre-wrap">{assignment.instructions}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Submission Status */}
+                            {assignment.submissionLink && (
+                              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  <span className="text-sm font-medium text-green-900">Submitted on {assignment.submittedAt ? formatBanglaDate(assignment.submittedAt) : 'N/A'}</span>
+                                  <a 
+                                    href={assignment.submissionLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="ml-auto text-sm text-green-700 hover:text-green-900 flex items-center gap-1"
+                                  >
+                                    View Post <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                            
                             {/* Assignment Details */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                               <div className="flex items-center gap-2 p-3 bg-white rounded-lg border">
@@ -826,24 +868,49 @@ export default function StudentBatchDetailPage() {
                             {/* Action Buttons */}
                             <div className="flex items-center gap-3">
                               {!isCompleted && (
-                                <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                                <Button 
+                                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                                  onClick={() => {
+                                    setSubmissionDialog({ isOpen: true, assignment });
+                                    setFacebookLink('');
+                                  }}
+                                >
                                   <FileText className="h-4 w-4 mr-2" />
                                   Submit Assignment
                                 </Button>
                               )}
                               
-                              {isCompleted && (
-                                <Button variant="outline" className="text-green-600 border-green-200">
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  View Submission
-                                </Button>
+                              {isCompleted && assignment.submissionLink && (
+                                <a 
+                                  href={assignment.submissionLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Button variant="outline" className="text-green-600 border-green-200">
+                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                    View Submission
+                                  </Button>
+                                </a>
                               )}
                               
-                              {assignment.grade && (
-                                <Button variant="outline">
-                                  <FileText className="h-4 w-4 mr-2" />
-                                  View Feedback
-                                </Button>
+                              {assignment.grade && assignment.feedback && (
+                                <Dialog>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>Feedback</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <div>
+                                        <Label>Grade</Label>
+                                        <p className="text-lg font-semibold">{assignment.grade}/{assignment.maxPoints}</p>
+                                      </div>
+                                      <div>
+                                        <Label>Feedback</Label>
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{assignment.feedback}</p>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
                               )}
                             </div>
                           </div>
@@ -980,6 +1047,99 @@ export default function StudentBatchDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Submission Dialog */}
+      <Dialog open={submissionDialog.isOpen} onOpenChange={(open) => {
+        if (!isSubmitting) {
+          setSubmissionDialog({ isOpen: open, assignment: null });
+          setFacebookLink('');
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Submit Assignment</DialogTitle>
+            <DialogDescription>
+              Submit your Facebook post link for: {submissionDialog.assignment?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="facebookLink">Facebook Post Link *</Label>
+              <Input
+                id="facebookLink"
+                type="url"
+                placeholder="https://www.facebook.com/groups/..."
+                value={facebookLink}
+                onChange={(e) => setFacebookLink(e.target.value)}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Paste the link to your Facebook group post where you uploaded the assignment
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSubmissionDialog({ isOpen: false, assignment: null });
+                setFacebookLink('');
+              }}
+              disabled={isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (!facebookLink.trim() || !submissionDialog.assignment) return;
+                
+                // Validate URL
+                try {
+                  new URL(facebookLink);
+                } catch {
+                  toast.error('Please enter a valid URL');
+                  return;
+                }
+                
+                setIsSubmitting(true);
+                try {
+                  const token = document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
+                  const response = await fetch(`/api/student/batches/${batchId}/assignments/submit`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      assignmentId: submissionDialog.assignment._id,
+                      facebookPostLink: facebookLink.trim()
+                    })
+                  });
+
+                  if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to submit assignment');
+                  }
+
+                  toast.success('Assignment submitted successfully!');
+                  setSubmissionDialog({ isOpen: false, assignment: null });
+                  setFacebookLink('');
+                  await fetchBatchData(); // Refresh assignments
+                } catch (error: any) {
+                  console.error('Error submitting assignment:', error);
+                  toast.error(error.message || 'Failed to submit assignment');
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              disabled={!facebookLink.trim() || isSubmitting}
+              className="bg-blue-500 hover:bg-blue-600"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
