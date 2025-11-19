@@ -210,69 +210,72 @@ export async function POST(request: NextRequest) {
         // Determine enrollment payment status based on invoice status
         const enrollmentPaymentStatus = invoiceStatus === 'paid' ? 'paid' : 'partial';
         
-        // Try to update enrollment, but don't fail the whole operation if it fails
-        try {
-          // Check if enrollment exists
-          let existingEnrollment = await Enrollment.findOne({
-            student: payment.studentId,
-            batch: payment.batchId
-          });
-          
-          if (existingEnrollment) {
-            // Update existing enrollment
-            existingEnrollment.status = 'approved';
-            // Use set() to bypass validation if needed, but first try normal assignment
-            try {
-              existingEnrollment.paymentStatus = enrollmentPaymentStatus;
-              existingEnrollment.approvedBy = currentUser._id;
-              existingEnrollment.approvedAt = new Date();
-              await existingEnrollment.save();
-              console.log('Enrollment updated:', existingEnrollment._id);
-              console.log('Enrollment payment status:', existingEnrollment.paymentStatus);
-            } catch (saveError: any) {
-              // If validation fails, try using set() to bypass validation
-              if (saveError.name === 'ValidationError' || saveError.message?.includes('not a valid enum')) {
-                console.log('Validation error, trying to update with validateBeforeSave: false...');
-                existingEnrollment.set('paymentStatus', enrollmentPaymentStatus);
-                existingEnrollment.set('status', 'approved');
-                existingEnrollment.set('approvedBy', currentUser._id);
-                existingEnrollment.set('approvedAt', new Date());
-                await existingEnrollment.save({ validateBeforeSave: false });
-                console.log('Enrollment updated with validation bypass:', existingEnrollment._id);
-                console.log('Enrollment payment status (bypassed):', enrollmentPaymentStatus);
-              } else {
-                console.error('Error updating enrollment:', saveError);
-                // Don't throw - continue with payment verification
-              }
-            }
-          } else {
-            // Create new enrollment if it doesn't exist
-            // Get batch and course info from invoice
-            const Batch = (await import('@/models/Batch')).default;
-            const batch = await Batch.findById(payment.batchId);
+        // Check if this is a recorded course (courseType === 'course')
+        if (invoice.courseType === 'course') {
+          // Handle recorded course enrollment
+          try {
+            const RecordedCourseEnrollment = (await import('@/models/RecordedCourseEnrollment')).default;
+            const existingRecordedEnrollment = await RecordedCourseEnrollment.findOne({
+              student: payment.studentId,
+              course: invoice.batchId, // batchId stores courseId for recorded courses
+              invoiceId: payment.invoiceId
+            });
             
-            if (batch) {
+            if (existingRecordedEnrollment) {
+              existingRecordedEnrollment.status = invoiceStatus === 'paid' ? 'active' : 'pending';
+              existingRecordedEnrollment.paymentStatus = enrollmentPaymentStatus;
+              await existingRecordedEnrollment.save();
+              console.log('Recorded course enrollment updated:', existingRecordedEnrollment._id);
+            }
+          } catch (recordedError) {
+            console.error('Error updating recorded course enrollment:', recordedError);
+            // Don't fail the whole operation
+          }
+        } else if (invoice.courseType === 'batch' || !invoice.courseType) {
+          // Handle batch enrollment (existing logic)
+          // Try to update enrollment, but don't fail the whole operation if it fails
+          try {
+            // Check if enrollment exists
+            let existingEnrollment = await Enrollment.findOne({
+              student: payment.studentId,
+              batch: payment.batchId
+            });
+            
+            if (existingEnrollment) {
+              // Update existing enrollment
+              existingEnrollment.status = 'approved';
+              // Use set() to bypass validation if needed, but first try normal assignment
               try {
-                const newEnrollment = new Enrollment({
-                  student: payment.studentId,
-                  course: batch.courseId || null,
-                  batch: payment.batchId,
-                  enrollmentDate: new Date(),
-                  status: 'approved',
-                  paymentStatus: enrollmentPaymentStatus,
-                  amount: invoice.finalAmount || payment.amount,
-                  progress: 0,
-                  lastAccessed: new Date(),
-                  approvedBy: currentUser._id,
-                  approvedAt: new Date()
-                });
-                await newEnrollment.save();
-                console.log('New enrollment created:', newEnrollment._id);
-                console.log('Enrollment payment status:', newEnrollment.paymentStatus);
-              } catch (createError: any) {
-                // If validation fails, try creating without validation
-                if (createError.name === 'ValidationError' || createError.message?.includes('not a valid enum')) {
-                  console.log('Validation error, trying to create with validateBeforeSave: false...');
+                existingEnrollment.paymentStatus = enrollmentPaymentStatus;
+                existingEnrollment.approvedBy = currentUser._id;
+                existingEnrollment.approvedAt = new Date();
+                await existingEnrollment.save();
+                console.log('Enrollment updated:', existingEnrollment._id);
+                console.log('Enrollment payment status:', existingEnrollment.paymentStatus);
+              } catch (saveError: any) {
+                // If validation fails, try using set() to bypass validation
+                if (saveError.name === 'ValidationError' || saveError.message?.includes('not a valid enum')) {
+                  console.log('Validation error, trying to update with validateBeforeSave: false...');
+                  existingEnrollment.set('paymentStatus', enrollmentPaymentStatus);
+                  existingEnrollment.set('status', 'approved');
+                  existingEnrollment.set('approvedBy', currentUser._id);
+                  existingEnrollment.set('approvedAt', new Date());
+                  await existingEnrollment.save({ validateBeforeSave: false });
+                  console.log('Enrollment updated with validation bypass:', existingEnrollment._id);
+                  console.log('Enrollment payment status (bypassed):', enrollmentPaymentStatus);
+                } else {
+                  console.error('Error updating enrollment:', saveError);
+                  // Don't throw - continue with payment verification
+                }
+              }
+            } else {
+              // Create new enrollment if it doesn't exist
+              // Get batch and course info from invoice
+              const Batch = (await import('@/models/Batch')).default;
+              const batch = await Batch.findById(payment.batchId);
+              
+              if (batch) {
+                try {
                   const newEnrollment = new Enrollment({
                     student: payment.studentId,
                     course: batch.courseId || null,
@@ -286,66 +289,87 @@ export async function POST(request: NextRequest) {
                     approvedBy: currentUser._id,
                     approvedAt: new Date()
                   });
-                  await newEnrollment.save({ validateBeforeSave: false });
-                  console.log('New enrollment created with validation bypass:', newEnrollment._id);
-                  console.log('Enrollment payment status (bypassed):', enrollmentPaymentStatus);
-                } else {
-                  console.error('Error creating enrollment:', createError);
-                  // Don't throw - continue with payment verification
+                  await newEnrollment.save();
+                  console.log('New enrollment created:', newEnrollment._id);
+                  console.log('Enrollment payment status:', newEnrollment.paymentStatus);
+                } catch (createError: any) {
+                  // If validation fails, try creating without validation
+                  if (createError.name === 'ValidationError' || createError.message?.includes('not a valid enum')) {
+                    console.log('Validation error, trying to create with validateBeforeSave: false...');
+                    const newEnrollment = new Enrollment({
+                      student: payment.studentId,
+                      course: batch.courseId || null,
+                      batch: payment.batchId,
+                      enrollmentDate: new Date(),
+                      status: 'approved',
+                      paymentStatus: enrollmentPaymentStatus,
+                      amount: invoice.finalAmount || payment.amount,
+                      progress: 0,
+                      lastAccessed: new Date(),
+                      approvedBy: currentUser._id,
+                      approvedAt: new Date()
+                    });
+                    await newEnrollment.save({ validateBeforeSave: false });
+                    console.log('New enrollment created with validation bypass:', newEnrollment._id);
+                    console.log('Enrollment payment status (bypassed):', enrollmentPaymentStatus);
+                  } else {
+                    console.error('Error creating enrollment:', createError);
+                    // Don't throw - continue with payment verification
+                  }
                 }
+              } else {
+                console.log('Batch not found, cannot create enrollment');
               }
-            } else {
-              console.log('Batch not found, cannot create enrollment');
             }
-          }
-        } catch (enrollmentError: any) {
-          // Log the error but don't fail the payment verification
-          console.error('Error updating/creating enrollment (non-critical):', enrollmentError);
-          console.log('Payment verification will continue despite enrollment update error');
-          
-          // Try one more time with direct database update if validation fails
-          if (enrollmentError.name === 'ValidationError' || enrollmentError.message?.includes('not a valid enum')) {
-            try {
-              console.log('Attempting direct database update for enrollment...');
-              // Get batch info for course field
-              const Batch = (await import('@/models/Batch')).default;
-              const batch = await Batch.findById(payment.batchId);
-              
-              const updateData: any = {
-                status: 'approved',
-                paymentStatus: enrollmentPaymentStatus,
-                approvedBy: currentUser._id,
-                approvedAt: new Date()
-              };
-              
-              // If creating new enrollment, need course field
-              const existingEnrollment = await Enrollment.findOne({
-                student: payment.studentId,
-                batch: payment.batchId
-              });
-              
-              if (!existingEnrollment && batch) {
-                updateData.student = payment.studentId;
-                updateData.course = batch.courseId || null;
-                updateData.batch = payment.batchId;
-                updateData.enrollmentDate = new Date();
-                updateData.amount = invoice.finalAmount || payment.amount;
-                updateData.progress = 0;
-                updateData.lastAccessed = new Date();
-              }
-              
-              const updateResult = await Enrollment.updateOne(
-                {
+          } catch (enrollmentError: any) {
+            // Log the error but don't fail the payment verification
+            console.error('Error updating/creating enrollment (non-critical):', enrollmentError);
+            console.log('Payment verification will continue despite enrollment update error');
+            
+            // Try one more time with direct database update if validation fails
+            if (enrollmentError.name === 'ValidationError' || enrollmentError.message?.includes('not a valid enum')) {
+              try {
+                console.log('Attempting direct database update for enrollment...');
+                // Get batch info for course field
+                const Batch = (await import('@/models/Batch')).default;
+                const batch = await Batch.findById(payment.batchId);
+                
+                const updateData: any = {
+                  status: 'approved',
+                  paymentStatus: enrollmentPaymentStatus,
+                  approvedBy: currentUser._id,
+                  approvedAt: new Date()
+                };
+                
+                // If creating new enrollment, need course field
+                const existingEnrollment = await Enrollment.findOne({
                   student: payment.studentId,
                   batch: payment.batchId
-                },
-                { $set: updateData },
-                { upsert: true, runValidators: false }
-              );
-              console.log('Direct database update result:', updateResult);
-              console.log('Enrollment created/updated successfully via direct update');
-            } catch (directUpdateError) {
-              console.error('Direct database update also failed:', directUpdateError);
+                });
+                
+                if (!existingEnrollment && batch) {
+                  updateData.student = payment.studentId;
+                  updateData.course = batch.courseId || null;
+                  updateData.batch = payment.batchId;
+                  updateData.enrollmentDate = new Date();
+                  updateData.amount = invoice.finalAmount || payment.amount;
+                  updateData.progress = 0;
+                  updateData.lastAccessed = new Date();
+                }
+                
+                const updateResult = await Enrollment.updateOne(
+                  {
+                    student: payment.studentId,
+                    batch: payment.batchId
+                  },
+                  { $set: updateData },
+                  { upsert: true, runValidators: false }
+                );
+                console.log('Direct database update result:', updateResult);
+                console.log('Enrollment created/updated successfully via direct update');
+              } catch (directUpdateError) {
+                console.error('Direct database update also failed:', directUpdateError);
+              }
             }
           }
         }

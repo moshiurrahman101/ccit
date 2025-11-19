@@ -28,7 +28,8 @@ import {
   Bell,
   UserPlus,
   Star,
-  Calendar
+  Calendar,
+  Video
 } from 'lucide-react';
 import { User } from '@/types';
 
@@ -103,6 +104,14 @@ const menuItems: MenuItem[] = [
     path: '/dashboard/courses',
     roles: ['admin', 'marketing'],
     description: 'কোর্স তৈরি ও ব্যবস্থাপনা'
+  },
+  {
+    id: 'recorded-courses',
+    label: 'ভিডিও কোর্স',
+    icon: Video,
+    path: '/dashboard/recorded-courses',
+    roles: ['admin', 'marketing'],
+    description: 'প্রাক-রেকর্ড করা কোর্স ব্যবস্থাপনা'
   },
   {
     id: 'batches',
@@ -199,6 +208,14 @@ const menuItems: MenuItem[] = [
     path: '/dashboard/student/batches',
     roles: ['student'],
     description: 'আপনার এনরোল করা ব্যাচসমূহ'
+  },
+  {
+    id: 'student-recorded-courses',
+    label: 'ভিডিও কোর্স',
+    icon: Video,
+    path: '/dashboard/student/recorded-courses',
+    roles: ['student'],
+    description: 'আপনার এনরোল করা প্রাক-রেকর্ড করা কোর্স'
   },
   {
     id: 'accounts',
