@@ -16,14 +16,14 @@ interface AttendanceRecord {
     name: string;
     email: string;
     avatar?: string;
-  };
+  } | null;
   scheduleId?: {
     _id: string;
     title: string;
     date: string;
     startTime: string;
     endTime: string;
-  };
+  } | null;
   classDate: string;
   status: 'present' | 'absent' | 'late' | 'excused';
   notes?: string;
@@ -142,43 +142,49 @@ export default function AttendanceManagement({ batchId, batchName }: AttendanceM
             </div>
           ) : (
             <div className="space-y-4">
-              {attendanceRecords.map(record => (
-                <div
-                  key={record._id}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {record.student.avatar ? (
-                      <img
-                        src={record.student.avatar}
-                        alt={record.student.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                        <span className="text-orange-600 font-semibold">
-                          {record.student.name.charAt(0).toUpperCase()}
-                        </span>
+              {attendanceRecords
+                .filter(record => record.student !== null && record.student !== undefined)
+                .map(record => {
+                  const student = record.student!; // Safe after filter
+                  
+                  return (
+                    <div
+                      key={record._id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        {student.avatar ? (
+                          <img
+                            src={student.avatar}
+                            alt={student.name || 'Student'}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                            <span className="text-orange-600 font-semibold">
+                              {(student.name || '?').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium">{student.name || 'Unknown Student'}</p>
+                          <p className="text-sm text-gray-500">
+                            {record.scheduleId ? record.scheduleId.title : 'General'} - {formatBanglaDate(record.classDate)}
+                          </p>
+                          {record.notes && (
+                            <p className="text-sm text-gray-400 mt-1">{record.notes}</p>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    <div>
-                      <p className="font-medium">{record.student.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {record.scheduleId ? record.scheduleId.title : 'General'} - {formatBanglaDate(record.classDate)}
-                      </p>
-                      {record.notes && (
-                        <p className="text-sm text-gray-400 mt-1">{record.notes}</p>
-                      )}
+                      <Badge className={getStatusColor(record.status)}>
+                        <div className="flex items-center gap-1">
+                          {getStatusIcon(record.status)}
+                          {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </div>
+                      </Badge>
                     </div>
-                  </div>
-                  <Badge className={getStatusColor(record.status)}>
-                    <div className="flex items-center gap-1">
-                      {getStatusIcon(record.status)}
-                      {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                    </div>
-                  </Badge>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           )}
         </CardContent>

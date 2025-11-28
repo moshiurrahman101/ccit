@@ -418,14 +418,27 @@ export async function POST(
     const attendanceRecords = [];
     for (const att of validatedData.attendance) {
       const studentId = new mongoose.Types.ObjectId(att.studentId);
+      const scheduleObjectId = validatedData.scheduleId ? new mongoose.Types.ObjectId(validatedData.scheduleId) : null;
       
       // Check if attendance already exists
-      const existingAttendance = await Attendance.findOne({
-        student: studentId,
-        batch: batchObjectId,
-        classDate: classDate,
-        ...(validatedData.scheduleId && { scheduleId: validatedData.scheduleId })
-      });
+      // When scheduleId is provided, use the sparse unique index: student + scheduleId
+      // When scheduleId is not provided, use the regular unique index: student + batch + classDate
+      let existingAttendance;
+      
+      if (scheduleObjectId) {
+        // Check using the sparse unique index (student + scheduleId)
+        existingAttendance = await Attendance.findOne({
+          student: studentId,
+          scheduleId: scheduleObjectId
+        });
+      } else {
+        // Check using the regular unique index (student + batch + classDate)
+        existingAttendance = await Attendance.findOne({
+          student: studentId,
+          batch: batchObjectId,
+          classDate: classDate
+        });
+      }
 
       if (existingAttendance) {
         // Update existing attendance
@@ -433,6 +446,8 @@ export async function POST(
         existingAttendance.notes = att.notes;
         existingAttendance.markedBy = payload.userId;
         existingAttendance.markedAt = new Date();
+        existingAttendance.classDate = classDate; // Update date in case it changed
+        existingAttendance.batch = batchObjectId; // Ensure batch is set
         if (att.status === 'present' || att.status === 'late') {
           existingAttendance.checkInTime = new Date();
         }
@@ -443,7 +458,7 @@ export async function POST(
         const newAttendance = new Attendance({
           student: studentId,
           batch: batchObjectId,
-          scheduleId: validatedData.scheduleId ? new mongoose.Types.ObjectId(validatedData.scheduleId) : undefined,
+          scheduleId: scheduleObjectId,
           classDate: classDate,
           status: att.status,
           notes: att.notes,
@@ -452,8 +467,50 @@ export async function POST(
           isOnline: batch.courseType === 'online',
           checkInTime: (att.status === 'present' || att.status === 'late') ? new Date() : undefined
         });
-        await newAttendance.save();
-        attendanceRecords.push(newAttendance);
+        
+        try {
+          await newAttendance.save();
+          attendanceRecords.push(newAttendance);
+        } catch (saveError: any) {
+          // Handle duplicate key error - try to find and update instead
+          if (saveError.code === 11000) {
+            // Duplicate key error - try to find the existing record
+            let duplicateRecord;
+            if (scheduleObjectId) {
+              duplicateRecord = await Attendance.findOne({
+                student: studentId,
+                scheduleId: scheduleObjectId
+              });
+            } else {
+              duplicateRecord = await Attendance.findOne({
+                student: studentId,
+                batch: batchObjectId,
+                classDate: classDate
+              });
+            }
+            
+            if (duplicateRecord) {
+              // Update the existing record
+              duplicateRecord.status = att.status;
+              duplicateRecord.notes = att.notes;
+              duplicateRecord.markedBy = payload.userId;
+              duplicateRecord.markedAt = new Date();
+              duplicateRecord.classDate = classDate;
+              duplicateRecord.batch = batchObjectId;
+              if (att.status === 'present' || att.status === 'late') {
+                duplicateRecord.checkInTime = new Date();
+              }
+              await duplicateRecord.save();
+              attendanceRecords.push(duplicateRecord);
+            } else {
+              // If we can't find it, re-throw the error
+              throw saveError;
+            }
+          } else {
+            // Re-throw non-duplicate errors
+            throw saveError;
+          }
+        }
       }
     }
 
@@ -472,8 +529,18 @@ export async function POST(
       );
     }
 
+    // Handle MongoDB duplicate key errors
+    if (error && typeof error === 'object' && 'code' in error && error.code === 11000) {
+      return NextResponse.json(
+        { error: 'Attendance already exists for this student and schedule. Please update the existing record instead.' },
+        { status: 409 }
+      );
+    }
+
+    // Provide more specific error message
+    const errorMessage = error instanceof Error ? error.message : 'Failed to mark attendance';
     return NextResponse.json(
-      { error: 'Failed to mark attendance' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

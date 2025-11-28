@@ -62,19 +62,79 @@ export function formatBanglaDate(date: Date | string | undefined | null): string
   }
   
   try {
-    // Convert string to Date if needed
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    let day: number, month: number, year: number;
     
-    // Check if date is valid
-    if (isNaN(dateObj.getTime())) {
+    if (typeof date === 'string') {
+      // Parse ISO string or date string to extract date components directly
+      // This avoids timezone conversion issues
+      const dateStr = date.trim();
+      
+      // Check if it's an ISO string (contains 'T')
+      if (dateStr.includes('T')) {
+        // Extract date part before 'T' (YYYY-MM-DD)
+        // This preserves the original date without timezone conversion
+        const datePart = dateStr.split('T')[0];
+        const parts = datePart.split('-');
+        if (parts.length === 3) {
+          year = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10);
+          day = parseInt(parts[2], 10);
+        } else {
+          // Fallback: try parsing as Date
+          const dateObj = new Date(date);
+          if (isNaN(dateObj.getTime())) {
+            return 'তারিখ নেই';
+          }
+          // Use local date methods to preserve the date as the user set it
+          day = dateObj.getDate();
+          month = dateObj.getMonth() + 1;
+          year = dateObj.getFullYear();
+        }
+      } else if (dateStr.includes('/')) {
+        // Handle MM/DD/YYYY or DD/MM/YYYY format
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          // Try to detect format - if first part > 12, it's likely DD/MM/YYYY
+          if (parseInt(parts[0], 10) > 12) {
+            day = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10);
+            year = parseInt(parts[2], 10);
+          } else {
+            // Assume MM/DD/YYYY format
+            month = parseInt(parts[0], 10);
+            day = parseInt(parts[1], 10);
+            year = parseInt(parts[2], 10);
+          }
+        } else {
+          throw new Error('Invalid date format');
+        }
+      } else {
+        // Try to parse as Date and use local methods
+        const dateObj = new Date(date);
+        if (isNaN(dateObj.getTime())) {
+          return 'তারিখ নেই';
+        }
+        // Use local date methods to preserve the date as the user set it
+        day = dateObj.getDate();
+        month = dateObj.getMonth() + 1;
+        year = dateObj.getFullYear();
+      }
+    } else {
+      // Date object - use local date methods to preserve the date as the user set it
+      if (isNaN(date.getTime())) {
+        return 'তারিখ নেই';
+      }
+      day = date.getDate();
+      month = date.getMonth() + 1;
+      year = date.getFullYear();
+    }
+    
+    // Validate extracted values
+    if (isNaN(day) || isNaN(month) || isNaN(year) || day < 1 || day > 31 || month < 1 || month > 12) {
       return 'তারিখ নেই';
     }
     
-    const day = toBanglaNumbers(dateObj.getDate());
-    const month = toBanglaNumbers(dateObj.getMonth() + 1);
-    const year = toBanglaNumbers(dateObj.getFullYear());
-    
-    return `${day}/${month}/${year}`;
+    return `${toBanglaNumbers(day)}/${toBanglaNumbers(month)}/${toBanglaNumbers(year)}`;
   } catch (error) {
     return 'তারিখ নেই';
   }
