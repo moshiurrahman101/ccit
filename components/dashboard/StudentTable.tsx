@@ -188,6 +188,7 @@ export default function StudentTable({
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isApproving, setIsApproving] = useState<string | null>(null);
+  const [isUpdatingPayment, setIsUpdatingPayment] = useState<string | null>(null);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -296,6 +297,44 @@ export default function StudentTable({
     const reason = prompt('প্রত্যাখ্যানের কারণ দিন (ঐচ্ছিক):');
     if (reason !== null) {
       handleApproval(student._id, 'reject', reason);
+    }
+  };
+
+  const handlePaymentStatusUpdate = async (studentId: string, newStatus: 'paid' | 'partial' | 'due' | 'overdue') => {
+    try {
+      setIsUpdatingPayment(studentId);
+      const token = localStorage.getItem('auth-token') || document.cookie.split('auth-token=')[1]?.split(';')[0] || '';
+      
+      const currentStudent = students.find(s => s._id === studentId);
+      const currentPaidAmount = currentStudent?.studentInfo?.paymentInfo?.paidAmount || 0;
+      const currentDueAmount = currentStudent?.studentInfo?.paymentInfo?.dueAmount || 0;
+      
+      const response = await fetch(`/api/students/${studentId}/payment-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          paymentStatus: newStatus,
+          paidAmount: newStatus === 'paid' ? (currentPaidAmount + currentDueAmount) : currentPaidAmount,
+          dueAmount: newStatus === 'paid' ? 0 : (newStatus === 'partial' ? currentDueAmount : currentDueAmount)
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('পেমেন্ট স্ট্যাটাস সফলভাবে আপডেট হয়েছে');
+        onRefresh();
+      } else {
+        toast.error(data.error || 'পেমেন্ট স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error('পেমেন্ট স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে');
+    } finally {
+      setIsUpdatingPayment(null);
     }
   };
 
@@ -412,8 +451,6 @@ export default function StudentTable({
             <TableHeader>
               <TableRow className="bg-gray-50">
                 <TableHead className="text-gray-700 font-semibold">শিক্ষার্থী</TableHead>
-                <TableHead className="text-gray-700 font-semibold">স্টুডেন্ট আইডি</TableHead>
-                <TableHead className="text-gray-700 font-semibold">ব্যাচ</TableHead>
                 <TableHead className="text-gray-700 font-semibold">যোগাযোগ</TableHead>
                 <TableHead className="text-gray-700 font-semibold">পেমেন্ট</TableHead>
                 <TableHead className="text-gray-700 font-semibold">অনুমোদন</TableHead>
@@ -425,14 +462,14 @@ export default function StudentTable({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
                     <p className="text-gray-500">{getStatusText('dashboard_loading')}</p>
                   </TableCell>
                 </TableRow>
               ) : students.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
+                  <TableCell colSpan={7} className="text-center py-8">
                     <div className="text-gray-500">
                       <GraduationCap className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                       <p className="text-lg font-medium mb-2">কোন শিক্ষার্থী নেই</p>
@@ -475,23 +512,6 @@ export default function StudentTable({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-mono text-sm">
-                        {student.studentInfo?.studentId || 'N/A'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {student.studentInfo?.batchInfo?.batchName || 'N/A'}
-                        </p>
-                        {student.studentInfo?.isOfflineStudent && (
-                          <Badge variant="outline" className="text-blue-600 border-blue-600 text-xs">
-                            অফলাইন
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center text-sm text-gray-600">
                           <Mail className="w-3 h-3 mr-2" />
@@ -511,23 +531,50 @@ export default function StudentTable({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <Badge 
-                          className={
-                            paymentStatusColors[student.studentInfo?.paymentInfo?.paymentStatus || 'due']
-                          }
-                        >
-                          {paymentStatusLabels[student.studentInfo?.paymentInfo?.paymentStatus || 'due']}
-                        </Badge>
-                        {student.studentInfo?.paymentInfo?.paidAmount !== undefined && (
-                          <div className="text-xs text-gray-600">
-                            {formatCurrency(student.studentInfo.paymentInfo.paidAmount)}
-                          </div>
+                        {isUpdatingPayment === student._id ? (
+                          <Badge className={paymentStatusColors[student.studentInfo?.paymentInfo?.paymentStatus || 'due']}>
+                            <Loader2 className="w-3 h-3 animate-spin mr-1 inline" />
+                            আপডেট হচ্ছে...
+                          </Badge>
+                        ) : (
+                          <AdminOnly>
+                            <Select
+                              value={student.studentInfo?.paymentInfo?.paymentStatus || 'due'}
+                              onValueChange={(value) => handlePaymentStatusUpdate(student._id, value as 'paid' | 'partial' | 'due' | 'overdue')}
+                              disabled={isUpdatingPayment === student._id}
+                            >
+                              <SelectTrigger className="h-auto w-auto border-0 p-1 bg-transparent hover:bg-gray-50 focus:ring-0 inline-flex">
+                                <Badge 
+                                  className={
+                                    paymentStatusColors[student.studentInfo?.paymentInfo?.paymentStatus || 'due'] + ' cursor-pointer hover:opacity-80'
+                                  }
+                                >
+                                  {paymentStatusLabels[student.studentInfo?.paymentInfo?.paymentStatus || 'due']}
+                                </Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="paid">{paymentStatusLabels.paid}</SelectItem>
+                                <SelectItem value="partial">{paymentStatusLabels.partial}</SelectItem>
+                                <SelectItem value="due">{paymentStatusLabels.due}</SelectItem>
+                                <SelectItem value="overdue">{paymentStatusLabels.overdue}</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </AdminOnly>
                         )}
-                        {student.studentInfo?.paymentInfo?.dueAmount !== undefined && 
-                         student.studentInfo.paymentInfo.dueAmount > 0 && (
-                          <div className="text-xs text-red-600">
-                            বাকি: {formatCurrency(student.studentInfo.paymentInfo.dueAmount)}
-                          </div>
+                        {!isUpdatingPayment && (
+                          <>
+                            {student.studentInfo?.paymentInfo?.paidAmount !== undefined && (
+                              <div className="text-xs text-gray-600">
+                                {formatCurrency(student.studentInfo.paymentInfo.paidAmount)}
+                              </div>
+                            )}
+                            {student.studentInfo?.paymentInfo?.dueAmount !== undefined && 
+                             student.studentInfo.paymentInfo.dueAmount > 0 && (
+                              <div className="text-xs text-red-600">
+                                বাকি: {formatCurrency(student.studentInfo.paymentInfo.dueAmount)}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </TableCell>

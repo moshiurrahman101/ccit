@@ -76,6 +76,11 @@ interface Batch {
   currentStudents: number;
   status: 'draft' | 'published' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled';
   isActive: boolean;
+  marketing?: {
+    slug?: string;
+    metaDescription?: string;
+    tags?: string[];
+  };
   createdAt: string;
 }
 
@@ -281,7 +286,7 @@ export default function BatchesPage() {
               const isStarted = daysUntilStart <= 0;
               
               return (
-                <Link key={batch._id} href={`/batches/${batch.courseId?.marketing?.slug || batch._id}`} className="group block">
+                <Link key={batch._id} href={`/batches/${batch.marketing?.slug || batch._id}`} className="group block">
                   {/* New Card Design */}
                   <div className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100 h-full flex flex-col">
                     

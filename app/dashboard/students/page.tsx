@@ -55,6 +55,15 @@ export default function StudentsPage() {
     hasNext: false,
     hasPrev: false
   });
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    due: 0,
+    overdue: 0,
+    paid: 0
+  });
   const [filters, setFilters] = useState({
     search: '',
     status: ''
@@ -89,6 +98,9 @@ export default function StudentsPage() {
       if (response.ok) {
         setStudents(data.students);
         setPagination(data.pagination);
+        if (data.stats) {
+          setStats(data.stats);
+        }
       } else {
         toast.error(data.error || 'শিক্ষার্থীদের তথ্য আনতে সমস্যা হয়েছে');
       }
@@ -138,22 +150,7 @@ export default function StudentsPage() {
     setEditingStudent(null);
   };
 
-  const getStudentStats = () => {
-    const total = students.length;
-    const active = students.filter(s => s.isActive).length;
-    const inactive = students.filter(s => !s.isActive).length;
-    const verified = students.filter(s => s.studentInfo?.isActiveStudent).length;
-    const pending = students.filter(s => s.approvalStatus === 'pending').length;
-    const approved = students.filter(s => s.approvalStatus === 'approved').length;
-    const rejected = students.filter(s => s.approvalStatus === 'rejected').length;
-    const paid = 0; // Will be updated when payment system is implemented
-    const due = 0; // Will be updated when payment system is implemented
-    const overdue = 0; // Will be updated when payment system is implemented
-    
-    return { total, active, inactive, verified, pending, approved, rejected, paid, due, overdue };
-  };
-
-  const stats = getStudentStats();
+  // Stats are now fetched from API and stored in state
 
   if (isLoading && students.length === 0) {
     return (
@@ -245,44 +242,6 @@ export default function StudentsPage() {
         </Card>
       </div>
 
-      {/* Payment Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">বাকি পেমেন্ট</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.due}</p>
-              </div>
-              <AlertCircle className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">অতিরিক্ত বাকি</p>
-                <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{getStatusText('inactive')}</p>
-                <p className="text-2xl font-bold text-gray-600">{stats.inactive}</p>
-              </div>
-              <XCircle className="w-8 h-8 text-gray-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Student Table */}
       <StudentTable

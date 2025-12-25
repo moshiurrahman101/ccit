@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Batch from '@/models/Batch';
-import { verifyTokenEdge } from '@/lib/auth';
+import { verifyTokenEdge, verifyToken } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 
 // GET single student with full profile
@@ -12,14 +12,23 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    
+    // Try to get token from Authorization header first
+    let token = null;
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      token = request.cookies.get('auth-token')?.value;
+    }
 
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyTokenEdge(token);
+    // Use verifyToken (server-side) since we're not in edge runtime
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -58,14 +67,23 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    
+    // Try to get token from Authorization header first
+    let token = null;
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      token = request.cookies.get('auth-token')?.value;
+    }
 
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyTokenEdge(token);
+    // Use verifyToken (server-side) since we're not in edge runtime
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -237,14 +255,23 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    
+    // Try to get token from Authorization header first
+    let token = null;
     const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      token = request.cookies.get('auth-token')?.value;
+    }
 
-    if (!token) {
+    if (!token || token === 'null' || token === 'undefined') {
       return NextResponse.json({ error: 'No token provided' }, { status: 401 });
     }
 
-    const payload = verifyTokenEdge(token);
+    // Use verifyToken (server-side) since we're not in edge runtime
+    const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }

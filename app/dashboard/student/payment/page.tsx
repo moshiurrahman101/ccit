@@ -33,11 +33,13 @@ interface Invoice {
   remainingAmount: number;
   status: string;
   dueDate: string;
+  batchName: string;
+  courseType: 'batch' | 'course';
   batchId: {
     _id: string;
     name: string;
     courseType: string;
-  };
+  } | null;
 }
 
 interface Payment {
@@ -497,7 +499,7 @@ export default function StudentPaymentPage() {
                     {selectedInvoice ? (
                       <div className="flex items-center gap-2 w-full">
                         <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
-                        <span className="font-medium truncate flex-1">{selectedInvoice.batchId.name}</span>
+                        <span className="font-medium truncate flex-1">{selectedInvoice.batchId?.name || selectedInvoice.batchName}</span>
                         <span className="text-gray-400">•</span>
                         <span className="text-sm text-gray-600 font-mono">{selectedInvoice.invoiceNumber}</span>
                         <span className="text-gray-400">•</span>
@@ -530,7 +532,7 @@ export default function StudentPaymentPage() {
                                   <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></div>
                                     <p className="font-semibold text-sm text-gray-900 truncate">
-                                      {invoice.batchId.name}
+                                      {invoice.batchId?.name || invoice.batchName}
                                     </p>
                                   </div>
                                   <p className="text-xs text-gray-500 font-mono ml-4">
@@ -585,7 +587,7 @@ export default function StudentPaymentPage() {
                       </div>
                       <div>
                         <span className="text-blue-700">কোর্স:</span>
-                        <p className="font-medium">{selectedInvoice.batchId.name}</p>
+                        <p className="font-medium">{selectedInvoice.batchId?.name || selectedInvoice.batchName}</p>
                       </div>
                       <div>
                         <span className="text-blue-700">মোট পরিমাণ:</span>

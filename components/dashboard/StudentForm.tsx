@@ -314,7 +314,21 @@ export default function StudentForm({
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('auth-token');
+      // Get token from localStorage or cookies
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop()?.split(';').shift();
+        return '';
+      };
+      
+      const token = localStorage.getItem('auth-token') || getCookie('auth-token');
+      
+      if (!token || token === 'null' || token === 'undefined') {
+        toast.error('Authentication required. Please login again.');
+        return;
+      }
+      
       const url = student ? `/api/students/${student._id}` : '/api/students';
       const method = student ? 'PUT' : 'POST';
       
@@ -339,6 +353,7 @@ export default function StudentForm({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
+        credentials: 'include', // Include cookies
         body: JSON.stringify(body)
       });
 

@@ -11,15 +11,32 @@ export async function GET(
   try {
     await connectDB();
 
-    const { slug } = await params;
+    const { slug: rawSlug } = await params;
+    // Decode the slug in case of URL encoding
+    const slug = decodeURIComponent(rawSlug);
     
     console.log('Fetching batch with slug:', slug);
+    console.log('Raw slug from params:', rawSlug);
 
-    const batch = await Batch.findOne({ 
+    let batch = await Batch.findOne({ 
       'marketing.slug': slug,
       isActive: true,
       status: { $in: ['published', 'upcoming', 'ongoing'] }
     }).populate('courseId');
+
+    // If not found, try without decoding (in case slug was stored differently)
+    if (!batch && rawSlug !== slug) {
+      console.log('Batch not found with decoded slug, trying raw slug...');
+      batch = await Batch.findOne({ 
+        'marketing.slug': rawSlug,
+        isActive: true,
+        status: { $in: ['published', 'upcoming', 'ongoing'] }
+      }).populate('courseId');
+      
+      if (batch) {
+        console.log('Batch found with raw slug');
+      }
+    }
 
     console.log('Batch found:', batch ? 'Yes' : 'No');
     if (batch) {

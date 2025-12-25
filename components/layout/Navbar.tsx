@@ -50,9 +50,6 @@ export function Navbar() {
             <Link href="/courses" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
               কোর্স
             </Link>
-            <Link href="/recorded-courses" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
-              ভিডিও কোর্স
-            </Link>
             <Link href="/batches" className="text-gray-700 hover:text-orange-600 transition-colors font-medium">
               ব্যাচ
             </Link>
@@ -154,13 +151,6 @@ export function Navbar() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 কোর্স
-              </Link>
-              <Link
-                href="/recorded-courses"
-                className="block px-3 py-2 text-gray-700 hover:text-orange-600 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                ভিডিও কোর্স
               </Link>
               <Link
                 href="/batches"

@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
       query.status = status;
     }
 
+    // Populate batchId - will be null for recorded courses (since courseId is stored in batchId field)
+    // For recorded courses, batchName field contains the course title
     const invoices = await Invoice.find(query)
       .populate('batchId', 'name courseType')
       .sort({ createdAt: -1 })

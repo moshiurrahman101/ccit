@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import User from '@/models/User';
 import Batch from '@/models/Batch';
+import { Enrollment } from '@/models/Enrollment';
+import Invoice from '@/models/Invoice';
 import { verifyTokenEdge } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
 import { generateStudentId } from '@/lib/utils/studentIdGenerator';
@@ -47,7 +49,8 @@ export async function GET(request: NextRequest) {
       filter.$or = [
         { name: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } }
+        { phone: { $regex: search, $options: 'i' } },
+        { 'studentInfo.studentId': { $regex: search, $options: 'i' } }
       ];
     }
     
@@ -68,14 +71,147 @@ export async function GET(request: NextRequest) {
     const totalStudents = await User.countDocuments(filter);
     const totalPages = Math.ceil(totalStudents / limit);
 
+    // Enrich students with enrollment and payment data
+    // Calculate stats for all students (not just current page)
+    const statsFilter = { role: 'student' };
+    const totalStudentsCount = await User.countDocuments(statsFilter);
+    const pendingCount = await User.countDocuments({ ...statsFilter, approvalStatus: 'pending' });
+    const approvedCount = await User.countDocuments({ ...statsFilter, approvalStatus: 'approved' });
+    const rejectedCount = await User.countDocuments({ ...statsFilter, approvalStatus: 'rejected' });
+    
+    // Calculate payment stats more efficiently
+    // Get all invoices grouped by student
+    const allInvoices = await Invoice.find({ status: { $ne: 'cancelled' } }).sort({ studentId: 1, createdAt: -1 });
+    const latestInvoiceByStudent = new Map();
+    
+    allInvoices.forEach(invoice => {
+      const studentId = invoice.studentId.toString();
+      if (!latestInvoiceByStudent.has(studentId)) {
+        latestInvoiceByStudent.set(studentId, invoice);
+      }
+    });
+    
+    // Count payment statuses from invoices
+    let paidCount = 0;
+    let overdueCount = 0;
+    let dueCount = totalStudentsCount; // Start with all students, subtract those with paid/overdue
+    
+    latestInvoiceByStudent.forEach((invoice) => {
+      if (invoice.status === 'paid') {
+        paidCount++;
+        dueCount--;
+      } else if (invoice.status === 'overdue') {
+        overdueCount++;
+        dueCount--;
+      }
+      // If status is 'partial' or 'pending', it counts as 'due', so we don't adjust dueCount
+    });
+
+    const enrichedStudents = await Promise.all(
+      students.map(async (student) => {
+        const studentObj = student.toObject();
+        
+        // Get active enrollments for this student
+        const enrollments = await Enrollment.find({
+          student: student._id
+        })
+          .populate('batch', 'name batchCode')
+          .populate('course', 'title courseCode')
+          .sort({ createdAt: -1 });
+
+        // Get invoices for this student
+        const invoices = await Invoice.find({
+          studentId: student._id
+        }).sort({ createdAt: -1 });
+
+        // Calculate payment status from enrollments and invoices
+        let overallPaymentStatus: 'paid' | 'partial' | 'due' | 'overdue' = 'due';
+        let totalPaid = 0;
+        let totalDue = 0;
+        let hasCompletedCourse = false;
+
+        if (enrollments.length > 0) {
+          // Check if any enrollment is completed
+          hasCompletedCourse = enrollments.some(e => e.status === 'completed');
+          
+          // Get the most recent active enrollment
+          const activeEnrollment = enrollments.find(e => 
+            e.status === 'approved' || e.status === 'completed'
+          ) || enrollments[0];
+
+          // Map enrollment paymentStatus to student paymentStatus
+          if (activeEnrollment.paymentStatus === 'paid') {
+            overallPaymentStatus = 'paid';
+          } else if (activeEnrollment.paymentStatus === 'partial') {
+            overallPaymentStatus = 'partial';
+          } else {
+            overallPaymentStatus = 'due';
+          }
+        }
+
+        // Calculate from invoices if available
+        if (invoices.length > 0) {
+          const totalFinalAmount = invoices.reduce((sum, inv) => sum + (inv.finalAmount || 0), 0);
+          const totalPaidAmount = invoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+          totalPaid = totalPaidAmount;
+          totalDue = totalFinalAmount - totalPaidAmount;
+
+          if (totalDue <= 0) {
+            overallPaymentStatus = 'paid';
+          } else if (totalPaidAmount > 0) {
+            overallPaymentStatus = 'partial';
+          } else {
+            overallPaymentStatus = 'due';
+          }
+        }
+
+        // Sync payment status to studentInfo if it exists, otherwise create it
+        if (!studentObj.studentInfo) {
+          studentObj.studentInfo = {};
+        }
+        if (!studentObj.studentInfo.paymentInfo) {
+          studentObj.studentInfo.paymentInfo = {};
+        }
+
+        // Update payment info from enrollments/invoices if not set or different
+        studentObj.studentInfo.paymentInfo.paymentStatus = overallPaymentStatus;
+        studentObj.studentInfo.paymentInfo.paidAmount = totalPaid;
+        studentObj.studentInfo.paymentInfo.dueAmount = totalDue;
+
+        // If student has completed courses, mark batch status as completed
+        if (hasCompletedCourse && studentObj.studentInfo.batchInfo) {
+          const completedEnrollment = enrollments.find(e => e.status === 'completed');
+          if (completedEnrollment && studentObj.studentInfo.batchInfo.status !== 'completed') {
+            studentObj.studentInfo.batchInfo.status = 'completed';
+          }
+        }
+
+        // Ensure studentId exists - if not, try to get from enrollments
+        if (!studentObj.studentInfo.studentId && enrollments.length > 0) {
+          // Could potentially generate one, but for now just keep as is
+        }
+
+        return studentObj;
+      })
+    );
+
     return NextResponse.json({
-      students,
+      students: enrichedStudents,
       pagination: {
         currentPage: page,
         totalPages,
         totalStudents,
         hasNext: page < totalPages,
         hasPrev: page > 1
+      },
+      stats: {
+        total: totalStudentsCount,
+        pending: pendingCount,
+        approved: approvedCount,
+        rejected: rejectedCount,
+        due: dueCount,
+        overdue: overdueCount,
+        paid: paidCount
       }
     });
 

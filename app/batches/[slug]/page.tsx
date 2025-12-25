@@ -177,7 +177,7 @@ export default function BatchDetailPage() {
     try {
       // Use absolute URL to ensure it works in all environments
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const response = await fetch(`${baseUrl}/api/batches/slug/${slug}`, {
+      const response = await fetch(`${baseUrl}/api/batches/slug/${encodeURIComponent(slug)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

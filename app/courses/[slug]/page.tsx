@@ -86,7 +86,7 @@ export default function CourseDetailPage() {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/public/courses?slug=${params.slug}`);
+        const response = await fetch(`/api/public/courses?slug=${encodeURIComponent(params.slug as string)}`);
         const data = await response.json();
 
         if (response.ok && data.courses.length > 0) {

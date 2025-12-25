@@ -20,13 +20,6 @@ interface Student {
   avatar?: string;
 }
 
-interface Schedule {
-  _id: string;
-  title: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-}
 
 interface Batch {
   _id: string;
@@ -60,7 +53,6 @@ export default function MentorAttendancePage() {
   const [batches, setBatches] = useState<Batch[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<string>(searchParams.get('batchId') || '');
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +63,6 @@ export default function MentorAttendancePage() {
   const [editingAttendance, setEditingAttendance] = useState<Record<string, boolean>>({});
   
   // Form state
-  const [selectedSchedule, setSelectedSchedule] = useState<string>('none');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [attendanceData, setAttendanceData] = useState<Record<string, boolean>>({}); // true = present, false = absent
 
@@ -84,7 +75,6 @@ export default function MentorAttendancePage() {
       fetchSchedulesAndStudents();
       // Set today's date automatically
       setSelectedDate(new Date().toISOString().split('T')[0]);
-      setSelectedSchedule('none');
     }
   }, [selectedBatchId]);
 
@@ -144,7 +134,6 @@ export default function MentorAttendancePage() {
       }
 
       const data = await response.json();
-      setSchedules(data.schedules || []);
       setStudents(data.students || []);
       setAttendanceRecords(data.attendance || []);
 
@@ -205,7 +194,6 @@ export default function MentorAttendancePage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          scheduleId: selectedSchedule && selectedSchedule !== 'none' ? selectedSchedule : undefined,
           classDate: selectedDate,
           attendance
         })
@@ -230,7 +218,6 @@ export default function MentorAttendancePage() {
         resetData[student._id] = true;
       });
       setAttendanceData(resetData);
-      setSelectedSchedule('none');
     } catch (error) {
       console.error('Error marking attendance:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to mark attendance');
@@ -321,14 +308,14 @@ export default function MentorAttendancePage() {
       {/* Batch Selection */}
       <Card>
         <CardHeader>
-          <CardTitle>Select Batch</CardTitle>
+          <CardTitle>Select Batch <span className="text-red-500">*</span></CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <Label>Batch</Label>
-            <Select value={selectedBatchId} onValueChange={setSelectedBatchId}>
+            <Select value={selectedBatchId} onValueChange={setSelectedBatchId} required>
               <SelectTrigger>
-                <SelectValue placeholder="Select a batch" />
+                <SelectValue placeholder="Select a batch (required)" />
               </SelectTrigger>
               <SelectContent>
                 {batches.map(batch => (
@@ -338,6 +325,9 @@ export default function MentorAttendancePage() {
                 ))}
               </SelectContent>
             </Select>
+            {!selectedBatchId && (
+              <p className="text-sm text-red-500">Batch selection is required to take attendance</p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -352,38 +342,21 @@ export default function MentorAttendancePage() {
             </div>
           )}
 
-          {/* Schedule and Date Selection */}
+          {/* Date Selection */}
           <Card>
             <CardHeader>
               <CardTitle>Class Information</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Select Schedule/Class</Label>
-                  <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a scheduled class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Schedule (General)</SelectItem>
-                      {schedules.map(schedule => (
-                        <SelectItem key={schedule._id} value={schedule._id}>
-                          {schedule.title} - {formatBanglaDate(schedule.date)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Date</Label>
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Class Date <span className="text-red-500">*</span></Label>
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]} // Allow past dates, but not future dates
+                />
+                <p className="text-sm text-gray-500">Select the date for which you want to mark attendance. Previous dates are allowed.</p>
               </div>
             </CardContent>
           </Card>
@@ -812,7 +785,6 @@ export default function MentorAttendancePage() {
                                 'Content-Type': 'application/json'
                               },
                               body: JSON.stringify({
-                                scheduleId: selectedDateRecord.scheduleId || undefined,
                                 classDate: selectedDateRecord.date,
                                 attendance
                               })

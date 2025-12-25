@@ -210,28 +210,7 @@ export async function POST(request: NextRequest) {
         // Determine enrollment payment status based on invoice status
         const enrollmentPaymentStatus = invoiceStatus === 'paid' ? 'paid' : 'partial';
         
-        // Check if this is a recorded course (courseType === 'course')
-        if (invoice.courseType === 'course') {
-          // Handle recorded course enrollment
-          try {
-            const RecordedCourseEnrollment = (await import('@/models/RecordedCourseEnrollment')).default;
-            const existingRecordedEnrollment = await RecordedCourseEnrollment.findOne({
-              student: payment.studentId,
-              course: invoice.batchId, // batchId stores courseId for recorded courses
-              invoiceId: payment.invoiceId
-            });
-            
-            if (existingRecordedEnrollment) {
-              existingRecordedEnrollment.status = invoiceStatus === 'paid' ? 'active' : 'pending';
-              existingRecordedEnrollment.paymentStatus = enrollmentPaymentStatus;
-              await existingRecordedEnrollment.save();
-              console.log('Recorded course enrollment updated:', existingRecordedEnrollment._id);
-            }
-          } catch (recordedError) {
-            console.error('Error updating recorded course enrollment:', recordedError);
-            // Don't fail the whole operation
-          }
-        } else if (invoice.courseType === 'batch' || !invoice.courseType) {
+        if (invoice.courseType === 'batch' || !invoice.courseType) {
           // Handle batch enrollment (existing logic)
           // Try to update enrollment, but don't fail the whole operation if it fails
           try {

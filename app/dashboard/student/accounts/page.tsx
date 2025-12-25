@@ -40,7 +40,9 @@ interface Invoice {
     name: string;
     regularPrice: number;
     discountPrice?: number;
-  };
+  } | null;
+  batchName: string;
+  courseType: 'batch' | 'course';
   studentId: string;
   amount: number;
   paidAmount: number;
@@ -399,7 +401,7 @@ export default function AccountsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg">{invoice.batchId.name}</CardTitle>
+                        <CardTitle className="text-lg">{invoice.batchId?.name || invoice.batchName}</CardTitle>
                         <p className="text-sm text-gray-600">ইনভয়েস #: {invoice.invoiceNumber}</p>
                       </div>
                       <Badge className={getStatusColor(invoice.status)}>
@@ -487,7 +489,7 @@ export default function AccountsPage() {
                         paymentStatus,
                         senderNumber,
                         invoiceId: invoice._id,
-                        batchName: invoice.batchId?.name || 'Unknown Batch'
+                        batchName: invoice.batchId?.name || invoice.batchName || 'Unknown'
                       };
                     })
                 ).filter(p => p.paymentAmount > 0); // Only show payments with amount > 0

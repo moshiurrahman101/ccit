@@ -4,6 +4,7 @@ import { Enrollment } from '@/models/Enrollment';
 import User from '@/models/User';
 import Batch from '@/models/Batch';
 import Mentor from '@/models/Mentor';
+import { Attendance } from '@/models/Attendance';
 import { verifyToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
           status: invoice.status === 'paid' || invoice.status === 'partial' ? 'approved' : 'pending', // Approved if paid or partial
           paymentStatus: invoice.status === 'paid' ? 'paid' : invoice.status === 'partial' ? 'partial' : 'pending',
           amount: invoice.finalAmount || invoice.amount,
-          progress: 0,
+          progress: 0, // Will be calculated later
           lastAccessed: new Date(),
           createdAt: invoice.createdAt || new Date(),
           updatedAt: invoice.updatedAt || new Date()
@@ -115,6 +116,7 @@ export async function GET(request: NextRequest) {
     const Course = (await import('@/models/Course')).default;
     const Mentor = (await import('@/models/Mentor')).default;
     
+    // First, populate batch data for all enrollments
     for (let enrollment of enrollments) {
       if (enrollment.batch) {
         const batchData: any = enrollment.batch; // Type assertion for dynamic property assignment
@@ -198,6 +200,51 @@ export async function GET(request: NextRequest) {
             batchData.durationUnit = 'months';
           }
         }
+      }
+    }
+
+    // Calculate progress for each enrollment based on attendance
+    for (let enrollment of enrollments) {
+      if (enrollment.batch && enrollment.batch._id) {
+        const batchId = enrollment.batch._id.toString();
+        
+        // Get all attendance records for this batch to calculate total classes
+        const batchAttendance = await Attendance.find({ batch: batchId }).lean();
+        
+        // Get unique class dates for this batch (total classes)
+        const uniqueClassDates = new Set(
+          batchAttendance.map(a => {
+            const date = new Date(a.classDate);
+            return date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+          })
+        );
+        const totalClasses = uniqueClassDates.size;
+        
+        // Get student's attendance for this batch (attended classes)
+        const studentAttendance = await Attendance.find({
+          batch: batchId,
+          student: payload.userId,
+          status: { $in: ['present', 'late'] } // Count present and late as attended
+        }).lean();
+        
+        // Get unique class dates where student attended
+        const attendedClassDates = new Set(
+          studentAttendance.map(a => {
+            const date = new Date(a.classDate);
+            return date.toISOString().split('T')[0];
+          })
+        );
+        const attendedClasses = attendedClassDates.size;
+        
+        // Calculate progress percentage
+        const progress = totalClasses > 0 
+          ? Math.round((attendedClasses / totalClasses) * 100)
+          : 0;
+        
+        // Update enrollment with calculated progress
+        enrollment.progress = progress;
+        
+        console.log(`Batch ${batchId}: Total classes: ${totalClasses}, Attended: ${attendedClasses}, Progress: ${progress}%`);
       }
     }
 

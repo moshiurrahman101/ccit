@@ -329,7 +329,7 @@ export default function InvoiceViewPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Course Name</p>
-                <p className="font-medium">{invoice.batchId.name}</p>
+                <p className="font-medium">{invoice.batchId?.name || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Regular Price</p>
