@@ -13,7 +13,13 @@ export async function GET(
 
     const { slug: rawSlug } = await params;
     // Decode the slug in case of URL encoding
-    const slug = decodeURIComponent(rawSlug);
+    let slug = rawSlug;
+    try {
+      slug = decodeURIComponent(rawSlug);
+    } catch (e) {
+      // If decoding fails, use raw slug
+      slug = rawSlug;
+    }
     
     console.log('Fetching batch with slug:', slug);
     console.log('Raw slug from params:', rawSlug);
