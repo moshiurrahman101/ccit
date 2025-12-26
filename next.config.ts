@@ -56,8 +56,8 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // Exclude cloudinary from client-side bundle
-  serverExternalPackages: ['cloudinary'],
+  // Exclude cloudinary and canvas from client-side bundle
+  serverExternalPackages: ['cloudinary', 'canvas'],
 };
 
 export default nextConfig;
